@@ -112,9 +112,35 @@ GDD_BASE_C = 0.0             # GDD bázishőmérséklet
 # átírást. A megfeleltetés kézi, nem vak fuzzy matching (brief 8. buktató).
 # Budapestet külön kezeljük (elhanyagolható búza) — lásd BUDAPEST_HANDLING.
 # --------------------------------------------------------------------------- #
+# Ellenőrzés (Fázis 2): a KSH tábla vármegyenevei karakterre egyeznek a GISCO
+# NAME_LATN mezővel (2026-07 állapot). A megfeleltetés így 1:1, de explicit
+# rögzítjük, hogy egy jövőbeli névváltás (pl. "megye"/"vármegye" toldat) azonnal
+# kiderüljön, ne csendben törjön.
 KSH_TO_NUTS3: dict[str, str] = {
-    # TODO (Fázis 2): 20 sor, KSH név -> NUTS_ID
+    "Budapest": "HU110",
+    "Pest": "HU120",
+    "Fejér": "HU211",
+    "Komárom-Esztergom": "HU212",
+    "Veszprém": "HU213",
+    "Győr-Moson-Sopron": "HU221",
+    "Vas": "HU222",
+    "Zala": "HU223",
+    "Baranya": "HU231",
+    "Somogy": "HU232",
+    "Tolna": "HU233",
+    "Borsod-Abaúj-Zemplén": "HU311",
+    "Heves": "HU312",
+    "Nógrád": "HU313",
+    "Hajdú-Bihar": "HU321",
+    "Jász-Nagykun-Szolnok": "HU322",
+    "Szabolcs-Szatmár-Bereg": "HU323",
+    "Bács-Kiskun": "HU331",
+    "Békés": "HU332",
+    "Csongrád-Csanád": "HU333",
 }
+# A KSH "Területi egység szintje" értékei, amelyek NUTS3 egységet jelölnek
+# (a régió/nagyrégió/ország aggregátumokat kiszűrjük).
+KSH_NUTS3_LEVELS = {"vármegye", "vármegye, régió", "főváros, régió"}
 
 # Budapest kezelése a modellben: "drop" (kihagyás) vagy "merge_pest" (Pesthez).
 BUDAPEST_HANDLING = "drop"
