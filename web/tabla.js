@@ -40,7 +40,7 @@
     th.appendChild(label);
     th.appendChild(document.createTextNode(" "));
     th.appendChild(arrow);
-    th.addEventListener("click", function () {
+    function toggleSort() {
       if (state.sortKey === col.key) {
         state.sortDir = -state.sortDir;
       } else {
@@ -48,6 +48,13 @@
         state.sortDir = col.numeric ? -1 : 1; // számoknál csökkenővel indítunk
       }
       render();
+    }
+    th.addEventListener("click", toggleSort);
+    // billentyűzet-hozzáférés a rendezéshez (UX-audit P2.5)
+    th.tabIndex = 0;
+    th.setAttribute("role", "button");
+    th.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSort(); }
     });
     headRow.appendChild(th);
   });
@@ -157,14 +164,21 @@
             if (v < 0) td.classList.add("anomaly-neg");
             else if (v > 0) td.classList.add("anomaly-pos");
           }
-          // adatsáv a cella hátterében: az oszlop min-max tartományán belüli
-          // pozíció (csak számított %-érték kerül a style-ba — XSS-mentes)
+          // adatsáv a cella hátterében (csak számított %-érték — XSS-mentes).
+          // Anomáliánál a sáv HOSSZA az eltérés MÉRTÉKÉT kódolja (nullától),
+          // ne a tartományon belüli pozíciót — különben a legjobb megye kapná
+          // a leghosszabb piros sávot (UX-audit P1.2).
           var rg = ranges[col.key];
           if (rg && rg[1] > rg[0]) {
-            var pct = 100 * (v - rg[0]) / (rg[1] - rg[0]);
-            var color = col.anomaly
-              ? (v < 0 ? "rgba(192,57,43,.14)" : "rgba(30,132,73,.14)")
-              : "rgba(93,122,148,.13)";
+            var pct, color;
+            if (col.anomaly) {
+              var maxAbs = Math.max(Math.abs(rg[0]), Math.abs(rg[1])) || 1;
+              pct = 100 * Math.abs(v) / maxAbs;
+              color = v < 0 ? "rgba(192,57,43,.14)" : "rgba(30,132,73,.14)";
+            } else {
+              pct = 100 * (v - rg[0]) / (rg[1] - rg[0]);
+              color = "rgba(93,122,148,.13)";
+            }
             td.style.background = "linear-gradient(to right, " + color + " " +
               pct.toFixed(1) + "%, transparent " + pct.toFixed(1) + "%)";
           }
@@ -243,8 +257,10 @@
         state.rows = (data.counties || []).map(flatten);
         meta.textContent =
           (data.crop ? data.crop + " · " : "") +
-          (data.crop_year ? data.crop_year + ". évi termés · " : "") +
-          (data.updated_at ? "frissítve: " + data.updated_at : "");
+          (data.crop_year ? data.crop_year + "-es termésév · " : "") +
+          (data.updated_at ? "frissítve: " + data.updated_at : "") +
+          (data.weather_known_until
+            ? " · időjárás eddig: " + data.weather_known_until : "");
         csvBtn.disabled = false;
         setStatus(null);
         render();
@@ -264,7 +280,7 @@
     if (!btn) return;
     Array.prototype.forEach.call(
       cropSwitch.querySelectorAll("button"),
-      function (b) { b.classList.toggle("active", b === btn); }
+      function (b) { b.classList.toggle("active", b === btn); b.setAttribute("aria-selected", ( b === btn) ? "true" : "false"); }
     );
     load(btn.dataset.crop);
   });

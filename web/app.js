@@ -18,8 +18,10 @@ const COLORS = {
    vármegye-értékek min-max tartományát színezzük (relatív, országon belüli
    összevetés), a jelmagyarázat a tényleges min/max értéket mutatja. */
 const LAYERS = {
-  anomaly: { note: "anomália a trendhez képest", unit: "%", fixed: [-20, 20],
-             colors: ["#b03a2e", "#e67e22", "#f5e8c8", "#82c07a", "#1e8449"] },
+  anomaly: { note: "anomália a trendhez képest (piros = elmaradás, kék = többlet)",
+             unit: "%", fixed: [-20, 20],
+             // piros–kék divergens: színtévesztő-biztos (a piros–zöld nem az)
+             colors: ["#b03a2e", "#e67e22", "#f5e8c8", "#7fb3d5", "#2874a6"] },
   wb:   { note: "vízmérleg (csapadék − párolgás), termésév eddig", unit: " mm",
           colors: ["#b03a2e", "#e8c78f", "#7fb3d5", "#2874a6"] },
   prec: { note: "csapadékösszeg, termésév eddig", unit: " mm",
@@ -44,6 +46,9 @@ async function fetchJson(url, cacheBust = false) {
   if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
   return r.json();
 }
+
+// magyar tizedesvessző a kijelzett számokhoz (a JSON-ban pont marad)
+function hu(v, d = 2) { return v.toFixed(d).replace(".", ","); }
 
 // HTML-escape a JSON-ból érkező szövegekhez (védelem a template-interpolációnál)
 function esc(s) {
@@ -123,7 +128,7 @@ function applyForecast(fc) {
 function chip(v, suffix, inverse = false) {
   const neg = v < 0;
   const cls = (inverse ? !neg : neg) ? "chip neg" : "chip pos";
-  return `<span class="${cls}">${v > 0 ? "+" : ""}${v.toFixed(1)}${suffix}</span>`;
+  return `<span class="${cls}">${v > 0 ? "+" : ""}${hu(v, 1)}${suffix}</span>`;
 }
 
 /* Percentilis pöttysor: a történelmi trend-anomáliák pontokként, az idei kiemelve.
@@ -148,11 +153,11 @@ function rankStripSVG(fc) {
   }
   for (const d of anoms) {
     g += `<circle cx="${X(d.a)}" cy="${H/2}" r="3" fill="#aab8c2" opacity="0.75">` +
-         `<title>${d.y}: ${d.a > 0 ? "+" : ""}${d.a.toFixed(1)}%</title></circle>`;
+         `<title>${d.y}: ${d.a > 0 ? "+" : ""}${hu(d.a, 1)}%</title></circle>`;
   }
   const curCol = cur < 0 ? "#c0392b" : "#1e8449";
   g += `<circle cx="${X(cur)}" cy="${H/2}" r="5.5" fill="${curCol}" stroke="#fff" stroke-width="1.5">` +
-       `<title>${fc.crop_year}: ${cur > 0 ? "+" : ""}${cur.toFixed(1)}%</title></circle>`;
+       `<title>${fc.crop_year}: ${cur > 0 ? "+" : ""}${hu(cur, 1)}%</title></circle>`;
   return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img"
            aria-label="Az idei anomália a történelmi évek közt">${g}</svg>`;
 }
@@ -170,8 +175,8 @@ function scenarioBandSVG(p10, p50, p90, point, width = 210) {
           fill="#7fb3d5" opacity="0.45"/>
     <line x1="${X(p50)}" y1="7" x2="${X(p50)}" y2="23" stroke="#2874a6" stroke-width="2"/>
     <path d="M ${X(point)} 6 l 5 8 l -10 0 z" fill="#c0392b"/>
-    <text x="${X(p10)}" y="33" font-size="8" fill="#90a0ab" text-anchor="middle">${p10.toFixed(1)}</text>
-    <text x="${X(p90)}" y="33" font-size="8" fill="#90a0ab" text-anchor="middle">${p90.toFixed(1)}</text>
+    <text x="${X(p10)}" y="33" font-size="9" fill="#6e7f8b" text-anchor="middle">${hu(p10, 1)}</text>
+    <text x="${X(p90)}" y="33" font-size="9" fill="#6e7f8b" text-anchor="middle">${hu(p90, 1)}</text>
   </svg>`;
 }
 
@@ -186,7 +191,7 @@ function renderNational(fc) {
   cards.push(`
     <div class="kpi">
       <div class="kpi-label">Országos becslés · ${fc.crop_year}</div>
-      <div class="kpi-value">${n.predicted_yield_t_ha.toFixed(2)} <small>t/ha</small></div>
+      <div class="kpi-value">${hu(n.predicted_yield_t_ha)} <small>t/ha</small></div>
       <div class="kpi-sub">${chip(n.anomaly_pct, "%")} a trendhez ·
         ${chip(n.yoy_pct, "%")} vs ${n.prev_year}</div>
     </div>`);
@@ -194,7 +199,7 @@ function renderNational(fc) {
     <div class="kpi">
       <div class="kpi-label">Történelmi helyezés</div>
       <div class="kpi-viz">${rankStripSVG(fc)}</div>
-      <div class="kpi-sub">${n.rank_total} évből a ${n.rank_from_worst}. leggyengébb</div>
+      <div class="kpi-sub">${n.rank_total} évből a ${n.rank_from_worst}. leggyengébb · szaggatott: trend (0%)</div>
     </div>`);
   if (sc) {
     cards.push(`
@@ -202,7 +207,7 @@ function renderNational(fc) {
         <div class="kpi-label">Forgatókönyvek (P10–P90)</div>
         <div class="kpi-viz">${scenarioBandSVG(sc.national.p10, sc.national.p50,
                                                sc.national.p90, n.predicted_yield_t_ha)}</div>
-        <div class="kpi-sub">▲ becslés · | medián pálya</div>
+        <div class="kpi-sub">▲ becslés · függőleges vonal: medián pálya</div>
       </div>`);
   }
   if (v) {
@@ -211,7 +216,7 @@ function renderNational(fc) {
         <div class="kpi-label">Termelési érték</div>
         <div class="kpi-value">~${Math.round(v.production_value_bn_huf)} <small>mrd Ft</small></div>
         <div class="kpi-sub">${chip(v.trend_gap_bn_huf, " mrd Ft")} trend-rés ·
-          ár (${v.price_year}): ${(v.price_huf_per_t / 1000).toFixed(1)} eFt/t</div>
+          ár (${v.price_year}): ${hu(v.price_huf_per_t / 1000, 1)} eFt/t</div>
       </div>`);
   }
   el.innerHTML = cards.join("");
@@ -236,7 +241,7 @@ function yieldChartSVG(years, yields, cur) {
   for (let i = 0; i <= 2; i++) {
     const v = y0 + (y1 - y0) * i / 2;
     g += `<line x1="${PL}" y1="${Y(v)}" x2="${W - PR}" y2="${Y(v)}" stroke="#eceff1"/>` +
-         `<text x="${PL - 4}" y="${Y(v) + 3}" text-anchor="end" font-size="8" fill="#90a0ab">${v.toFixed(1)}</text>`;
+         `<text x="${PL - 4}" y="${Y(v) + 3}" text-anchor="end" font-size="9" fill="#6e7f8b">${hu(v, 1)}</text>`;
   }
   // vármegye-trendvonal (legkisebb négyzetek, kliensoldalon)
   const nY = years.length;
@@ -259,8 +264,8 @@ function yieldChartSVG(years, yields, cur) {
          `<circle cx="${X(cur.year)}" cy="${Y(cur.value)}" r="3.2" fill="#c0392b"/>`;
   }
   // x-tengely címkék
-  g += `<text x="${X(x0)}" y="${H - 4}" font-size="8" fill="#90a0ab">${x0}</text>` +
-       `<text x="${X(x1)}" y="${H - 4}" text-anchor="end" font-size="8" fill="#90a0ab">${x1}</text>`;
+  g += `<text x="${X(x0)}" y="${H - 4}" font-size="9" fill="#6e7f8b">${x0}</text>` +
+       `<text x="${X(x1)}" y="${H - 4}" text-anchor="end" font-size="9" fill="#6e7f8b">${x1}</text>`;
   return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"
            role="img" aria-label="Hozam idősor">${g}</svg>`;
 }
@@ -285,7 +290,7 @@ function showPanel(nutsId) {
       .filter(x => x !== null && x !== undefined);
     const lo = Math.min(...all), hi = Math.max(...all);
     const pct = hi === lo ? 50 : 100 * (value - lo) / (hi - lo);
-    const fmtV = Number.isInteger(value) ? value : value.toFixed(1);
+    const fmtV = Number.isInteger(value) ? value : hu(value, 1);
     return `
       <div class="track-row" title="országos tartomány: ${Math.round(lo)} … ${Math.round(hi)}">
         <span class="track-label">${label}</span>
@@ -329,10 +334,10 @@ function showPanel(nutsId) {
                                                 c.predicted_yield_t_ha, 250)}</div>`
       : "";
     body.innerHTML = `
-      <div class="big-number">${c.predicted_yield_t_ha.toFixed(2)} t/ha</div>
-      <div class="band">80%-os sáv${currentForecast.scenarios ? " (modell + hátralévő időjárás)" : " (modell)"}: ${c.low.toFixed(2)} – ${c.high.toFixed(2)} t/ha</div>
+      <div class="big-number">${hu(c.predicted_yield_t_ha)} t/ha</div>
+      <div class="band">80%-os sáv${currentForecast.scenarios ? " (modell + hátralévő időjárás)" : " (modell)"}: ${hu(c.low)} – ${hu(c.high)} t/ha</div>
       ${scRow}
-      <div class="anomaly ${cls}">${sign}${c.anomaly_pct.toFixed(1)}% a trendhez képest</div>
+      <div class="anomaly ${cls}">${sign}${hu(c.anomaly_pct, 1)}% a trendhez képest</div>
       ${chart}${wxRows}`;
   }
   document.getElementById("panel").classList.remove("hidden");
