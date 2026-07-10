@@ -130,6 +130,56 @@ def build_season_daily(today: date, crop_year: int, crop: str):
     return combined, known_until
 
 
+def national_block(crop: str, crop_year: int, rows: list[dict],
+                   df_model: pd.DataFrame) -> dict:
+    """Országos fejléc-mutatók a forecast JSON-ba.
+
+    - predicted: a 19 modellezett vármegye becslése a LEGUTÓBBI ismert évi
+      betakarított területtel súlyozva (az idei terület még nem ismert;
+      Budapest kimarad — részaránya < 0.1%, dokumentált elhanyagolás).
+    - anomaly_pct: a KSH hivatalos országos idősorra illesztett lineáris trend
+      extrapolációjához képest (yield_history JSON-ból, export_history generálja).
+    - yoy_pct: az előző év hivatalos országos átlagához képest.
+    - percentile: az idei trend-anomália helye a historikus anomáliák közt.
+    """
+    from src.export_history import yield_history_json
+    hist = json.loads(yield_history_json(crop).read_text(encoding="utf-8"))
+    nat = hist["national"]
+
+    # terület-súlyok: a legutóbbi ismert év vármegyei területei
+    last_year = int(df_model["crop_year"].max())
+    areas = (df_model[df_model["crop_year"] == last_year]
+             .set_index("nuts_id")["area_ha"])
+    est = {r["nuts_id"]: r["predicted_yield_t_ha"] for r in rows
+           if r["predicted_yield_t_ha"] is not None}
+    w = areas.reindex(est.keys()).dropna()
+    predicted = float(sum(est[c] * w[c] for c in w.index) / w.sum())
+
+    # trend-extrapoláció és historikus anomáliák a hivatalos idősoron
+    t = crop_year - nat["trend_base_year"]
+    trend_now = nat["trend_intercept"] + nat["trend_slope"] * t
+    anomaly_pct = 100 * (predicted - trend_now) / trend_now
+    hist_anoms = []
+    for y, v in zip(nat["years"], nat["yields"]):
+        tr = nat["trend_intercept"] + nat["trend_slope"] * (y - nat["trend_base_year"])
+        hist_anoms.append(100 * (v - tr) / tr)
+    weaker = sum(1 for a in hist_anoms if a < anomaly_pct)
+    n_total = len(hist_anoms) + 1
+
+    last_official = nat["yields"][-1]
+    return {
+        "predicted_yield_t_ha": round(predicted, 2),
+        "anomaly_pct": round(anomaly_pct, 1),
+        "trend_t_ha": round(trend_now, 2),
+        "yoy_pct": round(100 * (predicted - last_official) / last_official, 1),
+        "prev_year": int(nat["years"][-1]),
+        "prev_year_yield_t_ha": last_official,
+        "rank_from_worst": weaker + 1,
+        "rank_total": n_total,
+        "weights": f"{last_year}. évi vármegyei betakarított területek, Budapest nélkül",
+    }
+
+
 def main(crop: str = config.DEFAULT_CROP) -> None:
     spec = config.CROPS[crop]
     today = date.today()
@@ -192,6 +242,7 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
         "weather_known_until": str(known_until),
         "unit": "t/ha",
         "band": "80%",
+        "national": national_block(crop, crop_year, rows, df),
         "counties": rows,
     }
     hdir = history_dir(crop)
@@ -218,12 +269,20 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
             problems.append(f"{r['nuts_id']} hozam kilóg: {r['predicted_yield_t_ha']}")
         if abs(r["anomaly_pct"]) > 50:
             problems.append(f"{r['nuts_id']} anomália kilóg: {r['anomaly_pct']}%")
+    # az országos becslésnek a vármegyei becslések tartományába kell esnie
+    nat = payload["national"]
+    preds = [r["predicted_yield_t_ha"] for r in est]
+    if not (min(preds) <= nat["predicted_yield_t_ha"] <= max(preds)):
+        problems.append(f"országos becslés ({nat['predicted_yield_t_ha']}) a vármegyei "
+                        f"tartományon kívül [{min(preds)}, {max(preds)}]")
     if problems:
         sys.exit("HIBA az élő előrejelzés ellenőrzésén: " + "; ".join(problems))
     anoms = [r["anomaly_pct"] for r in est]
-    print(f"  ellenőrzés OK: 19 becslés + Budapest; anomália "
-          f"{min(anoms):+.1f}% .. {max(anoms):+.1f}%, "
-          f"országos átlag {np.mean(anoms):+.1f}%")
+    print(f"  ellenőrzés OK: 19 becslés + Budapest; vármegyei anomália "
+          f"{min(anoms):+.1f}% .. {max(anoms):+.1f}%")
+    print(f"  országos: {nat['predicted_yield_t_ha']} t/ha, trendhez {nat['anomaly_pct']:+.1f}%, "
+          f"YoY {nat['yoy_pct']:+.1f}%, a {nat['rank_total']} évből a "
+          f"{nat['rank_from_worst']}. leggyengébb")
 
 
 if __name__ == "__main__":

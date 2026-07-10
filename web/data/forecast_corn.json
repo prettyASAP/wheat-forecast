@@ -5,6 +5,17 @@
  "weather_known_until": "2026-07-16",
  "unit": "t/ha",
  "band": "80%",
+ "national": {
+  "predicted_yield_t_ha": 6.89,
+  "anomaly_pct": -2.1,
+  "trend_t_ha": 7.04,
+  "yoy_pct": 30.8,
+  "prev_year": 2025,
+  "prev_year_yield_t_ha": 5.27,
+  "rank_from_worst": 12,
+  "rank_total": 27,
+  "weights": "2025. évi vármegyei betakarított területek, Budapest nélkül"
+ },
  "counties": [
   {
    "nuts_id": "HU110",
@@ -14,9 +25,9 @@
    "low": null,
    "high": null,
    "weather_todate": {
-    "prec_total_mm": 250.1,
-    "wb_total_mm": -549.0,
-    "heat_days": 3,
+    "prec_total_mm": 244.4,
+    "wb_total_mm": -554.0,
+    "heat_days": 2,
     "frost_days_winter": null,
     "gdd_total": 3559.0
    },
@@ -25,16 +36,16 @@
   {
    "nuts_id": "HU120",
    "county_name": "Pest",
-   "predicted_yield_t_ha": 6.02,
-   "anomaly_pct": -7.8,
-   "low": 4.22,
-   "high": 7.81,
+   "predicted_yield_t_ha": 5.97,
+   "anomaly_pct": -8.5,
+   "low": 4.18,
+   "high": 7.76,
    "weather_todate": {
-    "prec_total_mm": 244.6,
-    "wb_total_mm": -550.0,
+    "prec_total_mm": 240.7,
+    "wb_total_mm": -553.5,
     "heat_days": 1,
     "frost_days_winter": null,
-    "gdd_total": 3482.0
+    "gdd_total": 3481.0
    }
   },
   {
@@ -46,7 +57,7 @@
    "high": 8.41,
    "weather_todate": {
     "prec_total_mm": 256.2,
-    "wb_total_mm": -540.7,
+    "wb_total_mm": -540.8,
     "heat_days": 3,
     "frost_days_winter": null,
     "gdd_total": 3510.0

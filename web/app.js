@@ -17,6 +17,7 @@ const COLORS = {
 let map, geojson, historyDates = [], currentForecast = null;
 let selectedId = null;
 let crop = "wheat";
+const yieldHistory = {};  // crop -> yield_history JSON (cache)
 
 async function fetchJson(url) {
   const r = await fetch(url);
@@ -46,7 +47,55 @@ function applyForecast(fc) {
   document.getElementById("meta").textContent =
     `${fc.crop} · ${fc.crop_year}-es termésév · frissítve: ${fc.updated_at}` +
     ` · időjárás eddig: ${fc.weather_known_until}`;
+  renderNational(fc);
   if (selectedId) showPanel(selectedId);
+}
+
+function renderNational(fc) {
+  const el = document.getElementById("national");
+  const n = fc.national;
+  if (!n) { el.innerHTML = ""; return; }
+  const cls = n.anomaly_pct < 0 ? "neg" : "pos";
+  const s = v => (v > 0 ? "+" : "") + v.toFixed(1);
+  el.innerHTML = `
+    <span class="nat-item"><b>Országos becslés:</b> ${n.predicted_yield_t_ha.toFixed(2)} t/ha</span>
+    <span class="nat-item ${cls}">${s(n.anomaly_pct)}% a trendhez képest</span>
+    <span class="nat-item">${s(n.yoy_pct)}% vs ${n.prev_year} (${n.prev_year_yield_t_ha.toFixed(2)} t/ha)</span>
+    <span class="nat-item">${n.rank_total} évből a ${n.rank_from_worst}. leggyengébb</span>`;
+}
+
+/* Kézi SVG vonaldiagram: historikus hozamok + idei becslés sávval.
+   Semmi külső könyvtár — statikus oldal marad. */
+function yieldChartSVG(years, yields, cur) {
+  const W = 268, H = 130, PL = 30, PR = 8, PT = 8, PB = 18;
+  const allY = yields.concat(cur ? [cur.low, cur.high] : []);
+  const allX = years.concat(cur ? [cur.year] : []);
+  const y0 = Math.floor(Math.min(...allY) * 2) / 2, y1 = Math.ceil(Math.max(...allY) * 2) / 2;
+  const x0 = Math.min(...allX), x1 = Math.max(...allX);
+  const X = yr => PL + (yr - x0) / (x1 - x0) * (W - PL - PR);
+  const Y = v => PT + (y1 - v) / (y1 - y0) * (H - PT - PB);
+
+  let g = "";
+  // y-tengely rácsok (3 osztás)
+  for (let i = 0; i <= 2; i++) {
+    const v = y0 + (y1 - y0) * i / 2;
+    g += `<line x1="${PL}" y1="${Y(v)}" x2="${W - PR}" y2="${Y(v)}" stroke="#eceff1"/>` +
+         `<text x="${PL - 4}" y="${Y(v) + 3}" text-anchor="end" font-size="8" fill="#90a0ab">${v.toFixed(1)}</text>`;
+  }
+  // historikus vonal + pontok
+  const pts = years.map((yr, i) => `${X(yr)},${Y(yields[i])}`).join(" ");
+  g += `<polyline points="${pts}" fill="none" stroke="#5d7a94" stroke-width="1.4"/>`;
+  // idei becslés: sáv + pont
+  if (cur) {
+    g += `<line x1="${X(cur.year)}" y1="${Y(cur.low)}" x2="${X(cur.year)}" y2="${Y(cur.high)}"
+           stroke="#c0392b" stroke-width="2" opacity="0.45"/>` +
+         `<circle cx="${X(cur.year)}" cy="${Y(cur.value)}" r="3.2" fill="#c0392b"/>`;
+  }
+  // x-tengely címkék
+  g += `<text x="${X(x0)}" y="${H - 4}" font-size="8" fill="#90a0ab">${x0}</text>` +
+       `<text x="${X(x1)}" y="${H - 4}" text-anchor="end" font-size="8" fill="#90a0ab">${x1}</text>`;
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"
+           role="img" aria-label="Hozam idősor">${g}</svg>`;
 }
 
 function showPanel(nutsId) {
@@ -67,8 +116,21 @@ function showPanel(nutsId) {
       ${frostRow}
       <tr><td>Hőösszeg (GDD)</td><td>${wx.gdd_total}</td></tr>
     </table>`;
+  // hozamgrafikon a cache-elt idősorból
+  let chart = "";
+  const hist = yieldHistory[crop];
+  const hc = hist && hist.counties[nutsId];
+  if (hc) {
+    const cur = c.predicted_yield_t_ha === null ? null : {
+      year: currentForecast.crop_year, value: c.predicted_yield_t_ha,
+      low: c.low, high: c.high,
+    };
+    chart = `<div class="chart-title">Hozam ${hc.years[0]}–${hc.years[hc.years.length - 1]}
+             (piros: idei becslés a sávval)</div>` +
+            yieldChartSVG(hc.years, hc.yields, cur);
+  }
   if (c.predicted_yield_t_ha === null) {
-    body.innerHTML = `<p class="note">${c.note || "Nincs becslés."}</p>${wxRows}`;
+    body.innerHTML = `<p class="note">${c.note || "Nincs becslés."}</p>${chart}${wxRows}`;
   } else {
     const cls = c.anomaly_pct < 0 ? "neg" : "pos";
     const sign = c.anomaly_pct > 0 ? "+" : "";
@@ -76,7 +138,7 @@ function showPanel(nutsId) {
       <div class="big-number">${c.predicted_yield_t_ha.toFixed(2)} t/ha</div>
       <div class="band">80%-os sáv: ${c.low.toFixed(2)} – ${c.high.toFixed(2)} t/ha</div>
       <div class="anomaly ${cls}">${sign}${c.anomaly_pct.toFixed(1)}% a trendhez képest</div>
-      ${wxRows}`;
+      ${chart}${wxRows}`;
   }
   document.getElementById("panel").classList.remove("hidden");
 }
@@ -108,6 +170,11 @@ async function loadCrop(newCrop) {
   document.querySelectorAll("#crop-switch button").forEach(b =>
     b.classList.toggle("active", b.dataset.crop === crop));
   const fc = await fetchJson(`data/forecast_${crop}.json`);
+  if (!yieldHistory[crop]) {
+    try {
+      yieldHistory[crop] = await fetchJson(`data/yield_history_${crop}.json`);
+    } catch (e) { console.error("yield_history betöltés:", e); }
+  }
   try {
     historyDates = await fetchJson(`data/history/${crop}/index.json`);
   } catch { historyDates = []; }

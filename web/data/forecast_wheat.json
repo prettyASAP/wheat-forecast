@@ -5,6 +5,17 @@
  "weather_known_until": "2026-06-30",
  "unit": "t/ha",
  "band": "80%",
+ "national": {
+  "predicted_yield_t_ha": 5.22,
+  "anomaly_pct": -9.3,
+  "trend_t_ha": 5.75,
+  "yoy_pct": -5.1,
+  "prev_year": 2025,
+  "prev_year_yield_t_ha": 5.5,
+  "rank_from_worst": 7,
+  "rank_total": 27,
+  "weights": "2025. évi vármegyei betakarított területek, Budapest nélkül"
+ },
  "counties": [
   {
    "nuts_id": "HU110",
