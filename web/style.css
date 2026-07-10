@@ -59,19 +59,79 @@ header h1 { font-size: 1.15rem; }
 
 #national {
   display: flex;
-  gap: 18px;
+  gap: 10px;
   flex-wrap: wrap;
-  padding: 5px 16px;
+  padding: 8px 16px;
   background: #fbfcfd;
   border-bottom: 1px solid #e3e6e8;
-  font-size: 0.82rem;
-  color: #4a5a66;
 }
 #national:empty { display: none; }
-.nat-item.neg { color: #c0392b; font-weight: 600; }
-.nat-item.pos { color: #1e8449; font-weight: 600; }
+
+.kpi {
+  background: #fff;
+  border: 1px solid #e3e6e8;
+  border-radius: 10px;
+  padding: 8px 14px;
+  min-width: 180px;
+  flex: 1 1 200px;
+  max-width: 320px;
+}
+.kpi-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #90a0ab;
+  margin-bottom: 2px;
+}
+.kpi-value { font-size: 1.45rem; font-weight: 700; color: #2c3e50; line-height: 1.15; }
+.kpi-value small { font-size: 0.8rem; font-weight: 500; color: #6b7a86; }
+.kpi-sub { font-size: 0.74rem; color: #6b7a86; margin-top: 3px; }
+.kpi-viz { margin: 2px 0; }
+
+.chip {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 9px;
+  font-weight: 700;
+  font-size: 0.74rem;
+}
+.chip.neg { background: #fdecea; color: #c0392b; }
+.chip.pos { background: #e8f6ee; color: #1e8449; }
 
 .chart-title { font-size: 0.72rem; color: #90a0ab; margin: 8px 0 2px; }
+
+.track-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-top: 1px solid #f0f2f3;
+  font-size: 0.8rem;
+}
+.track-label { flex: 0 0 108px; color: #4a5a66; }
+.track {
+  flex: 1;
+  position: relative;
+  height: 6px;
+  background: linear-gradient(to right, #eef1f3, #dfe4e8);
+  border-radius: 3px;
+}
+.track-dot {
+  position: absolute;
+  top: 50%;
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 3px rgba(0,0,0,.25);
+  transform: translate(-50%, -50%);
+}
+.track-value {
+  flex: 0 0 62px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #2c3e50;
+}
 
 main { flex: 1; position: relative; min-height: 0; }
 #map { position: absolute; inset: 0; }

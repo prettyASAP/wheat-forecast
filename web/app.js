@@ -119,33 +119,102 @@ function applyForecast(fc) {
   if (selectedId) showPanel(selectedId);
 }
 
+/* Delta-chip: színezett +/- badge */
+function chip(v, suffix, inverse = false) {
+  const neg = v < 0;
+  const cls = (inverse ? !neg : neg) ? "chip neg" : "chip pos";
+  return `<span class="${cls}">${v > 0 ? "+" : ""}${v.toFixed(1)}${suffix}</span>`;
+}
+
+/* Percentilis pöttysor: a történelmi trend-anomáliák pontokként, az idei kiemelve.
+   Az anomáliák a yield_history national blokkjából számolódnak kliensoldalon —
+   ugyanazzal a trenddel, amivel a szerveroldal (trend_slope/intercept). */
+function rankStripSVG(fc) {
+  const hist = yieldHistory[crop];
+  if (!hist) return "";
+  const nat = hist.national;
+  const anoms = nat.years.map((y, i) => {
+    const tr = nat.trend_intercept + nat.trend_slope * (y - nat.trend_base_year);
+    return { y, a: 100 * (nat.yields[i] - tr) / tr };
+  });
+  const cur = fc.national.anomaly_pct;
+  const all = anoms.map(d => d.a).concat([cur]);
+  const lo = Math.min(...all), hi = Math.max(...all);
+  const W = 210, H = 30, P = 8;
+  const X = a => P + (a - lo) / (hi - lo || 1) * (W - 2 * P);
+  let g = `<line x1="${P}" y1="${H/2}" x2="${W-P}" y2="${H/2}" stroke="#dfe4e8"/>`;
+  if (lo < 0 && hi > 0) {
+    g += `<line x1="${X(0)}" y1="6" x2="${X(0)}" y2="${H-6}" stroke="#b8c2ca" stroke-dasharray="2,2"/>`;
+  }
+  for (const d of anoms) {
+    g += `<circle cx="${X(d.a)}" cy="${H/2}" r="3" fill="#aab8c2" opacity="0.75">` +
+         `<title>${d.y}: ${d.a > 0 ? "+" : ""}${d.a.toFixed(1)}%</title></circle>`;
+  }
+  const curCol = cur < 0 ? "#c0392b" : "#1e8449";
+  g += `<circle cx="${X(cur)}" cy="${H/2}" r="5.5" fill="${curCol}" stroke="#fff" stroke-width="1.5">` +
+       `<title>${fc.crop_year}: ${cur > 0 ? "+" : ""}${cur.toFixed(1)}%</title></circle>`;
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img"
+           aria-label="Az idei anomália a történelmi évek közt">${g}</svg>`;
+}
+
+/* Szcenárió-szalag: P10–P90 sáv, P50-jel, becslés-marker */
+function scenarioBandSVG(p10, p50, p90, point, width = 210) {
+  const all = [p10, p90, point];
+  const lo = Math.min(...all), hi = Math.max(...all);
+  const pad = (hi - lo) * 0.15 || 0.5;
+  const W = width, H = 34, P = 6;
+  const X = v => P + (v - (lo - pad)) / ((hi + pad) - (lo - pad)) * (W - 2 * P);
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img"
+           aria-label="Időjárás-forgatókönyvek sávja">
+    <rect x="${X(p10)}" y="10" width="${X(p90) - X(p10)}" height="10" rx="5"
+          fill="#7fb3d5" opacity="0.45"/>
+    <line x1="${X(p50)}" y1="7" x2="${X(p50)}" y2="23" stroke="#2874a6" stroke-width="2"/>
+    <path d="M ${X(point)} 6 l 5 8 l -10 0 z" fill="#c0392b"/>
+    <text x="${X(p10)}" y="33" font-size="8" fill="#90a0ab" text-anchor="middle">${p10.toFixed(1)}</text>
+    <text x="${X(p90)}" y="33" font-size="8" fill="#90a0ab" text-anchor="middle">${p90.toFixed(1)}</text>
+  </svg>`;
+}
+
 function renderNational(fc) {
   const el = document.getElementById("national");
   const n = fc.national;
   if (!n) { el.innerHTML = ""; return; }
-  const cls = n.anomaly_pct < 0 ? "neg" : "pos";
-  const s = v => (v > 0 ? "+" : "") + v.toFixed(1);
   const sc = fc.scenarios;
-  const scHtml = sc
-    ? `<span class="nat-item" title="${esc(sc.method)}">forgatókönyvek (P10–P90):
-       ${sc.national.p10.toFixed(2)} – ${sc.national.p90.toFixed(2)} t/ha</span>`
-    : "";
   const v = n.value;
-  const gapCls = v && v.trend_gap_bn_huf < 0 ? "neg" : "pos";
-  const valHtml = v
-    ? `<span class="nat-item" title="${esc(v.note)}">termelési érték:
-       ~${Math.round(v.production_value_bn_huf)} mrd Ft</span>
-       <span class="nat-item ${gapCls}" title="${esc(v.note)}">trend-rés:
-       ${v.trend_gap_bn_huf > 0 ? "+" : ""}${Math.round(v.trend_gap_bn_huf)} mrd Ft</span>
-       <span class="nat-item">ár (${v.price_year}):
-       ${(v.price_huf_per_t / 1000).toFixed(1)} eFt/t</span>`
-    : "";
-  el.innerHTML = `
-    <span class="nat-item"><b>Országos becslés:</b> ${n.predicted_yield_t_ha.toFixed(2)} t/ha</span>
-    <span class="nat-item ${cls}">${s(n.anomaly_pct)}% a trendhez képest</span>
-    <span class="nat-item">${s(n.yoy_pct)}% vs ${n.prev_year} (${n.prev_year_yield_t_ha.toFixed(2)} t/ha)</span>
-    <span class="nat-item">${n.rank_total} évből a ${n.rank_from_worst}. leggyengébb</span>
-    ${scHtml}${valHtml}`;
+
+  const cards = [];
+  cards.push(`
+    <div class="kpi">
+      <div class="kpi-label">Országos becslés · ${fc.crop_year}</div>
+      <div class="kpi-value">${n.predicted_yield_t_ha.toFixed(2)} <small>t/ha</small></div>
+      <div class="kpi-sub">${chip(n.anomaly_pct, "%")} a trendhez ·
+        ${chip(n.yoy_pct, "%")} vs ${n.prev_year}</div>
+    </div>`);
+  cards.push(`
+    <div class="kpi">
+      <div class="kpi-label">Történelmi helyezés</div>
+      <div class="kpi-viz">${rankStripSVG(fc)}</div>
+      <div class="kpi-sub">${n.rank_total} évből a ${n.rank_from_worst}. leggyengébb</div>
+    </div>`);
+  if (sc) {
+    cards.push(`
+      <div class="kpi" title="${esc(sc.method)}">
+        <div class="kpi-label">Forgatókönyvek (P10–P90)</div>
+        <div class="kpi-viz">${scenarioBandSVG(sc.national.p10, sc.national.p50,
+                                               sc.national.p90, n.predicted_yield_t_ha)}</div>
+        <div class="kpi-sub">▲ becslés · | medián pálya</div>
+      </div>`);
+  }
+  if (v) {
+    cards.push(`
+      <div class="kpi" title="${esc(v.note)}">
+        <div class="kpi-label">Termelési érték</div>
+        <div class="kpi-value">~${Math.round(v.production_value_bn_huf)} <small>mrd Ft</small></div>
+        <div class="kpi-sub">${chip(v.trend_gap_bn_huf, " mrd Ft")} trend-rés ·
+          ár (${v.price_year}): ${(v.price_huf_per_t / 1000).toFixed(1)} eFt/t</div>
+      </div>`);
+  }
+  el.innerHTML = cards.join("");
 }
 
 /* Kézi SVG vonaldiagram: historikus hozamok + idei becslés sávval.
@@ -169,6 +238,17 @@ function yieldChartSVG(years, yields, cur) {
     g += `<line x1="${PL}" y1="${Y(v)}" x2="${W - PR}" y2="${Y(v)}" stroke="#eceff1"/>` +
          `<text x="${PL - 4}" y="${Y(v) + 3}" text-anchor="end" font-size="8" fill="#90a0ab">${v.toFixed(1)}</text>`;
   }
+  // vármegye-trendvonal (legkisebb négyzetek, kliensoldalon)
+  const nY = years.length;
+  const mx = years.reduce((a, b) => a + b, 0) / nY;
+  const my = yields.reduce((a, b) => a + b, 0) / nY;
+  let sxy = 0, sxx = 0;
+  for (let i = 0; i < nY; i++) { sxy += (years[i] - mx) * (yields[i] - my); sxx += (years[i] - mx) ** 2; }
+  const slope = sxx ? sxy / sxx : 0, icept = my - slope * mx;
+  const clampY = v => Math.max(y0, Math.min(y1, v));
+  g += `<line x1="${X(x0)}" y1="${Y(clampY(icept + slope * x0))}"
+         x2="${X(x1)}" y2="${Y(clampY(icept + slope * x1))}"
+         stroke="#b8c2ca" stroke-width="1" stroke-dasharray="4,3"/>`;
   // historikus vonal + pontok
   const pts = years.map((yr, i) => `${X(yr)},${Y(yields[i])}`).join(" ");
   g += `<polyline points="${pts}" fill="none" stroke="#5d7a94" stroke-width="1.4"/>`;
@@ -192,17 +272,36 @@ function showPanel(nutsId) {
   document.getElementById("panel-name").textContent = c.county_name;
   const body = document.getElementById("panel-body");
   const wx = c.weather_todate;
-  const frostRow = wx.frost_days_winter === null || wx.frost_days_winter === undefined
-    ? ""
-    : `<tr><td>Téli fagynapok (−15 °C alatt)</td><td>${wx.frost_days_winter}</td></tr>`;
+  // "pötty a pályán": hol áll a vármegye értéke a 20 egység tartományában
+  const TRACK_KEYS = {
+    "Csapadék": "prec_total_mm", "Vízmérleg": "wb_total_mm",
+    "Hőstressznapok": "heat_days", "Fagynapok": "frost_days_winter",
+    "Hőösszeg (GDD)": "gdd_total",
+  };
+  function trackRow(label, value, unit, color) {
+    if (value === null || value === undefined) return "";
+    const all = currentForecast.counties
+      .map(x => x.weather_todate[TRACK_KEYS[label]])
+      .filter(x => x !== null && x !== undefined);
+    const lo = Math.min(...all), hi = Math.max(...all);
+    const pct = hi === lo ? 50 : 100 * (value - lo) / (hi - lo);
+    const fmtV = Number.isInteger(value) ? value : value.toFixed(1);
+    return `
+      <div class="track-row" title="országos tartomány: ${Math.round(lo)} … ${Math.round(hi)}">
+        <span class="track-label">${label}</span>
+        <span class="track"><span class="track-dot" style="left:${pct.toFixed(1)}%;background:${color}"></span></span>
+        <span class="track-value">${fmtV}${unit}</span>
+      </div>`;
+  }
   const wxRows = `
-    <table>
-      <tr><td>Csapadék (termésév eddig)</td><td>${wx.prec_total_mm} mm</td></tr>
-      <tr><td>Vízmérleg (eddig, csap. − párolgás)</td><td>${wx.wb_total_mm} mm</td></tr>
-      <tr><td>Hőstressznapok (kritikus ablak)</td><td>${wx.heat_days}</td></tr>
-      ${frostRow}
-      <tr><td>Hőösszeg (GDD)</td><td>${wx.gdd_total}</td></tr>
-    </table>`;
+    <div class="chart-title">Időjárás eddig — a pötty a 20 vármegye tartományán belüli
+    helyet mutatja</div>
+    ${trackRow("Csapadék", wx.prec_total_mm, " mm", "#5499c7")}
+    ${trackRow("Vízmérleg", wx.wb_total_mm, " mm", "#2874a6")}
+    ${trackRow("Hőstressznapok", wx.heat_days, "", "#c0392b")}
+    ${trackRow("Fagynapok", wx.frost_days_winter, "", "#8e44ad")}
+    ${trackRow("Hőösszeg (GDD)", wx.gdd_total, "", "#d68910")}`;
+
   // hozamgrafikon a cache-elt idősorból
   let chart = "";
   const hist = yieldHistory[crop];
@@ -225,7 +324,9 @@ function showPanel(nutsId) {
       && currentForecast.scenarios.counties[nutsId];
     const scRow = scc
       ? `<div class="band" title="${esc(currentForecast.scenarios.method)}">
-         időjárás-forgatókönyvek (P10–P90): ${scc.p10.toFixed(2)} – ${scc.p90.toFixed(2)} t/ha</div>`
+         időjárás-forgatókönyvek (P10–P90):</div>
+         <div class="kpi-viz">${scenarioBandSVG(scc.p10, scc.p50, scc.p90,
+                                                c.predicted_yield_t_ha, 250)}</div>`
       : "";
     body.innerHTML = `
       <div class="big-number">${c.predicted_yield_t_ha.toFixed(2)} t/ha</div>
