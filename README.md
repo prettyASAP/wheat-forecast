@@ -19,6 +19,20 @@ magyarázó a hőmérséklet és a csapadék (ablakos GDD, hőstressz, vízmérl
 | 7 | Automatizálás (GitHub Actions) | ✅ (GitHub remote + Pages bekapcsolás kell) |
 | 8 | Kukorica bővítés | ✅ ([riport](reports/backtest_report_corn.md)) |
 
+**Terminál-bővítések** (a 8 fázis után):
+- **A** — vármegye-hozamgrafikon (2000–2025) + országos fejléc-mutatók (becslés,
+  trend-anomália, YoY, percentilis); a historikus országos idősor a KSH hivatalos
+  sora, szigorú parse-keresztellenőrzéssel
+- **B** — termelői árak (Eurostat apri_ap_crpouta, HUF) + forintosítás: termelési
+  érték és trend-rés mrd Ft-ban, az ár- és terület-évjárat explicit jelölésével
+- **C** — térképréteg-váltó: anomália / vízmérleg / csapadék / hőstressz / GDD
+  (az időjárási rétegek adatvezérelt, relatív skálával)
+- **D** — időjárás-forgatókönyvek: a szezon hátralévő napjai a 26 analóg év
+  tényleges időjárásával -> P10/P50/P90; szezon közben a fő becslés az együttes
+  átlaga (Jensen-korrekció a konvex aszályjelző miatt)
+- **E** — harmadik termény: **őszi árpa** (a KSH külön őszi árpa szekciójából,
+  keverés nélkül; mérési kapu: LOYO 0.548 vs naiv 0.693, sáv 81.4%)
+
 **Modell-eredmények (leave-one-year-out, out-of-sample):**
 búza RMSE 0,53 t/ha (11,4%, R² 0,73), kukorica RMSE 1,40 t/ha (22,9%, R² 0,43) —
 mindkettő érdemben veri a naiv trend-alapot. A 2022-es aszály iránytartása:
