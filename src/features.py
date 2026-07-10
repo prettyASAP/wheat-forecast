@@ -78,6 +78,11 @@ def compute_features(daily: pd.DataFrame) -> pd.DataFrame:
             w = _window_slice(g, cy, config.PHENOLOGY_WINDOWS[name])
             row[f"wb_{name}"] = (w["precipitation_sum"]
                                  - w["et0_fao_evapotranspiration"]).sum()
+        # Teljes termésévi halmozott vízmérleg — a több ablakon átívelő,
+        # halmozódó szárazság (pl. 2022) jelzője. A modell ebből képez
+        # konvex deficit-tagot (wb_deficit) a tanítóminta mediánjához képest.
+        row["wb_total"] = (g["precipitation_sum"]
+                           - g["et0_fao_evapotranspiration"]).sum()
         rows.append(row)
 
     return pd.DataFrame(rows).sort_values(["nuts_id", "crop_year"]).reset_index(drop=True)
