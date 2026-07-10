@@ -25,15 +25,24 @@ RAW_KSH = DATA_RAW / "ksh"
 RAW_BOUNDARIES = DATA_RAW / "boundaries"
 RAW_WEATHER = DATA_RAW / "weather"
 
-# Feldolgozott kimenetek
-PANEL_PARQUET = DATA_PROCESSED / "panel.parquet"
+# Feldolgozott kimenetek — terményenként (lásd CROPS lent)
+def panel_parquet(crop: str = "wheat") -> Path:
+    return DATA_PROCESSED / f"panel_{crop}.parquet"
+
+
+def features_parquet(crop: str = "wheat") -> Path:
+    return DATA_PROCESSED / f"features_{crop}.parquet"
+
+
+def weather_daily_parquet(crop: str = "wheat") -> Path:
+    return DATA_PROCESSED / f"weather_daily_{crop}.parquet"
+
 
 # --------------------------------------------------------------------------- #
-# Adatforrás: KSH búzahozam (19.1.2.4. tábla)
+# Adatforrás: KSH terménytáblák (stadat 19.1.2.x)
 # --------------------------------------------------------------------------- #
 # Az oldalt töltjük le és onnan szedjük ki a relatív letöltési linket (xlsx/csv),
 # mert a fájl URL-je verzióváltáskor változhat (brief 5.1).
-KSH_PAGE_URL = "https://www.ksh.hu/stadat_files/mez/hu/mez0071.html"
 # A KSH oldal és a letölthető fájlok kódolása
 KSH_ENCODING = "iso-8859-2"
 
@@ -89,22 +98,72 @@ def weather_end(today: date | None = None) -> str:
 
 
 # --------------------------------------------------------------------------- #
-# Fenológiai ablakok (őszi búza, Magyarország) — a features.py használja (3. fázis)
-# Minden ablak (kezdő_hónap, kezdő_nap, záró_hónap, záró_nap, év_eltolás) alakban:
-#   év_eltolás = -1  -> a termésévhez képest az előző naptári év (Y-1)
-#   év_eltolás =  0  -> a termésév (Y)
+# Terményregiszter (Fázis 8) — minden termény-specifikus beállítás egy helyen.
+#
+# Fenológiai ablakok: (kezdő_hónap, kezdő_nap, záró_hónap, záró_nap, év_eltolás),
+#   év_eltolás = -1 -> a termésévhez képest az előző naptári év (Y-1); 0 -> Y.
+# season: (kezdő_hónap, záró_hónap) — a termésévhez tartozó időjárási ablak.
+#   Ha kezdő > záró (búza: 10..6), az ablak átnyúlik az évhatáron: a Y termésév
+#   a Y-1 okt 1 – Y jún 30 időjárást kapja. Ha kezdő < záró (kukorica: 4..9),
+#   minden a Y naptári évben van.
 # --------------------------------------------------------------------------- #
-PHENOLOGY_WINDOWS = {
-    "sowing_emergence": (10, 1, 11, 15, -1),   # vetés/kelés: okt 1 – nov 15 (Y-1)
-    "winter_dormancy": (12, 1, 2, 28, -1),     # téli nyugalom: dec 1 (Y-1) – feb 28 (Y)
-    "tillering": (3, 1, 4, 30, 0),             # bokrosodás: márc 1 – ápr 30 (Y)
-    "grain_filling": (5, 1, 6, 20, 0),         # szemtelítődés KRIT: máj 1 – jún 20 (Y)
-}
+GDD_BASE_C = 0.0             # GDD bázishőmérséklet (mindkét terményre)
+WINTER_FROST_TMIN_C = -15.0  # Tmin < -15 °C fagynap (őszi vetésű terményekre)
 
-# Hőstressz és fagy küszöbök (brief 3. fázis)
-HEAT_STRESS_TMAX_C = 30.0    # Tmax > 30 °C hőstressznap (szemtelítődés alatt)
-WINTER_FROST_TMIN_C = -15.0  # Tmin < -15 °C fagynap (dec – feb)
-GDD_BASE_C = 0.0             # GDD bázishőmérséklet
+CROPS = {
+    "wheat": {
+        "label": "búza",
+        "ksh_page": "https://www.ksh.hu/stadat_files/mez/hu/mez0071.html",
+        "ksh_slug": "mez0071",
+        "season": (10, 6),
+        "phenology": {
+            "sowing_emergence": (10, 1, 11, 15, -1),  # vetés/kelés (Y-1)
+            "winter_dormancy": (12, 1, 2, 28, -1),    # téli nyugalom (Y-1/Y)
+            "tillering": (3, 1, 4, 30, 0),            # bokrosodás (Y)
+            "grain_filling": (5, 1, 6, 20, 0),        # szemtelítődés KRIT (Y)
+        },
+        "heat_window": "grain_filling",   # ebben az ablakban számoljuk a hőstresszt
+        "heat_tmax_c": 30.0,
+        "use_frost": True,                # téli fagynapok feature
+        "wb_windows": ["tillering", "grain_filling"],  # ablakos vízmérlegek
+        "model_features": [
+            "gdd_sowing_emergence", "gdd_winter_dormancy", "gdd_tillering",
+            "gdd_grain_filling", "prec_sowing_emergence", "prec_winter_dormancy",
+            "heat_days", "frost_days_winter", "wb_tillering", "wb_grain_filling",
+            # Konvex halmozott aszályjelző: min(wb_total - vármegye-medián, 0),
+            # a tanítóminta mediánjával (look-ahead-mentes) — mérési kapu iteráció.
+            "wb_deficit",
+        ],
+        "asof": (6, 15),                  # as-of backtest: jún 15
+        "backtest_years": [2022, 2007, 2003],
+    },
+    "corn": {
+        "label": "kukorica",
+        "ksh_page": "https://www.ksh.hu/stadat_files/mez/hu/mez0072.html",
+        "ksh_slug": "mez0072",
+        "season": (4, 9),
+        "phenology": {
+            "sowing_emergence": (4, 15, 5, 31, 0),    # vetés/kelés (Y)
+            "vegetative": (6, 1, 6, 30, 0),           # intenzív növekedés (Y)
+            "flowering": (7, 1, 7, 31, 0),            # virágzás/megporzás KRIT (Y)
+            "grain_filling": (8, 1, 9, 15, 0),        # szemtelítődés (Y)
+        },
+        # A kukoricánál a júliusi hővel szembeni érzékenység a döntő (brief 8. fázis);
+        # a megporzás 32 °C felett károsodik.
+        "heat_window": "flowering",
+        "heat_tmax_c": 32.0,
+        "use_frost": False,               # nincs téli kitettség
+        "wb_windows": ["flowering", "grain_filling"],
+        "model_features": [
+            "gdd_sowing_emergence", "gdd_vegetative", "gdd_flowering",
+            "gdd_grain_filling", "prec_sowing_emergence", "prec_vegetative",
+            "heat_days", "wb_flowering", "wb_grain_filling", "wb_deficit",
+        ],
+        "asof": (8, 1),                   # as-of backtest: aug 1 (virágzás után)
+        "backtest_years": [2022, 2012, 2007],
+    },
+}
+DEFAULT_CROP = "wheat"
 
 # --------------------------------------------------------------------------- #
 # Crosswalk: KSH vármegyenév -> NUTS3 kód (2. fázis tölti ki, kézzel ellenőrizve)
@@ -149,30 +208,10 @@ BUDAPEST_HANDLING = "drop"
 BUDAPEST_NUTS_ID = "HU110"
 
 # --------------------------------------------------------------------------- #
-# Modell (Fázis 4)
+# Modell (Fázis 4) — termény-független beállítások.
+# A termény-specifikus magyarázólista a CROPS[crop]["model_features"].
 # --------------------------------------------------------------------------- #
-# Időjárási magyarázók a feature táblából. A collinearitás miatt szűkített,
-# értelmezhető készlet: ablakos GDD-k, ablakos csapadék, stresszmutatók, vízmérleg.
-MODEL_FEATURES = [
-    "gdd_sowing_emergence",
-    "gdd_winter_dormancy",
-    "gdd_tillering",
-    "gdd_grain_filling",
-    "prec_sowing_emergence",
-    "prec_winter_dormancy",
-    "heat_days_grain_filling",
-    "frost_days_winter",
-    "wb_tillering",
-    "wb_grain_filling",
-    # Konvex halmozott aszályjelző: min(wb_total - vármegye-medián, 0), a modell
-    # számolja a tanítóminta mediánjával (look-ahead-mentes). A 2022-szerű,
-    # több ablakon átívelő szárazság megfogásához (mérési kapu iteráció).
-    "wb_deficit",
-]
 TREND_DEGREE = 1        # közös időtrend foka (1 = lineáris, 2 = kvadratikus)
 RIDGE_ALPHA = 25.0      # ridge büntetés az időjárási blokkra (0 = sima OLS);
                         # LOYO ráccsal választva (validate.py, 2026-07)
 UNCERTAINTY_Z = 1.282   # 80%-os sáv a normál eloszlás alapján
-# As-of backtest dátuma: az adott év jún 15-ig ismert időjárás
-ASOF_MONTH, ASOF_DAY = 6, 15
-BACKTEST_YEARS = [2022, 2007, 2003]

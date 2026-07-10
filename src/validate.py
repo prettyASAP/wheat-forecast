@@ -19,15 +19,20 @@ from src import config
 from src.model import (fit_panel_model, load_model_data,
                        predict_naive_last3, predict_naive_trend)
 
-LOYO_PARQUET = config.DATA_PROCESSED / "loyo_results.parquet"
+def loyo_parquet(crop: str = config.DEFAULT_CROP):
+    return config.DATA_PROCESSED / f"loyo_results_{crop}.parquet"
 
 
-def loyo_predict(df: pd.DataFrame, **model_kw) -> pd.DataFrame:
+def loyo_summary_json(crop: str = config.DEFAULT_CROP):
+    return config.DATA_PROCESSED / f"loyo_summary_{crop}.json"
+
+
+def loyo_predict(df: pd.DataFrame, crop: str = config.DEFAULT_CROP, **model_kw) -> pd.DataFrame:
     """LOYO: minden évre a többi évből tanított modell előrejelzése."""
     out = []
     for year in sorted(df["crop_year"].unique()):
         train, test = df[df["crop_year"] != year], df[df["crop_year"] == year]
-        m = fit_panel_model(train, **model_kw)
+        m = fit_panel_model(train, crop=crop, **model_kw)
         out.append(pd.DataFrame({
             "nuts_id": test["nuts_id"].values,
             "crop_year": year,
@@ -41,17 +46,18 @@ def rmse(a: np.ndarray, p: np.ndarray) -> float:
     return float(np.sqrt(np.mean((a - p) ** 2)))
 
 
-def main() -> None:
-    df = load_model_data()
+def main(crop: str = config.DEFAULT_CROP) -> None:
+    df = load_model_data(crop)
     years = sorted(df["crop_year"].unique())
-    print(f"LOYO keresztvalidáció: {len(df)} megfigyelés, {len(years)} év")
+    label = config.CROPS[crop]["label"]
+    print(f"LOYO keresztvalidáció ({label}): {len(df)} megfigyelés, {len(years)} év")
 
     # --- Modellváltozat-rács ---
     print("\n=== Változatok (out-of-sample RMSE, t/ha) ===")
     grid_results = {}
     for deg in (1, 2):
         for alpha in (0.0, 5.0, 10.0, 25.0):
-            r = loyo_predict(df, trend_degree=deg, ridge_alpha=alpha)
+            r = loyo_predict(df, crop=crop, trend_degree=deg, ridge_alpha=alpha)
             grid_results[(deg, alpha)] = rmse(r["actual"], r["pred"])
             print(f"  trend fok {deg}, ridge {alpha:5.1f}: {grid_results[(deg, alpha)]:.3f}")
     best_deg, best_alpha = min(grid_results, key=grid_results.get)
@@ -59,7 +65,7 @@ def main() -> None:
           f"(config: {config.TREND_DEGREE}, {config.RIDGE_ALPHA})")
 
     # --- Fő modell (config szerinti) vs naiv alapok ---
-    res = loyo_predict(df)
+    res = loyo_predict(df, crop=crop)
     naive_t, naive_3 = [], []
     for year in years:
         train, test = df[df["crop_year"] != year], df[df["crop_year"] == year]
@@ -94,11 +100,14 @@ def main() -> None:
     print(f"80%-os sáv (±{z}·szórás) tényleges lefedettsége: {100*cover:.1f}%")
 
     res.attrs = {}
-    res.to_parquet(LOYO_PARQUET, index=False)
+    res.to_parquet(loyo_parquet(crop), index=False)
     pd.Series({"oos_std": oos_std, "coverage": cover}).to_json(
-        config.DATA_PROCESSED / "loyo_summary.json")
-    print(f"\n[ok] {LOYO_PARQUET.name} mentve")
+        loyo_summary_json(crop))
+    print(f"\n[ok] {loyo_parquet(crop).name} mentve")
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--crop", choices=list(config.CROPS), default=config.DEFAULT_CROP)
+    main(crop=ap.parse_args().crop)

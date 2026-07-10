@@ -1,20 +1,20 @@
-"""As-of visszateszt (Fázis 4 — mérési kapu második fele).
+"""As-of visszateszt (Fázis 4 — mérési kapu; terményparaméteres a Fázis 8 óta).
 
-Rekonstruáljuk a feature-öket úgy, ahogy egy adott év jún 15-én ismertek lennének:
-  - időjárás a valós napi adatból jún 15-ig,
-  - a hátralévő napokra (jún 16 – jún 20, a szemtelítődési ablak vége) a TÖBBI
-    évből számolt nap-klimatológia (look-ahead nélkül: a célévet kihagyjuk a
-    klimatológiából és a tanításból is).
+Rekonstruáljuk a feature-öket úgy, ahogy egy adott év as-of napján (búza: jún 15,
+kukorica: aug 1) ismertek lennének:
+  - időjárás a valós napi adatból az as-of napig,
+  - a szezon hátralévő napjaira a TÖBBI évből számolt nap-klimatológia
+    (look-ahead nélkül: a célévet kihagyjuk a klimatológiából és a tanításból is).
 A modellt a célév NÉLKÜL tanítjuk, jóslunk, és a tényleges hozammal vetjük össze.
-Aszályévek: config.BACKTEST_YEARS (2022, 2007, 2003).
 
-Kimenet: data/processed/backtest_results.parquet, reports/figures/*.png,
-         reports/backtest_report.md (magyar riport, a LOYO eredményekkel együtt).
+Kimenet: data/processed/backtest_results_{crop}.parquet, reports/figures/*.png,
+         reports/backtest_report{_corn}.md (magyar riport a LOYO eredményekkel).
 
-Futtatás:  python -m src.backtest
+Futtatás:  python -m src.backtest [--crop wheat|corn]
 """
 from __future__ import annotations
 
+import argparse
 from datetime import date
 
 import matplotlib
@@ -24,32 +24,39 @@ import numpy as np
 import pandas as pd
 
 from src import config
-from src.build_panel import WEATHER_DAILY_PARQUET
-from src.features import FEATURES_PARQUET, compute_features
+from src.features import compute_features
 from src.model import fit_panel_model, load_model_data, predict_naive_trend
-from src.validate import LOYO_PARQUET, rmse
+from src.validate import loyo_parquet, rmse
 
-BACKTEST_PARQUET = config.DATA_PROCESSED / "backtest_results.parquet"
 FIGURES_DIR = config.REPORTS_DIR / "figures"
-REPORT_MD = config.REPORTS_DIR / "backtest_report.md"
 
 
-def asof_daily(daily: pd.DataFrame, target_year: int,
+def backtest_parquet(crop: str) -> "Path":
+    return config.DATA_PROCESSED / f"backtest_results_{crop}.parquet"
+
+
+def report_md(crop: str) -> "Path":
+    suffix = "" if crop == "wheat" else f"_{crop}"
+    return config.REPORTS_DIR / f"backtest_report{suffix}.md"
+
+
+def asof_daily(daily: pd.DataFrame, target_year: int, crop: str,
                asof: date | None = None) -> pd.DataFrame:
     """A célév termésévi napi időjárása úgy, ahogy az as-of napon ismert lenne.
 
-    A jún 15 utáni napokat (a termésév végéig) a TÖBBI év nap-klimatológiájával
+    Az as-of nap utáni napokat (a termésév végéig) a TÖBBI év nap-klimatológiájával
     (hónap-nap átlag vármegyénként) pótoljuk — semmi look-ahead a célévből.
     """
-    asof = asof or date(target_year, config.ASOF_MONTH, config.ASOF_DAY)
-    d = daily.dropna(subset=["crop_year"]).copy()
-    d["date"] = pd.to_datetime(d["date"]).dt.date
+    if asof is None:
+        m, d = config.CROPS[crop]["asof"]
+        asof = date(target_year, m, d)
+    d_ = daily.dropna(subset=["crop_year"]).copy()
+    d_["date"] = pd.to_datetime(d_["date"]).dt.date
 
-    target = d[d["crop_year"] == target_year]
+    target = d_[d_["crop_year"] == target_year]
     known = target[target["date"] <= asof]
 
-    # klimatológia: a többi év azonos (hónap, nap) átlaga vármegyénként
-    others = d[d["crop_year"] != target_year].copy()
+    others = d_[d_["crop_year"] != target_year].copy()
     dt = pd.to_datetime(others["date"])
     others["md"] = list(zip(dt.dt.month, dt.dt.day))
     clim = (others.groupby(["nuts_id", "md"])[config.OPENMETEO_DAILY_VARS]
@@ -64,11 +71,10 @@ def asof_daily(daily: pd.DataFrame, target_year: int,
 
 
 def backtest_year(df_model: pd.DataFrame, daily: pd.DataFrame,
-                  target_year: int) -> pd.DataFrame:
+                  target_year: int, crop: str) -> pd.DataFrame:
     """Egy célév as-of backtestje. Visszaadja a vármegyénkénti eredménytáblát."""
-    # as-of feature-ök a célévre
-    asof_wx = asof_daily(daily, target_year)
-    feats_asof = compute_features(asof_wx)
+    asof_wx = asof_daily(daily, target_year, crop)
+    feats_asof = compute_features(asof_wx, crop)
     feats_asof = feats_asof[feats_asof["crop_year"] == target_year]
 
     train = df_model[df_model["crop_year"] != target_year]
@@ -76,7 +82,7 @@ def backtest_year(df_model: pd.DataFrame, daily: pd.DataFrame,
         ["nuts_id", "county_name", "crop_year", "yield_t_ha"]]
 
     test = actual.merge(feats_asof, on=["nuts_id", "crop_year"], how="inner")
-    m = fit_panel_model(train)
+    m = fit_panel_model(train, crop=crop)
     test["pred"] = m.predict(test)
     test["trend_baseline"] = predict_naive_trend(train, test)  # "normál év" szint
     test["anomaly_pct"] = 100 * (test["pred"] - test["trend_baseline"]) / test["trend_baseline"]
@@ -85,9 +91,10 @@ def backtest_year(df_model: pd.DataFrame, daily: pd.DataFrame,
                  "trend_baseline", "anomaly_pct", "actual_anomaly_pct"]]
 
 
-def plot_backtest(results: pd.DataFrame) -> list[str]:
+def plot_backtest(results: pd.DataFrame, crop: str) -> list[str]:
     """Évenkénti szórásdiagram: jósolt vs tényleges hozam. PNG fájlnevek listája."""
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
+    m, d = config.CROPS[crop]["asof"]
     files = []
     for year, g in results.groupby("crop_year"):
         fig, ax = plt.subplots(figsize=(6, 6))
@@ -99,10 +106,10 @@ def plot_backtest(results: pd.DataFrame) -> list[str]:
             ax.annotate(r["nuts_id"], (r["yield_t_ha"], r["pred"]), fontsize=7,
                         xytext=(3, 3), textcoords="offset points")
         ax.set_xlabel("Tényleges hozam (t/ha)")
-        ax.set_ylabel(f"As-of (jún 15.) előrejelzés (t/ha)")
-        ax.set_title(f"{year} — as-of backtest, vármegyénként")
+        ax.set_ylabel(f"As-of ({m:02d}-{d:02d}) előrejelzés (t/ha)")
+        ax.set_title(f"{year} — as-of backtest, {config.CROPS[crop]['label']}")
         ax.legend()
-        fname = f"backtest_{year}.png"
+        fname = f"backtest_{crop}_{year}.png"
         fig.savefig(FIGURES_DIR / fname, dpi=120, bbox_inches="tight")
         plt.close(fig)
         files.append(fname)
@@ -110,23 +117,25 @@ def plot_backtest(results: pd.DataFrame) -> list[str]:
 
 
 def write_report(results: pd.DataFrame, loyo: pd.DataFrame,
-                 fig_files: list[str]) -> None:
+                 fig_files: list[str], crop: str) -> None:
     """Magyar nyelvű riport a mérési kapuhoz."""
+    label = config.CROPS[crop]["label"]
+    asof_m, asof_d = config.CROPS[crop]["asof"]
     a = loyo["actual"].to_numpy()
     lines = [
-        "# Backtest riport — búzahozam-előrejelző (mérési kapu)",
+        f"# Backtest riport — {label}hozam-előrejelző (mérési kapu)",
         "",
-        f"*Készült: {date.today().isoformat()}. Adat: KSH vármegyei búza-termésátlag "
+        f"*Készült: {date.today().isoformat()}. Adat: KSH vármegyei {label}-termésátlag "
         f"(2000–{int(loyo['crop_year'].max())}), ERA5 (Open-Meteo), 19 vármegye "
-        "(Budapest kihagyva — elhanyagolható búzaterület).*",
+        "(Budapest kihagyva — elhanyagolható termőterület).*",
         "",
         "## 1. Modell",
         "",
         "Panelregresszió: vármegye-fixhatás + közös lineáris időtrend (a technológiai "
         "fejlődés leválasztására) + standardizált időjárási mutatók (ablakos GDD-k, "
-        "őszi/téli csapadék, hőstressznapok, fagynapok, tavaszi és szemtelítődési "
-        f"vízmérleg). Becslés: OLS szelektív ridge büntetéssel (α={config.RIDGE_ALPHA}, "
-        "csak az időjárási blokkon; LOYO ráccsal választva).",
+        "csapadék, hőstressznapok, vízmérleg-mutatók, halmozott vízmérleg-deficit). "
+        f"Becslés: OLS szelektív ridge büntetéssel (α={config.RIDGE_ALPHA}, csak az "
+        "időjárási blokkon; LOYO ráccsal választva).",
         "",
         "## 2. Leave-one-year-out validáció (out-of-sample)",
         "",
@@ -146,14 +155,13 @@ def write_report(results: pd.DataFrame, loyo: pd.DataFrame,
                    & (loyo["actual"] <= loyo["pred"] + z * oos_std)).mean())
     lines += [
         "",
-        f"A modell mindkét naiv alapot veri. A bizonytalansági sáv a LOYO reziduumok "
-        f"szórásából: ±{z}·{oos_std:.3f} t/ha (névleges 80%); tényleges lefedettség "
-        f"**{100*cover:.1f}%** — reális, nem túl szűk és nem túl tág.",
+        f"A bizonytalansági sáv a LOYO reziduumok szórásából: ±{z}·{oos_std:.3f} t/ha "
+        f"(névleges 80%); tényleges lefedettség **{100*cover:.1f}%**.",
         "",
-        "## 3. As-of backtest (jún. 15-i tudásállapot)",
+        f"## 3. As-of backtest ({asof_m:02d}. hó {asof_d}. napi tudásállapot)",
         "",
-        "A feature-ök a célév jún. 15-ig ismert időjárásából + a hátralévő napokra a "
-        "többi év klimatológiájából; a modell a célév nélkül tanítva (nincs look-ahead).",
+        "A feature-ök a célév as-of napjáig ismert időjárásból + a hátralévő napokra "
+        "a többi év klimatológiájából; a modell a célév nélkül tanítva (nincs look-ahead).",
         "",
         "| Év | Jósolt anomália (átlag) | Tényleges anomália (átlag) | Iránytalálat (vármegye) |",
         "|---|---|---|---|",
@@ -162,13 +170,14 @@ def write_report(results: pd.DataFrame, loyo: pd.DataFrame,
         hit = int(((g["anomaly_pct"] < 0) == (g["actual_anomaly_pct"] < 0)).sum())
         lines.append(f"| {year} | {g['anomaly_pct'].mean():+.1f}% | "
                      f"{g['actual_anomaly_pct'].mean():+.1f}% | {hit}/{len(g)} |")
+
     # 2022 vármegyénkénti részletezés — a kapu (b) ezt kéri számon
     g22 = results[results["crop_year"] == 2022].sort_values("actual_anomaly_pct")
     lines += [
         "",
         "### 2022 vármegyénként (a leginkább érintettől a legkevésbé érintettig)",
         "",
-        "| Vármegye | Tényleges anomália | Jósolt anomália (jún. 15.) | Irány |",
+        "| Vármegye | Tényleges anomália | Jósolt anomália | Irány |",
         "|---|---|---|---|",
     ]
     for _, r in g22.iterrows():
@@ -186,40 +195,41 @@ def write_report(results: pd.DataFrame, loyo: pd.DataFrame,
         "",
         "## 4. A mérési kapu értékelése",
         "",
-        "- **(a) Naiv alap verése:** TELJESÜL — a panelmodell out-of-sample RMSE-je "
-        "22%-kal jobb a vármegye-trend naivnál (2. táblázat).",
-        f"- **(b) 2022 iránytartás:** TELJESÜL — {hit22}/19 vármegyénél helyes az "
-        f"előjel, a 10 leginkább érintettből {hit_top}-nál; a három legsúlyosabban "
-        "érintett (Jász-Nagykun-Szolnok, Hajdú-Bihar, Heves) mind helyesen átlag "
-        "alatti. A tévesztések ~0% körüli határesetek.",
-        f"- **(c) Sáv realitása:** TELJESÜL — {100*cover:.1f}% tényleges lefedettség "
-        "a névleges 80%-ra.",
-        "",
-        "### Ismert korlátok (őszintén)",
-        "",
-        "- **A 2022-es anomália MÉRTÉKÉT a modell alulbecsüli** (jún. 15-i átlag "
-        f"{g22['anomaly_pct'].mean():+.1f}% a tényleges {g22['actual_anomaly_pct'].mean():+.1f}% "
-        "helyett). Két ok: (1) a június végi hőhullám a jún. 15-i tudásállapotban még "
-        "nem ismert — a teljes szezonos (LOYO) becslés már −5,5%-ot ad; (2) 2022-ben a "
-        "műtrágyaár-robbanás (háború) is csökkentette a hozamot, ami nem időjárási "
-        "tényező, egy időjárás-alapú modell elvben sem foghatja meg.",
-        "- A halmozott vízmérleg-deficit (wb_deficit) bevezetése a kapu-iteráció "
-        "eredménye: az összesített out-of-sample RMSE-t 0,624-ről 0,529 t/ha-ra "
-        "javította, és a 2012-es aszályt is 19/19-re hozza.",
-        "- A modell szezonon belüli frissítéssel (5. fázis) a jún. 15. utáni "
-        "időjárást is beépíti majd, a 2022-szerű késői stresszt is követve.",
+        "- **(a) Naiv alap verése:** lásd a 2. táblázatot.",
+        f"- **(b) 2022 iránytartás:** {hit22}/19 vármegyénél helyes az előjel, "
+        f"a 10 leginkább érintettből {hit_top}-nál.",
+        f"- **(c) Sáv realitása:** {100*cover:.1f}% tényleges lefedettség a névleges 80%-ra.",
     ]
-    REPORT_MD.write_text("\n".join(lines), encoding="utf-8")
-    print(f"[ok] riport: {REPORT_MD}")
+    if crop == "wheat":
+        lines += [
+            "",
+            "### Ismert korlátok (őszintén)",
+            "",
+            "- **A 2022-es anomália MÉRTÉKÉT a modell alulbecsüli** (jún. 15-i átlag "
+            f"{g22['anomaly_pct'].mean():+.1f}% a tényleges "
+            f"{g22['actual_anomaly_pct'].mean():+.1f}% helyett). Két ok: (1) a június "
+            "végi hőhullám a jún. 15-i tudásállapotban még nem ismert — a teljes "
+            "szezonos (LOYO) becslés már −5,5%-ot ad; (2) 2022-ben a műtrágyaár-robbanás "
+            "(háború) is csökkentette a hozamot, ami nem időjárási tényező, egy "
+            "időjárás-alapú modell elvben sem foghatja meg.",
+            "- A halmozott vízmérleg-deficit (wb_deficit) bevezetése a kapu-iteráció "
+            "eredménye: az összesített out-of-sample RMSE-t 0,624-ről 0,529 t/ha-ra "
+            "javította, és a 2012-es aszályt is 19/19-re hozza.",
+            "- A modell szezonon belüli frissítéssel (5. fázis) az as-of nap utáni "
+            "időjárást is beépíti, a 2022-szerű késői stresszt is követve.",
+        ]
+    out = report_md(crop)
+    out.write_text("\n".join(lines), encoding="utf-8")
+    print(f"[ok] riport: {out}")
 
 
-def main() -> None:
-    df_model = load_model_data()
-    daily = pd.read_parquet(WEATHER_DAILY_PARQUET)
+def main(crop: str = config.DEFAULT_CROP) -> None:
+    df_model = load_model_data(crop)
+    daily = pd.read_parquet(config.weather_daily_parquet(crop))
 
     all_res = []
-    for year in config.BACKTEST_YEARS:
-        res = backtest_year(df_model, daily, year)
+    for year in config.CROPS[crop]["backtest_years"]:
+        res = backtest_year(df_model, daily, year, crop)
         all_res.append(res)
         hit = int(((res["anomaly_pct"] < 0) == (res["actual_anomaly_pct"] < 0)).sum())
         print(f"{year}: jósolt anomália {res['anomaly_pct'].mean():+.1f}%, "
@@ -228,12 +238,14 @@ def main() -> None:
               f"RMSE {rmse(res['yield_t_ha'].to_numpy(), res['pred'].to_numpy()):.3f} t/ha")
 
     results = pd.concat(all_res, ignore_index=True)
-    results.to_parquet(BACKTEST_PARQUET, index=False)
+    results.to_parquet(backtest_parquet(crop), index=False)
 
-    loyo = pd.read_parquet(LOYO_PARQUET)
-    figs = plot_backtest(results)
-    write_report(results, loyo, figs)
+    loyo = pd.read_parquet(loyo_parquet(crop))
+    figs = plot_backtest(results, crop)
+    write_report(results, loyo, figs, crop)
 
 
 if __name__ == "__main__":
-    main()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--crop", choices=list(config.CROPS), default=config.DEFAULT_CROP)
+    main(crop=ap.parse_args().crop)

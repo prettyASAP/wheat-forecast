@@ -16,6 +16,7 @@ const COLORS = {
 
 let map, geojson, historyDates = [], currentForecast = null;
 let selectedId = null;
+let crop = "wheat";
 
 async function fetchJson(url) {
   const r = await fetch(url);
@@ -55,12 +56,15 @@ function showPanel(nutsId) {
   document.getElementById("panel-name").textContent = c.county_name;
   const body = document.getElementById("panel-body");
   const wx = c.weather_todate;
+  const frostRow = wx.frost_days_winter === null || wx.frost_days_winter === undefined
+    ? ""
+    : `<tr><td>Téli fagynapok (−15 °C alatt)</td><td>${wx.frost_days_winter}</td></tr>`;
   const wxRows = `
     <table>
       <tr><td>Csapadék (termésév)</td><td>${wx.prec_total_mm} mm</td></tr>
       <tr><td>Vízmérleg (csap. − párolgás)</td><td>${wx.wb_total_mm} mm</td></tr>
-      <tr><td>Hőstressznapok (szemtelítődés)</td><td>${wx.heat_days_grain_filling}</td></tr>
-      <tr><td>Téli fagynapok (−15 °C alatt)</td><td>${wx.frost_days_winter}</td></tr>
+      <tr><td>Hőstressznapok (kritikus ablak)</td><td>${wx.heat_days}</td></tr>
+      ${frostRow}
       <tr><td>Hőösszeg (GDD)</td><td>${wx.gdd_total}</td></tr>
     </table>`;
   if (c.predicted_yield_t_ha === null) {
@@ -78,35 +82,47 @@ function showPanel(nutsId) {
 }
 
 function setupTimeline() {
-  if (historyDates.length < 2) return; // egy nappal nincs mit csúsztatni
   const tl = document.getElementById("timeline");
   const slider = document.getElementById("slider");
   const label = document.getElementById("slider-date");
+  if (historyDates.length < 2) {  // egy nappal nincs mit csúsztatni
+    tl.classList.add("hidden");
+    return;
+  }
   tl.classList.remove("hidden");
   slider.max = historyDates.length - 1;
   slider.value = historyDates.length - 1;
   label.textContent = historyDates[historyDates.length - 1];
-  slider.addEventListener("input", async () => {
-    const d = historyDates[Number(slider.value)];
-    label.textContent = d;
-    try {
-      applyForecast(await fetchJson(`data/history/${d}.json`));
-    } catch (e) { console.error(e); }
-  });
 }
 
+document.getElementById("slider").addEventListener("input", async e => {
+  const d = historyDates[Number(e.target.value)];
+  document.getElementById("slider-date").textContent = d;
+  try {
+    applyForecast(await fetchJson(`data/history/${crop}/${d}.json`));
+  } catch (err) { console.error(err); }
+});
+
+async function loadCrop(newCrop) {
+  crop = newCrop;
+  document.querySelectorAll("#crop-switch button").forEach(b =>
+    b.classList.toggle("active", b.dataset.crop === crop));
+  const fc = await fetchJson(`data/forecast_${crop}.json`);
+  try {
+    historyDates = await fetchJson(`data/history/${crop}/index.json`);
+  } catch { historyDates = []; }
+  applyForecast(fc);
+  setupTimeline();
+}
+
+document.querySelectorAll("#crop-switch button").forEach(b =>
+  b.addEventListener("click", () => loadCrop(b.dataset.crop).catch(console.error)));
+
 async function init() {
-  const [gj, fc] = await Promise.all([
-    fetchJson("data/nuts3_hu.geojson"),
-    fetchJson("data/forecast.json"),
-  ]);
+  const gj = await fetchJson("data/nuts3_hu.geojson");
   geojson = gj;
   // MapLibre feature-state-hez numerikus/string id kell a feature-ön
   for (const f of geojson.features) f.id = f.properties.NUTS_ID;
-
-  try {
-    historyDates = await fetchJson("data/history/index.json");
-  } catch { historyDates = []; }
 
   map = new maplibregl.Map({
     container: "map",
@@ -140,8 +156,7 @@ async function init() {
       paint: { "line-color": COLORS.border, "line-width": 1 },
     });
 
-    applyForecast(fc);
-    setupTimeline();
+    loadCrop("wheat").catch(console.error);
 
     map.on("click", "counties-fill", e => showPanel(e.features[0].properties.NUTS_ID));
     map.on("mouseenter", "counties-fill", () => map.getCanvas().style.cursor = "pointer");

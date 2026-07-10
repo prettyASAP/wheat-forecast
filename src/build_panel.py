@@ -1,33 +1,31 @@
-"""Panel összeállítás (Fázis 2).
+"""Panel összeállítás (Fázis 2, terményparaméteres a Fázis 8 óta).
 
-A három forrás egyesítése:
+A három forrás egyesítése terményenként:
   1. KSH csv -> hosszú hozamtábla (nuts_id, county_name, crop_year, yield_t_ha, ...)
   2. ERA5 napi időjárás -> napi tábla termésév-hozzárendeléssel
   3. NUTS3 geometria -> a crosswalk ellenőrzéséhez
 
-KRITIKUS termésévi logika (brief 8. buktató): a Y évben betakarított búzát az
-előző ősszel vetették, ezért a Y termésévhez a Y-1 okt 1 – Y jún 30 időjárás
-tartozik. A napi táblában: hónap >= 10 -> crop_year = év + 1;
-hónap <= 6 -> crop_year = év; júl–szept -> nincs termésév (kimarad).
+KRITIKUS termésévi logika (brief 8. buktató):
+  - búza (season 10..6): a Y évben betakarított búzát az előző ősszel vetették,
+    a Y termésévhez a Y-1 okt 1 – Y jún 30 időjárás tartozik
+    (hónap >= 10 -> crop_year = év + 1; hónap <= 6 -> crop_year = év)
+  - kukorica (season 4..9): tavaszi vetés, minden a Y naptári évben
+    (4 <= hónap <= 9 -> crop_year = év)
 
-Kimenet:
-  data/processed/panel.parquet          (nuts_id, county_name, crop_year, yield_t_ha,
-                                         area_ha, production_t)
-  data/processed/weather_daily.parquet  (nuts_id, date, crop_year, + 5 napi változó)
+Kimenet: data/processed/panel_{crop}.parquet, weather_daily_{crop}.parquet.
 
-Futtatás:  python -m src.build_panel
+Futtatás:  python -m src.build_panel [--crop wheat|corn]
 """
 from __future__ import annotations
 
+import argparse
 import sys
 
 import pandas as pd
 
 from src import config
 
-WEATHER_DAILY_PARQUET = config.DATA_PROCESSED / "weather_daily.parquet"
-
-# A KSH csv szekciócímei -> a panel oszlopnevei
+# A KSH csv szekciócímei -> a panel oszlopnevei (mindkét terménynél azonosak)
 KSH_SECTIONS = {
     "Betakarított terület, hektár": "area_ha",
     "Betakarított összes termés, tonna": "production_t",
@@ -38,16 +36,18 @@ KSH_SECTIONS = {
 def _parse_number(cell: str) -> float | None:
     """KSH számformátum: szóköz ezres elválasztó; '..' / '–' / üres = hiányzó."""
     s = cell.strip().replace("\xa0", " ").replace(" ", "")
-    if not s or s in {"..", "…", "–", "-"}:
+    # A KSH hiányjelei: "..", "…", kötőjel-változatok; a 0x96/0x97 bájt (cp1252
+    # en/em-dash) ISO-8859-2 dekódolással kontrollkarakterként jön át.
+    if not s or s in {"..", "…", "–", "—", "-", "\x96", "\x97"}:
         return None
     return float(s.replace(",", "."))
 
 
-def parse_ksh_csv() -> pd.DataFrame:
+def parse_ksh_csv(crop: str) -> pd.DataFrame:
     """A KSH csv-ből hosszú tábla: nuts_id, county_name, crop_year, yield_t_ha, ..."""
-    path = config.RAW_KSH / "mez0071.csv"
+    path = config.RAW_KSH / f"{config.CROPS[crop]['ksh_slug']}.csv"
     if not path.exists():
-        sys.exit(f"HIBA: hiányzik {path}. Futtasd előbb: python -m src.fetch_ksh")
+        sys.exit(f"HIBA: hiányzik {path}. Futtasd előbb: python -m src.fetch_ksh --crop {crop}")
     lines = path.read_bytes().decode(config.KSH_ENCODING).splitlines()
 
     # Fejléc: a 2. sor tartalmazza az évoszlopokat
@@ -89,16 +89,29 @@ def parse_ksh_csv() -> pd.DataFrame:
                  "area_ha", "production_t"]].sort_values(["nuts_id", "crop_year"])
 
 
-def assign_crop_year(dates: pd.Series) -> pd.Series:
-    """Termésév hozzárendelés: okt–dec -> év+1, jan–jún -> év, júl–szept -> <NA>."""
+def assign_crop_year(dates: pd.Series, crop: str = config.DEFAULT_CROP) -> pd.Series:
+    """Termésév hozzárendelés a termény szezonja szerint (lásd modul-doc)."""
+    start_m, end_m = config.CROPS[crop]["season"]
     d = pd.to_datetime(dates)
     cy = pd.Series(pd.NA, index=dates.index, dtype="Int64")
-    cy[d.dt.month >= 10] = (d.dt.year + 1)[d.dt.month >= 10]
-    cy[d.dt.month <= 6] = d.dt.year[d.dt.month <= 6]
+    if start_m > end_m:  # évhatáron átnyúló szezon (búza)
+        cy[d.dt.month >= start_m] = (d.dt.year + 1)[d.dt.month >= start_m]
+        cy[d.dt.month <= end_m] = d.dt.year[d.dt.month <= end_m]
+    else:                # naptári éven belüli szezon (kukorica)
+        in_season = (d.dt.month >= start_m) & (d.dt.month <= end_m)
+        cy[in_season] = d.dt.year[in_season]
     return cy
 
 
-def build_weather_daily() -> pd.DataFrame:
+def season_days(crop: str) -> int:
+    """A termésévi ablak hossza napokban (ellenőrzéshez, ~1 nap tűréssel)."""
+    start_m, end_m = config.CROPS[crop]["season"]
+    if start_m > end_m:
+        return (pd.Timestamp(2001, end_m + 1, 1) - pd.Timestamp(2000, start_m, 1)).days
+    return (pd.Timestamp(2000, end_m + 1, 1) - pd.Timestamp(2000, start_m, 1)).days
+
+
+def build_weather_daily(crop: str) -> pd.DataFrame:
     """A 20 vármegye napi időjárása egy táblában, termésév-oszloppal."""
     frames = []
     files = sorted(config.RAW_WEATHER.glob("HU*.parquet"))
@@ -110,40 +123,41 @@ def build_weather_daily() -> pd.DataFrame:
         df.insert(0, "nuts_id", f.stem)
         frames.append(df)
     daily = pd.concat(frames, ignore_index=True)
-    daily["crop_year"] = assign_crop_year(daily["date"])
+    daily["crop_year"] = assign_crop_year(daily["date"], crop)
     return daily
 
 
-def main() -> None:
-    print("Panel összeállítás")
-    yields = parse_ksh_csv()
+def main(crop: str = config.DEFAULT_CROP) -> None:
+    label = config.CROPS[crop]["label"]
+    print(f"Panel összeállítás — {label}")
+    yields = parse_ksh_csv(crop)
     print(f"  KSH hozamtábla: {len(yields)} sor "
           f"({yields['nuts_id'].nunique()} egység x {yields['crop_year'].nunique()} év)")
 
-    daily = build_weather_daily()
+    daily = build_weather_daily(crop)
     print(f"  Napi időjárás: {len(daily)} sor, {daily['nuts_id'].nunique()} egység")
 
     # Csak azok a termésévek maradnak a panelben, amelyekhez TELJES időjárási
-    # ablak tartozik (okt 1 – jún 30). Az időjárás 1999-10-01-től indul, így a
-    # 2000-es termésév az első teljes.
+    # ablak tartozik.
+    n_days = season_days(crop)
     wx_years = daily.dropna(subset=["crop_year"]).groupby("crop_year")["date"].count()
-    complete_years = wx_years[wx_years >= 20 * 270].index  # ~273 nap x 20 vármegye
+    complete_years = wx_years[wx_years >= 20 * (n_days - 3)].index
     panel = yields[yields["crop_year"].isin(complete_years)].copy()
 
     config.DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
-    panel.to_parquet(config.PANEL_PARQUET, index=False)
-    daily.to_parquet(WEATHER_DAILY_PARQUET, index=False)
-    print(f"  [ok] {config.PANEL_PARQUET.name}: {len(panel)} sor, "
+    panel.to_parquet(config.panel_parquet(crop), index=False)
+    daily.to_parquet(config.weather_daily_parquet(crop), index=False)
+    print(f"  [ok] {config.panel_parquet(crop).name}: {len(panel)} sor, "
           f"termésévek {panel['crop_year'].min()}..{panel['crop_year'].max()}")
-    print(f"  [ok] {WEATHER_DAILY_PARQUET.name}: {len(daily)} sor")
+    print(f"  [ok] {config.weather_daily_parquet(crop).name}: {len(daily)} sor")
 
     # --- Fázis-záró ellenőrzés ---
     problems = []
     if panel["nuts_id"].nunique() != 20:
         problems.append(f"nem 20 egység: {panel['nuts_id'].nunique()}")
     per_cy = daily.dropna(subset=["crop_year"]).groupby(["nuts_id", "crop_year"])["date"].count()
-    bad = per_cy[(per_cy < 272) | (per_cy > 274)]
-    # az utolsó termésév (okt-dec megvan, jan-jún jövőre) lehet csonka — az nem hiba
+    bad = per_cy[(per_cy < n_days - 2) | (per_cy > n_days + 2)]
+    # az utolsó (csonka) termésév nem hiba, ha a panelben nincs benne
     bad = bad[bad.index.get_level_values("crop_year") <= int(panel["crop_year"].max())]
     if len(bad):
         problems.append(f"lyukas termésév-ablak: {len(bad)} db")
@@ -159,4 +173,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--crop", choices=list(config.CROPS), default=config.DEFAULT_CROP)
+    main(crop=ap.parse_args().crop)

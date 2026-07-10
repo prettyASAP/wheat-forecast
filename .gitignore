@@ -12,10 +12,10 @@ data/raw/weather/*
 !data/raw/weather/_centroids.csv
 !data/processed/
 data/processed/*
-!data/processed/panel.parquet
-!data/processed/features.parquet
-!data/processed/weather_daily.parquet
-!data/processed/loyo_summary.json
+!data/processed/panel_*.parquet
+!data/processed/features_*.parquet
+!data/processed/weather_daily_*.parquet
+!data/processed/loyo_summary_*.json
 
 # Python
 .venv/

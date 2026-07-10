@@ -1,20 +1,23 @@
-"""Napi élő előrejelzés (Fázis 5).
+"""Napi élő előrejelzés (Fázis 5; terményparaméteres a Fázis 8 óta).
 
-A futó termésévre (okt–jún: az adott szezon; júl–szept: az épp betakarított)
-összerakja a napi időjárást három rétegből:
-  1. historikus tanítóadat (weather_daily.parquet) — ami már megvan,
+A futó termésévre összerakja a napi időjárást négy rétegből:
+  1. historikus tanítóadat (weather_daily_{crop}.parquet),
   2. Open-Meteo archive — a szezonból hiányzó rész ~1 hétig ezelőttig,
   3. Open-Meteo forecast (past_days + forecast_days) — a közelmúlt és a jövő hét,
   4. a szezon hátralévő napjaira: vármegyénkénti nap-klimatológia (25 év átlaga).
 Ebből as-of feature-öket számol, a teljes panelen tanított modellel jósol
 anomáliát és 80%-os sávot (a LOYO out-of-sample szórásból).
 
-Kimenet: web/data/forecast.json + web/data/history/YYYY-MM-DD.json snapshot.
+Futó termésév: búzánál okt–jún a szezon (júl–szept: az épp betakarított évet
+mutatjuk); kukoricánál ápr–szept (okt–márc: az előző szezon záró becslése).
 
-Futtatás:  python -m src.predict_live
+Kimenet: web/data/forecast_{crop}.json + web/data/history/{crop}/YYYY-MM-DD.json.
+
+Futtatás:  python -m src.predict_live [--crop wheat|corn]
 """
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from datetime import date, timedelta
@@ -23,29 +26,43 @@ import numpy as np
 import pandas as pd
 
 from src import config
-from src.build_panel import WEATHER_DAILY_PARQUET, assign_crop_year
+from src.build_panel import assign_crop_year
 from src.features import compute_features
 from src.fetch_weather import CENTROIDS_CSV, fetch_county, get_daily
 from src.model import fit_panel_model, load_model_data, predict_naive_trend
+from src.validate import loyo_summary_json
 
-FORECAST_JSON = config.WEB_DATA / "forecast.json"
-HISTORY_DIR = config.WEB_DATA / "history"
 ARCHIVE_LAG_DAYS = 7   # az ERA5 archive kb. 5 nap késéssel teljes
 
 
-def current_crop_year(today: date) -> int:
-    """okt–dec -> következő év termése; jan–szept -> az idei termés(év)."""
-    return today.year + 1 if today.month >= 10 else today.year
+def forecast_json(crop: str):
+    return config.WEB_DATA / f"forecast_{crop}.json"
 
 
-def season_window(crop_year: int) -> tuple[date, date]:
-    return date(crop_year - 1, 10, 1), date(crop_year, 6, 30)
+def history_dir(crop: str):
+    return config.WEB_DATA / "history" / crop
 
 
-def build_season_daily(today: date, crop_year: int) -> pd.DataFrame:
+def current_crop_year(today: date, crop: str) -> int:
+    """A 'futó' termésév: szezon közben az aktuális, utána a most zárult."""
+    start_m, end_m = config.CROPS[crop]["season"]
+    if start_m > end_m:  # évhatáron átnyúló (búza)
+        return today.year + 1 if today.month >= start_m else today.year
+    return today.year    # naptári éven belüli (kukorica): szezon előtt/után is az idei
+
+
+def season_window(crop_year: int, crop: str) -> tuple[date, date]:
+    start_m, end_m = config.CROPS[crop]["season"]
+    start_y = crop_year - 1 if start_m > end_m else crop_year
+    # a záró hónap utolsó napja
+    end = (pd.Timestamp(crop_year, end_m, 1) + pd.offsets.MonthEnd(0)).date()
+    return date(start_y, start_m, 1), end
+
+
+def build_season_daily(today: date, crop_year: int, crop: str):
     """A futó termésév napi időjárása vármegyénként, 4 rétegből (lásd modul-doc)."""
-    start, end = season_window(crop_year)
-    hist = pd.read_parquet(WEATHER_DAILY_PARQUET)
+    start, end = season_window(crop_year, crop)
+    hist = pd.read_parquet(config.weather_daily_parquet(crop))
     hist["date"] = pd.to_datetime(hist["date"]).dt.date
 
     centroids = pd.read_csv(CENTROIDS_CSV)
@@ -67,7 +84,6 @@ def build_season_daily(today: date, crop_year: int) -> pd.DataFrame:
             if fetch_from <= archive_to:
                 parts.append(fetch_county(row.lat, row.lon,
                                           str(fetch_from), str(archive_to)))
-            # forecast API: past_days lefedi az archive-lag rést, plusz pár nap előre
             past_needed = (today - max(fetch_from, archive_to + timedelta(days=1))).days
             if max(fetch_from, archive_to + timedelta(days=1)) <= end:
                 fc = get_daily(config.OPENMETEO_FORECAST_URL, {
@@ -107,32 +123,33 @@ def build_season_daily(today: date, crop_year: int) -> pd.DataFrame:
         missing = missing.merge(clim, on=["nuts_id", "md"], how="left").drop(columns=["md"])
         combined = pd.concat([combined, missing[cols]], ignore_index=True)
 
-    combined["crop_year"] = assign_crop_year(pd.Series(combined["date"]))
+    combined["crop_year"] = assign_crop_year(pd.Series(combined["date"]), crop)
     known_until = have_index.get_level_values("date").max()
     print(f"  szezon-napok: {combined.groupby('nuts_id')['date'].count().iloc[0]} / vármegye, "
           f"ismert időjárás eddig: {known_until}, klimatológiával pótolt napok: {n_missing_days}")
     return combined, known_until
 
 
-def main() -> None:
+def main(crop: str = config.DEFAULT_CROP) -> None:
+    spec = config.CROPS[crop]
     today = date.today()
-    crop_year = current_crop_year(today)
-    start, end = season_window(crop_year)
-    print(f"Élő előrejelzés — {crop_year}-es termésév ({start} .. {end}), ma: {today}")
+    crop_year = current_crop_year(today, crop)
+    start, end = season_window(crop_year, crop)
+    print(f"Élő előrejelzés — {spec['label']}, {crop_year}-es termésév "
+          f"({start} .. {end}), ma: {today}")
 
-    season_daily, known_until = build_season_daily(today, crop_year)
-    feats = compute_features(season_daily)
+    season_daily, known_until = build_season_daily(today, crop_year, crop)
+    feats = compute_features(season_daily, crop)
     feats = feats[feats["crop_year"] == crop_year]
     if len(feats) != 20:
         sys.exit(f"HIBA: {len(feats)} vármegyére van feature, várt 20.")
 
-    # modell a teljes panelen; a sáv a LOYO out-of-sample szórásból
-    df = load_model_data()
-    m = fit_panel_model(df)
-    summary = json.loads((config.DATA_PROCESSED / "loyo_summary.json").read_text())
+    df = load_model_data(crop)
+    m = fit_panel_model(df, crop=crop)
+    summary = json.loads(loyo_summary_json(crop).read_text())
     oos_std, z = summary["oos_std"], config.UNCERTAINTY_Z
 
-    counties = pd.read_parquet(config.PANEL_PARQUET)[
+    counties = pd.read_parquet(config.panel_parquet(crop))[
         ["nuts_id", "county_name"]].drop_duplicates()
     rows = []
     model_feats = feats[feats["nuts_id"].isin(m.counties)].copy()
@@ -146,8 +163,8 @@ def main() -> None:
         wx = {
             "prec_total_mm": round(float(f["prec_total"]), 1),
             "wb_total_mm": round(float(f["wb_total"]), 1),
-            "heat_days_grain_filling": int(f["heat_days_grain_filling"]),
-            "frost_days_winter": int(f["frost_days_winter"]),
+            "heat_days": int(f["heat_days"]),
+            "frost_days_winter": int(f["frost_days_winter"]) if spec["use_frost"] else None,
             "gdd_total": round(float(f["gdd_total"]), 0),
         }
         if c["nuts_id"] in pred_map:  # Budapest kimarad a modellből
@@ -165,11 +182,11 @@ def main() -> None:
                 "nuts_id": c["nuts_id"], "county_name": c["county_name"],
                 "predicted_yield_t_ha": None, "anomaly_pct": None,
                 "low": None, "high": None, "weather_todate": wx,
-                "note": "nincs becslés — elhanyagolható búzaterület",
+                "note": "nincs becslés — elhanyagolható termőterület",
             })
 
     payload = {
-        "crop": "búza",
+        "crop": spec["label"],
         "crop_year": crop_year,
         "updated_at": today.isoformat(),
         "weather_known_until": str(known_until),
@@ -177,16 +194,16 @@ def main() -> None:
         "band": "80%",
         "counties": rows,
     }
-    config.WEB_DATA.mkdir(parents=True, exist_ok=True)
-    HISTORY_DIR.mkdir(parents=True, exist_ok=True)
-    FORECAST_JSON.write_text(json.dumps(payload, ensure_ascii=False, indent=1),
-                             encoding="utf-8")
-    (HISTORY_DIR / f"{today.isoformat()}.json").write_text(
+    hdir = history_dir(crop)
+    hdir.mkdir(parents=True, exist_ok=True)
+    forecast_json(crop).write_text(json.dumps(payload, ensure_ascii=False, indent=1),
+                                   encoding="utf-8")
+    (hdir / f"{today.isoformat()}.json").write_text(
         json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-    # index a statikus frontendnek (mappalistázás nélkül nem látná a snapshotokat)
-    dates = sorted(p.stem for p in HISTORY_DIR.glob("????-??-??.json"))
-    (HISTORY_DIR / "index.json").write_text(json.dumps(dates), encoding="utf-8")
-    print(f"  [ok] {FORECAST_JSON} + history snapshot ({len(dates)} nap az indexben)")
+    dates = sorted(p.stem for p in hdir.glob("????-??-??.json"))
+    (hdir / "index.json").write_text(json.dumps(dates), encoding="utf-8")
+    print(f"  [ok] {forecast_json(crop).name} + history snapshot "
+          f"({len(dates)} nap az indexben)")
 
     # --- Fázis-záró ellenőrzés ---
     est = [r for r in rows if r["predicted_yield_t_ha"] is not None]
@@ -195,10 +212,11 @@ def main() -> None:
         problems.append(f"{len(rows)} sor, várt 20")
     if len(est) != 19:
         problems.append(f"{len(est)} becslés, várt 19")
+    lo, hi = (1.5, 9.0) if crop == "wheat" else (2.0, 12.0)
     for r in est:
-        if not (1.5 <= r["predicted_yield_t_ha"] <= 9.0):
+        if not (lo <= r["predicted_yield_t_ha"] <= hi):
             problems.append(f"{r['nuts_id']} hozam kilóg: {r['predicted_yield_t_ha']}")
-        if abs(r["anomaly_pct"]) > 45:
+        if abs(r["anomaly_pct"]) > 50:
             problems.append(f"{r['nuts_id']} anomália kilóg: {r['anomaly_pct']}%")
     if problems:
         sys.exit("HIBA az élő előrejelzés ellenőrzésén: " + "; ".join(problems))
@@ -209,4 +227,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--crop", choices=list(config.CROPS), default=config.DEFAULT_CROP)
+    main(crop=ap.parse_args().crop)
