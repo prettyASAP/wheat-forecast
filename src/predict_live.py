@@ -44,11 +44,17 @@ def history_dir(crop: str):
 
 
 def current_crop_year(today: date, crop: str) -> int:
-    """A 'futó' termésév: szezon közben az aktuális, utána a most zárult."""
+    """A 'futó' termésév: szezon közben az aktuális, utána a most zárult.
+
+    Éven belüli szezonnál (kukorica, ápr–szept) a szezonkezdet ELŐTT (jan–márc)
+    az előző év zárult szezonja a 'futó' — az idei még el sem kezdődött, arra
+    nincs értelmezhető becslés (audit-javítás: korábban itt üres időjárással
+    összeomlott).
+    """
     start_m, end_m = config.CROPS[crop]["season"]
-    if start_m > end_m:  # évhatáron átnyúló (búza)
+    if start_m > end_m:  # évhatáron átnyúló (búza, árpa)
         return today.year + 1 if today.month >= start_m else today.year
-    return today.year    # naptári éven belüli (kukorica): szezon előtt/után is az idei
+    return today.year - 1 if today.month < start_m else today.year
 
 
 def season_window(crop_year: int, crop: str) -> tuple[date, date]:
@@ -124,7 +130,10 @@ def build_season_daily(today: date, crop_year: int, crop: str):
         combined = pd.concat([combined, missing[cols]], ignore_index=True)
 
     combined["crop_year"] = assign_crop_year(pd.Series(combined["date"]), crop)
-    known_until = have_index.get_level_values("date").max()
+    # üres ismert-index esetén (elvileg a crop_year-javítás után nem fordul elő)
+    # dátumot adunk, ne NaN-t — a downstream összehasonlítások dátumot várnak
+    known_until = (have_index.get_level_values("date").max()
+                   if len(have_index) else start - timedelta(days=1))
     print(f"  szezon-napok: {combined.groupby('nuts_id')['date'].count().iloc[0]} / vármegye, "
           f"ismert időjárás eddig: {known_until}, klimatológiával pótolt napok: {n_missing_days}")
     return combined, known_until
@@ -141,7 +150,7 @@ def scenario_ensemble(season_daily: pd.DataFrame, known_until, crop: str,
     """
     start, end = season_window(crop_year, crop)
     if known_until >= end:
-        return None, None
+        return None, None, None
 
     hist = pd.read_parquet(config.weather_daily_parquet(crop))
     hist["date"] = pd.to_datetime(hist["date"]).dt.date
@@ -211,7 +220,8 @@ def scenario_ensemble(season_daily: pd.DataFrame, known_until, crop: str,
     # Az együttes-átlag a korrekt középbecslés szezon közben: a modell nemlineáris
     # (konvex wb_deficit), ezért E[f(időjárás)] != f(E[időjárás]) — a klimatológiai
     # átlag-időjárásból számolt becslés felfelé torzítana (Jensen).
-    return payload, ens.mean(axis=1)
+    # A szórás a hátralévő időjárás bizonytalansága (a sáv-kombinációhoz).
+    return payload, ens.mean(axis=1), ens.std(axis=1, ddof=1)
 
 
 def national_block(crop: str, crop_year: int, rows: list[dict],
@@ -300,6 +310,13 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
     if len(feats) != 20:
         sys.exit(f"HIBA: {len(feats)} vármegyére van feature, várt 20.")
 
+    # A kijelzett "időjárás eddig" mutatók CSAK a ténylegesen ismert napokból
+    # (audit-javítás: korábban a klimatológiával szezonvégig feltöltött sorból
+    # számoltuk, így pl. a csapadék részben szintetikus jövőt tartalmazott).
+    known_only = season_daily[season_daily["date"] <= known_until]
+    feats_todate = compute_features(known_only, crop)
+    feats_todate = feats_todate[feats_todate["crop_year"] == crop_year]
+
     df = load_model_data(crop)
     m = fit_panel_model(df, crop=crop)
     summary = json.loads(loyo_summary_json(crop).read_text())
@@ -315,14 +332,23 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
 
     # Szezon közben a fő becslés az analóg-együttes átlaga (Jensen-korrekció,
     # lásd scenario_ensemble); lezárt szezonnál marad a valós időjárásos becslés.
-    sc, ens_mean = scenario_ensemble(season_daily, known_until, crop,
-                                     crop_year, m, df)
+    sc, ens_mean, ens_std = scenario_ensemble(season_daily, known_until, crop,
+                                              crop_year, m, df)
     if ens_mean is not None:
         preds = ens_mean.reindex(model_feats["nuts_id"].values).to_numpy()
 
+    # vármegyénkénti sáv: modell-hiba + (szezon közben) a hátralévő időjárás
+    # bizonytalansága, függetlenként kombinálva: sigma_tot = sqrt(m^2 + w^2)
+    # (audit-észrevétel: a csak-modell sáv szezon közben alulbecsülte a teljeset)
+    def _sigma_tot(nid: str) -> float:
+        # modell-hiba + (szezon közben) a hátralévő időjárás szórása, függetlenként
+        if ens_std is not None and nid in ens_std.index:
+            return float(np.sqrt(oos_std ** 2 + float(ens_std[nid]) ** 2))
+        return float(oos_std)
+
     pred_map = dict(zip(model_feats["nuts_id"], zip(preds, baseline)))
     for _, c in counties.sort_values("nuts_id").iterrows():
-        f = feats[feats["nuts_id"] == c["nuts_id"]].iloc[0]
+        f = feats_todate[feats_todate["nuts_id"] == c["nuts_id"]].iloc[0]
         wx = {
             "prec_total_mm": round(float(f["prec_total"]), 1),
             "wb_total_mm": round(float(f["wb_total"]), 1),
@@ -336,8 +362,8 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
                 "nuts_id": c["nuts_id"], "county_name": c["county_name"],
                 "predicted_yield_t_ha": round(float(p), 2),
                 "anomaly_pct": round(100 * (p - b) / b, 1),
-                "low": round(float(p - z * oos_std), 2),
-                "high": round(float(p + z * oos_std), 2),
+                "low": round(float(p - z * _sigma_tot(c["nuts_id"])), 2),
+                "high": round(float(p + z * _sigma_tot(c["nuts_id"])), 2),
                 "weather_todate": wx,
             })
         else:

@@ -197,8 +197,8 @@ function showPanel(nutsId) {
     : `<tr><td>Téli fagynapok (−15 °C alatt)</td><td>${wx.frost_days_winter}</td></tr>`;
   const wxRows = `
     <table>
-      <tr><td>Csapadék (termésév)</td><td>${wx.prec_total_mm} mm</td></tr>
-      <tr><td>Vízmérleg (csap. − párolgás)</td><td>${wx.wb_total_mm} mm</td></tr>
+      <tr><td>Csapadék (termésév eddig)</td><td>${wx.prec_total_mm} mm</td></tr>
+      <tr><td>Vízmérleg (eddig, csap. − párolgás)</td><td>${wx.wb_total_mm} mm</td></tr>
       <tr><td>Hőstressznapok (kritikus ablak)</td><td>${wx.heat_days}</td></tr>
       ${frostRow}
       <tr><td>Hőösszeg (GDD)</td><td>${wx.gdd_total}</td></tr>
@@ -229,7 +229,7 @@ function showPanel(nutsId) {
       : "";
     body.innerHTML = `
       <div class="big-number">${c.predicted_yield_t_ha.toFixed(2)} t/ha</div>
-      <div class="band">80%-os sáv (modell): ${c.low.toFixed(2)} – ${c.high.toFixed(2)} t/ha</div>
+      <div class="band">80%-os sáv${currentForecast.scenarios ? " (modell + hátralévő időjárás)" : " (modell)"}: ${c.low.toFixed(2)} – ${c.high.toFixed(2)} t/ha</div>
       ${scRow}
       <div class="anomaly ${cls}">${sign}${c.anomaly_pct.toFixed(1)}% a trendhez képest</div>
       ${chart}${wxRows}`;

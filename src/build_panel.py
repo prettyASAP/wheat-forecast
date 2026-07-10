@@ -167,6 +167,10 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
     bad = bad[bad.index.get_level_values("crop_year") <= int(panel["crop_year"].max())]
     if len(bad):
         problems.append(f"lyukas termésév-ablak: {len(bad)} db")
+    wx_na = daily[daily["crop_year"].notna()][config.OPENMETEO_DAILY_VARS].isna().sum().sum()
+    if wx_na:
+        problems.append(f"NaN a szezonon belüli nyers időjárásban: {wx_na} érték "
+                        "(pl. ERA5 archívum-késés évkezdetkor — töltsd újra --force-szal)")
     dup = panel.duplicated(subset=["nuts_id", "crop_year"]).sum()
     if dup:
         problems.append(f"duplikált (egység, év) sor: {dup}")

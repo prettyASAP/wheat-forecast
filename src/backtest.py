@@ -161,7 +161,7 @@ def write_report(results: pd.DataFrame, loyo: pd.DataFrame,
         f"## 3. As-of backtest ({asof_m:02d}. hó {asof_d}. napi tudásállapot)",
         "",
         "A feature-ök a célév as-of napjáig ismert időjárásból + a hátralévő napokra "
-        "a többi év klimatológiájából; a modell a célév nélkül tanítva (nincs look-ahead).",
+        "a többi év klimatológiájából; a modell a célév nélkül tanítva (LOYO-konvenció: a célév kizárva, de a célév UTÁNI évek benne vannak a tanításban és a klimatológiában — egy valódi korabeli futás ennél kevesebb adatot látott volna).",
         "",
         "| Év | Jósolt anomália (átlag) | Tényleges anomália (átlag) | Iránytalálat (vármegye) |",
         "|---|---|---|---|",
