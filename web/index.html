@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Terméshozam-előrejelző — Magyarország</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <header>
@@ -22,6 +22,7 @@
       <option value="heat">Hőstressznapok</option>
       <option value="gdd">Hőösszeg (GDD)</option>
     </select>
+    <a id="table-link" href="tabla.html">Táblázat ↗</a>
     <div id="meta">betöltés…</div>
   </header>
   <div id="national"></div>
@@ -38,7 +39,7 @@
 
   <div id="timeline" class="hidden">
     <label for="slider">Előrejelzés alakulása:</label>
-    <input type="range" id="slider" min="0" max="0" value="0">
+    <input type="range" id="slider" min="0" max="0" value="0" aria-label="Előrejelzés-idővonal">
     <span id="slider-date"></span>
   </div>
 
@@ -58,6 +59,6 @@
   </footer>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

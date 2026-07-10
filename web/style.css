@@ -46,6 +46,17 @@ header h1 { font-size: 1.15rem; }
   font-size: 0.85rem;
 }
 
+#table-link {
+  font-size: 0.85rem;
+  color: #5d7a94;
+  text-decoration: none;
+  border: 1px solid #cfd8de;
+  border-radius: 8px;
+  padding: 3px 10px;
+  background: #fff;
+}
+#table-link:hover { border-color: #5d7a94; }
+
 #national {
   display: flex;
   gap: 18px;
@@ -135,7 +146,7 @@ footer a { color: #5d7a94; }
   header h1 { font-size: 1rem; }
   #panel {
     top: auto; bottom: 8px; left: 8px; right: 8px;
-    width: auto; max-height: 55%;
+    width: auto; max-height: 70%;
   }
   #legend { flex-wrap: wrap; }
 }
