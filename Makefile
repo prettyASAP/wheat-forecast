@@ -43,3 +43,6 @@ live:             ## élő előrejelzés mindkét terményre (forecast_*.json)
 
 clean:            ## nyers/köztes adat törlése
 	rm -rf data/raw/* data/interim/* data/processed/*
+history:           ## statikus hozam-idősor export a webre (KSH-val keresztellenőrizve)
+	$(PY) -m src.export_history --crop wheat
+	$(PY) -m src.export_history --crop corn
