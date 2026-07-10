@@ -111,11 +111,17 @@ function renderNational(fc) {
   if (!n) { el.innerHTML = ""; return; }
   const cls = n.anomaly_pct < 0 ? "neg" : "pos";
   const s = v => (v > 0 ? "+" : "") + v.toFixed(1);
+  const sc = fc.scenarios;
+  const scHtml = sc
+    ? `<span class="nat-item" title="${sc.method}">forgatókönyvek (P10–P90):
+       ${sc.national.p10.toFixed(2)} – ${sc.national.p90.toFixed(2)} t/ha</span>`
+    : "";
   el.innerHTML = `
     <span class="nat-item"><b>Országos becslés:</b> ${n.predicted_yield_t_ha.toFixed(2)} t/ha</span>
     <span class="nat-item ${cls}">${s(n.anomaly_pct)}% a trendhez képest</span>
     <span class="nat-item">${s(n.yoy_pct)}% vs ${n.prev_year} (${n.prev_year_yield_t_ha.toFixed(2)} t/ha)</span>
-    <span class="nat-item">${n.rank_total} évből a ${n.rank_from_worst}. leggyengébb</span>`;
+    <span class="nat-item">${n.rank_total} évből a ${n.rank_from_worst}. leggyengébb</span>
+    ${scHtml}`;
 }
 
 /* Kézi SVG vonaldiagram: historikus hozamok + idei becslés sávval.
@@ -188,9 +194,16 @@ function showPanel(nutsId) {
   } else {
     const cls = c.anomaly_pct < 0 ? "neg" : "pos";
     const sign = c.anomaly_pct > 0 ? "+" : "";
+    const scc = currentForecast.scenarios
+      && currentForecast.scenarios.counties[nutsId];
+    const scRow = scc
+      ? `<div class="band" title="${currentForecast.scenarios.method}">
+         időjárás-forgatókönyvek (P10–P90): ${scc.p10.toFixed(2)} – ${scc.p90.toFixed(2)} t/ha</div>`
+      : "";
     body.innerHTML = `
       <div class="big-number">${c.predicted_yield_t_ha.toFixed(2)} t/ha</div>
-      <div class="band">80%-os sáv: ${c.low.toFixed(2)} – ${c.high.toFixed(2)} t/ha</div>
+      <div class="band">80%-os sáv (modell): ${c.low.toFixed(2)} – ${c.high.toFixed(2)} t/ha</div>
+      ${scRow}
       <div class="anomaly ${cls}">${sign}${c.anomaly_pct.toFixed(1)}% a trendhez képest</div>
       ${chart}${wxRows}`;
   }
