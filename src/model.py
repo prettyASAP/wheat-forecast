@@ -73,9 +73,11 @@ class PanelModel:
 def fit_panel_model(train: pd.DataFrame,
                     features: list[str] | None = None,
                     trend_degree: int | None = None,
-                    ridge_alpha: float | None = None) -> PanelModel:
+                    ridge_alpha: float | None = None,
+                    crop: str = config.DEFAULT_CROP) -> PanelModel:
     """Panelmodell tanítása. ridge_alpha=0 -> sima OLS."""
-    features = features if features is not None else config.MODEL_FEATURES
+    features = (features if features is not None
+                else config.CROPS[crop]["model_features"])
     trend_degree = trend_degree if trend_degree is not None else config.TREND_DEGREE
     ridge_alpha = ridge_alpha if ridge_alpha is not None else config.RIDGE_ALPHA
 
@@ -128,11 +130,10 @@ def predict_naive_last3(train: pd.DataFrame, test: pd.DataFrame) -> np.ndarray:
     return out
 
 
-def load_model_data() -> pd.DataFrame:
+def load_model_data(crop: str = config.DEFAULT_CROP) -> pd.DataFrame:
     """Panel + feature-ök összekötve, Budapest kihagyva (config.BUDAPEST_HANDLING)."""
-    from src.features import FEATURES_PARQUET
-    panel = pd.read_parquet(config.PANEL_PARQUET)
-    feats = pd.read_parquet(FEATURES_PARQUET)
+    panel = pd.read_parquet(config.panel_parquet(crop))
+    feats = pd.read_parquet(config.features_parquet(crop))
     df = panel.merge(feats, on=["nuts_id", "crop_year"], how="inner")
     if config.BUDAPEST_HANDLING == "drop":
         df = df[df["nuts_id"] != config.BUDAPEST_NUTS_ID]
@@ -140,10 +141,15 @@ def load_model_data() -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    df = load_model_data()
-    m = fit_panel_model(df)
-    print(f"Panelmodell: {len(df)} megfigyelés, {len(m.counties)} vármegye, "
-          f"trend fok {m.trend_degree}, ridge alpha {config.RIDGE_ALPHA}")
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--crop", choices=list(config.CROPS), default=config.DEFAULT_CROP)
+    crop = ap.parse_args().crop
+    df = load_model_data(crop)
+    m = fit_panel_model(df, crop=crop)
+    print(f"Panelmodell ({config.CROPS[crop]['label']}): {len(df)} megfigyelés, "
+          f"{len(m.counties)} vármegye, trend fok {m.trend_degree}, "
+          f"ridge alpha {config.RIDGE_ALPHA}")
     print("Időjárási együtthatók (standardizált, t/ha):")
     print(m.weather_coefs.round(3).to_string())
     print(f"In-sample reziduum szórás: {m.resid_std:.3f} t/ha")

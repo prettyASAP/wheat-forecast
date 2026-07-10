@@ -11,8 +11,9 @@ setup:            ## venv létrehozása (python3.12) + függőségek telepítés
 	$(PIP) install --upgrade pip
 	$(PIP) install -r requirements.txt
 
-ksh:              ## KSH búzahozam letöltése
-	$(PY) -m src.fetch_ksh
+ksh:              ## KSH hozamtáblák letöltése (búza + kukorica)
+	$(PY) -m src.fetch_ksh --crop wheat
+	$(PY) -m src.fetch_ksh --crop corn
 
 boundaries:       ## NUTS3 HU vármegyehatárok letöltése
 	$(PY) -m src.fetch_boundaries
@@ -22,14 +23,23 @@ weather:          ## ERA5 időjárás letöltése vármegyénként (a boundaries
 
 fetch: ksh boundaries weather   ## mindhárom letöltő sorban
 
-data: fetch       ## alias
+panel:            ## panel + feature-ök mindkét terményre
+	$(PY) -m src.build_panel --crop wheat && $(PY) -m src.features --crop wheat
+	$(PY) -m src.build_panel --crop corn && $(PY) -m src.features --crop corn
 
-# --- Későbbi fázisok (TODO) ---
-model:            ## Fázis 4 — modell + validáció
-	@echo "TODO: Fázis 4"
+data: fetch panel ## teljes adat-pipeline
 
-report:           ## Fázis 4 — backtest riport
-	@echo "TODO: Fázis 4"
+model:            ## LOYO validáció mindkét terményre
+	$(PY) -m src.validate --crop wheat
+	$(PY) -m src.validate --crop corn
+
+report:           ## as-of backtest + magyar riport mindkét terményre
+	$(PY) -m src.backtest --crop wheat
+	$(PY) -m src.backtest --crop corn
+
+live:             ## élő előrejelzés mindkét terményre (forecast_*.json)
+	$(PY) -m src.predict_live --crop wheat
+	$(PY) -m src.predict_live --crop corn
 
 clean:            ## nyers/köztes adat törlése
 	rm -rf data/raw/* data/interim/* data/processed/*

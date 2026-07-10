@@ -1,11 +1,11 @@
-"""KSH búzahozam letöltése (19.1.2.4. tábla).
+"""KSH terményhozam letöltése (búza: 19.1.2.4., kukorica: 19.1.2.5.).
 
 Az oldalt letöltjük, kiszedjük belőle a relatív xlsx/csv letöltési linket
 (nem hardcode-olunk fájl-URL-t, mert az verzióváltáskor változhat — brief 5.1),
 majd mindkét fájlt lementjük a data/raw/ksh/ alá. Idempotens: meglévő fájlt nem
 tölt újra --force nélkül.
 
-Futtatás:  python -m src.fetch_ksh [--force]
+Futtatás:  python -m src.fetch_ksh [--crop wheat|corn] [--force]
 """
 from __future__ import annotations
 
@@ -63,25 +63,28 @@ def sanity_check_csv(csv_path: Path) -> None:
           f"{years[0] if years else '?'}..{years[-1] if years else '?'} ({len(years)} év)")
 
 
-def main(force: bool = False) -> None:
-    print("KSH búzahozam letöltése")
-    print(f"  oldal: {config.KSH_PAGE_URL}")
-    page = _get(config.KSH_PAGE_URL).content.decode(config.KSH_ENCODING, errors="replace")
-    links = find_download_links(page, config.KSH_PAGE_URL)
+def main(crop: str = config.DEFAULT_CROP, force: bool = False) -> None:
+    spec = config.CROPS[crop]
+    print(f"KSH {spec['label']}-hozam letöltése")
+    print(f"  oldal: {spec['ksh_page']}")
+    page = _get(spec["ksh_page"]).content.decode(config.KSH_ENCODING, errors="replace")
+    links = find_download_links(page, spec["ksh_page"])
 
     if not links:
         sys.exit("HIBA: nem találtam letöltési linket (xlsx/csv) a KSH oldalon. "
                  "Lehet, hogy változott az oldal szerkezete — állj meg és ellenőrizd (brief 0. pont).")
 
     for ext, url in links.items():
-        download(url, config.RAW_KSH / f"mez0071.{ext}", force)
+        download(url, config.RAW_KSH / f"{spec['ksh_slug']}.{ext}", force)
 
-    csv_path = config.RAW_KSH / "mez0071.csv"
+    csv_path = config.RAW_KSH / f"{spec['ksh_slug']}.csv"
     if csv_path.exists():
         sanity_check_csv(csv_path)
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser(description="KSH búzahozam letöltése")
+    ap = argparse.ArgumentParser(description="KSH terményhozam letöltése")
+    ap.add_argument("--crop", choices=list(config.CROPS), default=config.DEFAULT_CROP)
     ap.add_argument("--force", action="store_true", help="Újratöltés akkor is, ha megvan")
-    main(force=ap.parse_args().force)
+    args = ap.parse_args()
+    main(crop=args.crop, force=args.force)

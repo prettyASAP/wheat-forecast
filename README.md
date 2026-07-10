@@ -1,32 +1,43 @@
-# Búzahozam-előrejelző (Magyarország, NUTS3)
+# Terméshozam-előrejelző (Magyarország, NUTS3)
 
 Interaktív térkép, amely Magyarország 20 NUTS3 egységére (19 vármegye + Budapest)
-mutatja az aktuális időjárást, és ebből folyamatosan frissülő búzahozam-előrejelzést
-ad. A modell a KSH tényleges vármegyei hozamait (2000-től) tanulja össze az ugyanezen
-területekre eső ERA5 időjárással; a két fő magyarázó a hőmérséklet és a csapadék.
+mutatja az aktuális időjárást, és ebből folyamatosan frissülő búza- és
+kukoricahozam-előrejelzést ad. A modell a KSH tényleges vármegyei hozamait
+(2000-től) tanulja össze az ugyanezen területekre eső ERA5 időjárással; a két fő
+magyarázó a hőmérséklet és a csapadék (ablakos GDD, hőstressz, vízmérleg).
 
 ## Állapot
 
 | Fázis | Tartalom | Állapot |
 |------|----------|---------|
-| 1 | Repó váz + letöltő scriptek | ✅ folyamatban/kész |
-| 2 | Panel + crosswalk | ⏳ |
-| 3 | Származtatott mutatók | ⏳ |
-| 4 | Modell + validáció (**mérési kapu**) | ⏳ |
-| 5 | Élő korrekciós motor | ⏳ |
-| 6 | Térképes felület | ⏳ |
-| 7 | Automatizálás (GitHub Actions) | ⏳ |
-| 8 | Kukorica bővítés (opcionális) | ⏳ |
+| 1 | Repó váz + letöltő scriptek | ✅ |
+| 2 | Panel + crosswalk | ✅ |
+| 3 | Származtatott mutatók | ✅ |
+| 4 | Modell + validáció (**mérési kapu**) | ✅ teljesült ([riport](reports/backtest_report.md)) |
+| 5 | Élő korrekciós motor | ✅ |
+| 6 | Térképes felület | ✅ |
+| 7 | Automatizálás (GitHub Actions) | ✅ (GitHub remote + Pages bekapcsolás kell) |
+| 8 | Kukorica bővítés | ✅ ([riport](reports/backtest_report_corn.md)) |
+
+**Modell-eredmények (leave-one-year-out, out-of-sample):**
+búza RMSE 0,53 t/ha (11,4%, R² 0,73), kukorica RMSE 1,40 t/ha (22,9%, R² 0,43) —
+mindkettő érdemben veri a naiv trend-alapot. A 2022-es aszály iránytartása:
+búza 14/19, kukorica 19/19 vármegye (a búza–kukorica kontraszt — a búza megúszta,
+a kukorica összeomlott — a modellben is látszik).
 
 ## Gyors indítás
 
 ```bash
 make setup      # .venv (python3.12) + függőségek
-make fetch      # KSH hozam + NUTS3 határok + ERA5 időjárás -> data/raw/
+make data       # letöltés + panel + feature-ök (mindkét termény)
+make model      # LOYO keresztvalidáció
+make report     # as-of backtest + magyar riportok a reports/ alá
+make live       # élő előrejelzés -> web/data/forecast_*.json
 ```
 
-Vagy egyesével: `make ksh`, `make boundaries`, `make weather`.
-Az `weather` cél a `boundaries` kimenetéből (centroidok) dolgozik, ezért azt futtasd előbb.
+A térkép statikus: `python -m http.server --directory web` és nyisd meg a
+`http://localhost:8000`-t. Termény-váltó a fejlécben, vármegyére kattintva részletek,
+idővonal-csúszka a szezonon belüli alakuláshoz (2+ napi snapshot után).
 Minden letöltő **idempotens**: meglévő fájlt nem tölt újra `--force` nélkül.
 
 ## Adatforrások és licenc
@@ -44,10 +55,16 @@ Minden letöltő **idempotens**: meglévő fájlt nem tölt újra `--force` nél
 
 ## Fontos modellezési döntések
 
-- **Termésévi eltolás**: a Y évi hozamhoz a Y-1 okt 1 – Y jún 30 időjárás tartozik.
+- **Termésévi eltolás (búza)**: a Y évi hozamhoz a Y-1 okt 1 – Y jún 30 időjárás tartozik.
+  A kukoricánál a szezon a Y naptári éven belüli (ápr–szept).
 - **Időjárás kezdete 1999-10-01**: hogy a 2000-es termésév őszi vetési ablaka is lefedett
   legyen (kis, szándékos eltérés a brief 2000-01-01-jétől).
-- **Budapest**: elhanyagolható búzatermelés — a modellben kihagyva (`config.BUDAPEST_HANDLING`).
+- **Budapest**: elhanyagolható termőterület — a modellben kihagyva (`config.BUDAPEST_HANDLING`).
+- **wb_deficit**: konvex, halmozott vízmérleg-hiány mutató (a vármegye tanítómintabeli
+  mediánjához képest) — a 2022-szerű, több ablakon átívelő aszályok megfogására;
+  a mérési kapu iterációjának eredménye.
+- **Bizonytalansági sáv**: a LOYO out-of-sample reziduumok szórásából (±1,282σ ≈ 80%),
+  tényleges lefedettség búza 82%, kukorica 85%.
 
 ## Struktúra
 

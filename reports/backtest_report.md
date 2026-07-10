@@ -1,10 +1,10 @@
 # Backtest riport — búzahozam-előrejelző (mérési kapu)
 
-*Készült: 2026-07-10. Adat: KSH vármegyei búza-termésátlag (2000–2025), ERA5 (Open-Meteo), 19 vármegye (Budapest kihagyva — elhanyagolható búzaterület).*
+*Készült: 2026-07-10. Adat: KSH vármegyei búza-termésátlag (2000–2025), ERA5 (Open-Meteo), 19 vármegye (Budapest kihagyva — elhanyagolható termőterület).*
 
 ## 1. Modell
 
-Panelregresszió: vármegye-fixhatás + közös lineáris időtrend (a technológiai fejlődés leválasztására) + standardizált időjárási mutatók (ablakos GDD-k, őszi/téli csapadék, hőstressznapok, fagynapok, tavaszi és szemtelítődési vízmérleg). Becslés: OLS szelektív ridge büntetéssel (α=25.0, csak az időjárási blokkon; LOYO ráccsal választva).
+Panelregresszió: vármegye-fixhatás + közös lineáris időtrend (a technológiai fejlődés leválasztására) + standardizált időjárási mutatók (ablakos GDD-k, csapadék, hőstressznapok, vízmérleg-mutatók, halmozott vízmérleg-deficit). Becslés: OLS szelektív ridge büntetéssel (α=25.0, csak az időjárási blokkon; LOYO ráccsal választva).
 
 ## 2. Leave-one-year-out validáció (out-of-sample)
 
@@ -14,11 +14,11 @@ Panelregresszió: vármegye-fixhatás + közös lineáris időtrend (a technoló
 | naiv: vármegye-trend | 0.682 | 14.7% | 0.542 |
 | naiv: előző 3 év átlaga | 0.780 | 16.8% | 0.402 |
 
-A modell mindkét naiv alapot veri. A bizonytalansági sáv a LOYO reziduumok szórásából: ±1.282·0.529 t/ha (névleges 80%); tényleges lefedettség **82.0%** — reális, nem túl szűk és nem túl tág.
+A bizonytalansági sáv a LOYO reziduumok szórásából: ±1.282·0.529 t/ha (névleges 80%); tényleges lefedettség **82.0%**.
 
-## 3. As-of backtest (jún. 15-i tudásállapot)
+## 3. As-of backtest (06. hó 15. napi tudásállapot)
 
-A feature-ök a célév jún. 15-ig ismert időjárásából + a hátralévő napokra a többi év klimatológiájából; a modell a célév nélkül tanítva (nincs look-ahead).
+A feature-ök a célév as-of napjáig ismert időjárásból + a hátralévő napokra a többi év klimatológiájából; a modell a célév nélkül tanítva (nincs look-ahead).
 
 | Év | Jósolt anomália (átlag) | Tényleges anomália (átlag) | Iránytalálat (vármegye) |
 |---|---|---|---|
@@ -28,7 +28,7 @@ A feature-ök a célév jún. 15-ig ismert időjárásából + a hátralévő na
 
 ### 2022 vármegyénként (a leginkább érintettől a legkevésbé érintettig)
 
-| Vármegye | Tényleges anomália | Jósolt anomália (jún. 15.) | Irány |
+| Vármegye | Tényleges anomália | Jósolt anomália | Irány |
 |---|---|---|---|
 | Jász-Nagykun-Szolnok | -39.8% | -6.0% | ✔ |
 | Hajdú-Bihar | -39.4% | -2.8% | ✔ |
@@ -50,18 +50,18 @@ A feature-ök a célév jún. 15-ig ismert időjárásából + a hátralévő na
 | Zala | +1.8% | +1.1% | ✔ |
 | Vas | +9.1% | +0.6% | ✔ |
 
-![backtest](figures/backtest_2003.png)
-![backtest](figures/backtest_2007.png)
-![backtest](figures/backtest_2022.png)
+![backtest](figures/backtest_wheat_2003.png)
+![backtest](figures/backtest_wheat_2007.png)
+![backtest](figures/backtest_wheat_2022.png)
 
 ## 4. A mérési kapu értékelése
 
-- **(a) Naiv alap verése:** TELJESÜL — a panelmodell out-of-sample RMSE-je 22%-kal jobb a vármegye-trend naivnál (2. táblázat).
-- **(b) 2022 iránytartás:** TELJESÜL — 14/19 vármegyénél helyes az előjel, a 10 leginkább érintettből 7-nál; a három legsúlyosabban érintett (Jász-Nagykun-Szolnok, Hajdú-Bihar, Heves) mind helyesen átlag alatti. A tévesztések ~0% körüli határesetek.
-- **(c) Sáv realitása:** TELJESÜL — 82.0% tényleges lefedettség a névleges 80%-ra.
+- **(a) Naiv alap verése:** lásd a 2. táblázatot.
+- **(b) 2022 iránytartás:** 14/19 vármegyénél helyes az előjel, a 10 leginkább érintettből 7-nál.
+- **(c) Sáv realitása:** 82.0% tényleges lefedettség a névleges 80%-ra.
 
 ### Ismert korlátok (őszintén)
 
 - **A 2022-es anomália MÉRTÉKÉT a modell alulbecsüli** (jún. 15-i átlag -1.8% a tényleges -18.1% helyett). Két ok: (1) a június végi hőhullám a jún. 15-i tudásállapotban még nem ismert — a teljes szezonos (LOYO) becslés már −5,5%-ot ad; (2) 2022-ben a műtrágyaár-robbanás (háború) is csökkentette a hozamot, ami nem időjárási tényező, egy időjárás-alapú modell elvben sem foghatja meg.
 - A halmozott vízmérleg-deficit (wb_deficit) bevezetése a kapu-iteráció eredménye: az összesített out-of-sample RMSE-t 0,624-ről 0,529 t/ha-ra javította, és a 2012-es aszályt is 19/19-re hozza.
-- A modell szezonon belüli frissítéssel (5. fázis) a jún. 15. utáni időjárást is beépíti majd, a 2022-szerű késői stresszt is követve.
+- A modell szezonon belüli frissítéssel (5. fázis) az as-of nap utáni időjárást is beépíti, a 2022-szerű késői stresszt is követve.

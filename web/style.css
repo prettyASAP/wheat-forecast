@@ -21,6 +21,22 @@ header {
 header h1 { font-size: 1.15rem; }
 #meta { font-size: 0.85rem; color: #6b7a86; }
 
+#crop-switch { display: flex; gap: 4px; }
+#crop-switch button {
+  border: 1px solid #cfd8de;
+  background: #fff;
+  color: #4a5a66;
+  padding: 3px 12px;
+  border-radius: 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+#crop-switch button.active {
+  background: #2c3e50;
+  border-color: #2c3e50;
+  color: #fff;
+}
+
 main { flex: 1; position: relative; min-height: 0; }
 #map { position: absolute; inset: 0; }
 
