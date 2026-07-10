@@ -48,6 +48,8 @@ def parse_ksh_csv(crop: str) -> pd.DataFrame:
     path = config.RAW_KSH / f"{config.CROPS[crop]['ksh_slug']}.csv"
     if not path.exists():
         sys.exit(f"HIBA: hiányzik {path}. Futtasd előbb: python -m src.fetch_ksh --crop {crop}")
+    # terményspecifikus szekciócímek (pl. árpánál "Őszi árpa ..."), különben az alap
+    sections = config.CROPS[crop].get("ksh_sections", KSH_SECTIONS)
     lines = path.read_bytes().decode(config.KSH_ENCODING).splitlines()
 
     # Fejléc: a 2. sor tartalmazza az évoszlopokat
@@ -60,8 +62,12 @@ def parse_ksh_csv(crop: str) -> pd.DataFrame:
     for ln in lines[2:]:
         cells = ln.split(";")
         first = cells[0].strip()
-        if first in KSH_SECTIONS:
-            current_section = KSH_SECTIONS[first]
+        if first in sections:
+            current_section = sections[first]
+            continue
+        if first in KSH_SECTIONS or (first.endswith(("hektár", "tonna", "kg/hektár"))
+                                     and len(cells) > 1 and not cells[1].strip()):
+            current_section = None  # másik (nem kért) szekció kezdődik
             continue
         if current_section is None or not first:
             continue
