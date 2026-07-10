@@ -14,7 +14,15 @@
   "prev_year_yield_t_ha": 5.5,
   "rank_from_worst": 7,
   "rank_total": 27,
-  "weights": "2025. évi vármegyei betakarított területek, Budapest nélkül"
+  "weights": "2025. évi vármegyei betakarított területek, Budapest nélkül",
+  "value": {
+   "price_huf_per_t": 70490,
+   "price_year": 2024,
+   "area_ha": 1046156,
+   "production_value_bn_huf": 384.8,
+   "trend_gap_bn_huf": -39.5,
+   "note": "a 2024. évi termelői átlagáron, a 2025. évi területtel számolva"
+  }
  },
  "scenarios": null,
  "counties": [

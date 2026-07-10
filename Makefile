@@ -46,3 +46,5 @@ clean:            ## nyers/köztes adat törlése
 history:           ## statikus hozam-idősor export a webre (KSH-val keresztellenőrizve)
 	$(PY) -m src.export_history --crop wheat
 	$(PY) -m src.export_history --crop corn
+prices:            ## termelői árak frissítése (Eurostat, HUF)
+	$(PY) -m src.fetch_prices --force
