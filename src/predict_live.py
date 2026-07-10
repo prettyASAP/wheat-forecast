@@ -183,7 +183,10 @@ def main() -> None:
                              encoding="utf-8")
     (HISTORY_DIR / f"{today.isoformat()}.json").write_text(
         json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-    print(f"  [ok] {FORECAST_JSON} + history snapshot")
+    # index a statikus frontendnek (mappalistázás nélkül nem látná a snapshotokat)
+    dates = sorted(p.stem for p in HISTORY_DIR.glob("????-??-??.json"))
+    (HISTORY_DIR / "index.json").write_text(json.dumps(dates), encoding="utf-8")
+    print(f"  [ok] {FORECAST_JSON} + history snapshot ({len(dates)} nap az indexben)")
 
     # --- Fázis-záró ellenőrzés ---
     est = [r for r in rows if r["predicted_yield_t_ha"] is not None]
