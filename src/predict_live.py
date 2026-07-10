@@ -130,6 +130,90 @@ def build_season_daily(today: date, crop_year: int, crop: str):
     return combined, known_until
 
 
+def scenario_ensemble(season_daily: pd.DataFrame, known_until, crop: str,
+                      crop_year: int, m, df_model: pd.DataFrame) -> dict | None:
+    """Analóg-év együttes: a szezon hátralévő napjait a historikus évek TÉNYLEGES
+    időjárásával pótoljuk (évenként egy pálya), mindegyikre jóslunk.
+
+    Eredmény: (szcenárió-payload, vármegyénkénti együttes-átlag) — az utóbbi a
+    fő becslés szezon közben (lásd a return előtti megjegyzést).
+    Ha a szezon már lezárult (nincs hátralévő nap), (None, None).
+    """
+    start, end = season_window(crop_year, crop)
+    if known_until >= end:
+        return None, None
+
+    hist = pd.read_parquet(config.weather_daily_parquet(crop))
+    hist["date"] = pd.to_datetime(hist["date"]).dt.date
+    hist = hist.dropna(subset=["crop_year"])
+    analog_years = sorted(int(y) for y in hist["crop_year"].unique()
+                          if y != crop_year)
+
+    known = season_daily[season_daily["date"] <= known_until]
+    cols = ["nuts_id", "date", *config.OPENMETEO_DAILY_VARS]
+
+    # a hátralévő naptári napok (month, day) párjai
+    remaining_days = [d for d in pd.date_range(known_until, end, freq="D").date
+                      if d > known_until]
+    rem_md = {(d.month, d.day): d for d in remaining_days}
+
+    # historikus napok indexelése (nuts_id, month, day, crop_year) szerint
+    hdt = pd.to_datetime(hist["date"])
+    hist = hist.assign(_m=hdt.dt.month, _d=hdt.dt.day)
+
+    # klimatológia tartaléknak (pl. feb 29 hiányzik az analóg évből)
+    clim = (hist.groupby(["nuts_id", "_m", "_d"])[config.OPENMETEO_DAILY_VARS]
+            .mean().reset_index())
+
+    preds_by_analog = {}
+    for ay in analog_years:
+        h = hist[hist["crop_year"] == ay]
+        tail = h[[( m_, d_) in rem_md for m_, d_ in zip(h["_m"], h["_d"])]].copy()
+        tail["date"] = [rem_md[(m_, d_)] for m_, d_ in zip(tail["_m"], tail["_d"])]
+        # hiányzó (nuts_id, nap) párok pótlása klimatológiával
+        have = set(zip(tail["nuts_id"], tail["date"]))
+        need = [(n, d) for n in known["nuts_id"].unique() for d in remaining_days
+                if (n, d) not in have]
+        if need:
+            fill = pd.DataFrame(need, columns=["nuts_id", "date"])
+            fill["_m"] = [d.month for d in fill["date"]]
+            fill["_d"] = [d.day for d in fill["date"]]
+            fill = fill.merge(clim, on=["nuts_id", "_m", "_d"], how="left")
+            tail = pd.concat([tail, fill], ignore_index=True)
+        spliced = pd.concat([known[cols], tail[cols]], ignore_index=True)
+        spliced["crop_year"] = crop_year
+
+        feats = compute_features(spliced, crop)
+        feats = feats[feats["nuts_id"].isin(m.counties)].copy()
+        feats["crop_year"] = crop_year
+        feats = feats.sort_values("nuts_id")
+        preds_by_analog[ay] = pd.Series(m.predict(feats),
+                                        index=feats["nuts_id"].values)
+
+    ens = pd.DataFrame(preds_by_analog)  # sor: vármegye, oszlop: analóg év
+
+    # országos pálya analóg évenként (a legutóbbi ismert évi területekkel)
+    last_year = int(df_model["crop_year"].max())
+    areas = (df_model[df_model["crop_year"] == last_year]
+             .set_index("nuts_id")["area_ha"]).reindex(ens.index)
+    nat_paths = (ens.mul(areas, axis=0).sum() / areas.sum())
+
+    def pcts(s):
+        return {f"p{p}": round(float(np.percentile(s, p)), 2) for p in (10, 50, 90)}
+
+    payload = {
+        "method": f"{len(analog_years)} analóg év tényleges időjárása a hátralévő "
+                  f"{len(remaining_days)} napra",
+        "remaining_days": len(remaining_days),
+        "national": pcts(nat_paths),
+        "counties": {nid: pcts(ens.loc[nid]) for nid in ens.index},
+    }
+    # Az együttes-átlag a korrekt középbecslés szezon közben: a modell nemlineáris
+    # (konvex wb_deficit), ezért E[f(időjárás)] != f(E[időjárás]) — a klimatológiai
+    # átlag-időjárásból számolt becslés felfelé torzítana (Jensen).
+    return payload, ens.mean(axis=1)
+
+
 def national_block(crop: str, crop_year: int, rows: list[dict],
                    df_model: pd.DataFrame) -> dict:
     """Országos fejléc-mutatók a forecast JSON-ba.
@@ -207,6 +291,13 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
     preds = m.predict(model_feats)
     baseline = predict_naive_trend(df, model_feats)
 
+    # Szezon közben a fő becslés az analóg-együttes átlaga (Jensen-korrekció,
+    # lásd scenario_ensemble); lezárt szezonnál marad a valós időjárásos becslés.
+    sc, ens_mean = scenario_ensemble(season_daily, known_until, crop,
+                                     crop_year, m, df)
+    if ens_mean is not None:
+        preds = ens_mean.reindex(model_feats["nuts_id"].values).to_numpy()
+
     pred_map = dict(zip(model_feats["nuts_id"], zip(preds, baseline)))
     for _, c in counties.sort_values("nuts_id").iterrows():
         f = feats[feats["nuts_id"] == c["nuts_id"]].iloc[0]
@@ -243,6 +334,7 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
         "unit": "t/ha",
         "band": "80%",
         "national": national_block(crop, crop_year, rows, df),
+        "scenarios": sc,
         "counties": rows,
     }
     hdir = history_dir(crop)
@@ -275,8 +367,24 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
     if not (min(preds) <= nat["predicted_yield_t_ha"] <= max(preds)):
         problems.append(f"országos becslés ({nat['predicted_yield_t_ha']}) a vármegyei "
                         f"tartományon kívül [{min(preds)}, {max(preds)}]")
+    # szcenárió-ellenőrzés: P10<=P50<=P90, és a P50 közel a pontbecsléshez
+    # (mindkettő "átlagos folytatás" — a klimatológiai átlag vs analóg-medián
+    # eltérése kicsi kell legyen a modell-sávhoz képest)
+    sc = payload["scenarios"]
+    if sc is not None:
+        pred_by_id = {r["nuts_id"]: r["predicted_yield_t_ha"] for r in est}
+        for nid, p in sc["counties"].items():
+            if not (p["p10"] <= p["p50"] <= p["p90"]):
+                problems.append(f"{nid} szcenárió-percentilisek nem monotonok: {p}")
+            if nid in pred_by_id and abs(p["p50"] - pred_by_id[nid]) > z * oos_std:
+                problems.append(f"{nid} szcenárió-P50 ({p['p50']}) messze a "
+                                f"pontbecsléstől ({pred_by_id[nid]})")
     if problems:
         sys.exit("HIBA az élő előrejelzés ellenőrzésén: " + "; ".join(problems))
+    if sc is not None:
+        n = sc["national"]
+        print(f"  szcenáriók ({sc['method']}): országos P10 {n['p10']} / "
+              f"P50 {n['p50']} / P90 {n['p90']} t/ha")
     anoms = [r["anomaly_pct"] for r in est]
     print(f"  ellenőrzés OK: 19 becslés + Budapest; vármegyei anomália "
           f"{min(anoms):+.1f}% .. {max(anoms):+.1f}%")
