@@ -49,11 +49,20 @@ def get_daily(url: str, params: dict) -> pd.DataFrame:
     """Open-Meteo napi lekérés backoff-fal. Visszaad: date + napi változók tábla.
 
     Az Open-Meteo súlyozottan számol: egy hosszú, több változós kérés sok "hívás".
-    429 (Too Many Requests) esetén várunk (Retry-After vagy alap) és újrapróbálunk.
+    429 (Too Many Requests) esetén várunk (Retry-After vagy alap) és újrapróbálunk;
+    átmeneti hálózati hibára (timeout, kapcsolat) rövidebb várással próbálkozunk újra.
     """
     for attempt in range(1, MAX_RETRIES + 1):
-        resp = requests.get(url, params=params, timeout=TIMEOUT,
-                            headers={"User-Agent": "wheat-forecast/1.0"})
+        try:
+            resp = requests.get(url, params=params, timeout=TIMEOUT,
+                                headers={"User-Agent": "wheat-forecast/1.0"})
+        except (requests.Timeout, requests.ConnectionError) as exc:
+            if attempt == MAX_RETRIES:
+                raise
+            print(f"    [hálózat] {type(exc).__name__} — várok 30 mp, "
+                  f"újrapróba {attempt}/{MAX_RETRIES-1}")
+            time.sleep(30)
+            continue
         if resp.status_code == 429:
             wait = int(resp.headers.get("Retry-After", RATE_LIMIT_WAIT))
             if attempt == MAX_RETRIES:
