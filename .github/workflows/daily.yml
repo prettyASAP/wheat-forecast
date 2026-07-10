@@ -46,6 +46,8 @@ jobs:
             echo "Nincs változás, nincs commit."
           else
             git commit -m "napi forecast frissítés ($(date -u +%F))"
+            # ha közben más commit került a main-re, rebase-elünk push előtt
+            git pull --rebase origin main
             git push
           fi
 
