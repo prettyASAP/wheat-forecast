@@ -1,0 +1,136 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  min-height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #2c3e50;
+  background: #f8f9fa;
+}
+
+body { display: flex; flex-direction: column; min-height: 100vh; }
+
+header {
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1px solid #e3e6e8;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+header h1 { font-size: 1.15rem; }
+#meta { font-size: 0.85rem; color: #6b7a86; }
+
+#crop-switch { display: flex; gap: 4px; }
+#crop-switch button {
+  border: 1px solid #cfd8de;
+  background: #fff;
+  color: #4a5a66;
+  padding: 3px 12px;
+  border-radius: 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+#crop-switch button.active {
+  background: #2c3e50;
+  border-color: #2c3e50;
+  color: #fff;
+}
+
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+#csv-btn {
+  border: 1px solid #cfd8de;
+  background: #fff;
+  color: #4a5a66;
+  padding: 3px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+#csv-btn:hover:not(:disabled) { background: #f0f3f5; }
+#csv-btn:disabled { opacity: 0.5; cursor: default; }
+#map-link {
+  font-size: 0.85rem;
+  color: #5d7a94;
+  text-decoration: none;
+}
+#map-link:hover { text-decoration: underline; }
+
+main { flex: 1; padding: 12px 16px; min-width: 0; }
+
+#table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #fff;
+  border: 1px solid #e3e6e8;
+  border-radius: 10px;
+}
+
+#forecast-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  min-width: 760px;
+}
+
+#forecast-table th {
+  text-align: right;
+  padding: 8px 10px;
+  background: #fbfcfd;
+  border-bottom: 2px solid #e3e6e8;
+  color: #4a5a66;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+#forecast-table th:first-child { text-align: left; }
+#forecast-table th:hover { background: #f0f3f5; }
+#forecast-table th .arrow {
+  display: inline-block;
+  width: 1em;
+  color: #90a0ab;
+  font-size: 0.75em;
+}
+#forecast-table th.sorted { color: #2c3e50; }
+#forecast-table th.sorted .arrow { color: #2c3e50; }
+
+#forecast-table td {
+  padding: 6px 10px;
+  border-top: 1px solid #f0f2f3;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+#forecast-table td:first-child { text-align: left; font-weight: 600; }
+#forecast-table tbody tr:hover { background: #fbfcfd; }
+
+td.anomaly-neg { color: #c0392b; font-weight: 600; }
+td.anomaly-pos { color: #1e8449; font-weight: 600; }
+
+tr.no-estimate td { color: #90a0ab; }
+tr.no-estimate td:first-child { font-weight: 600; }
+td.na { font-style: italic; }
+
+#status { padding: 20px; text-align: center; color: #6b7a86; font-size: 0.9rem; }
+#status.hidden { display: none; }
+#status.error { color: #c0392b; }
+
+footer {
+  padding: 6px 16px 9px;
+  background: #fff;
+  border-top: 1px solid #e3e6e8;
+  font-size: 0.72rem;
+  color: #90a0ab;
+}
+
+@media (max-width: 640px) {
+  header h1 { font-size: 1rem; }
+  .header-actions { margin-left: 0; }
+  main { padding: 8px; }
+}

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Táblázat — Terméshozam-előrejelző</title>
+  <link rel="stylesheet" href="tabla.css">
+</head>
+<body>
+  <header>
+    <h1>Terméshozam-előrejelző — Táblázat</h1>
+    <div id="crop-switch" role="tablist">
+      <button data-crop="wheat" class="active" role="tab">Búza</button>
+      <button data-crop="corn" role="tab">Kukorica</button>
+      <button data-crop="barley" role="tab">Őszi árpa</button>
+    </div>
+    <div id="meta">betöltés…</div>
+    <div class="header-actions">
+      <button id="csv-btn" type="button" disabled>CSV letöltés</button>
+      <a href="index.html" id="map-link">← Vissza a térképre</a>
+    </div>
+  </header>
+
+  <main>
+    <div id="table-wrap">
+      <table id="forecast-table" aria-label="Vármegyei előrejelzés">
+        <thead>
+          <tr id="head-row"></tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+    <div id="status" class="hidden"></div>
+  </main>
+
+  <footer>
+    A becslés statisztikai modell, nem hivatalos adat. Budapest esetén nincs becslés
+    (elhanyagolható termőterület), a lista alján szerepel.
+  </footer>
+
+  <script src="tabla.js"></script>
+</body>
+</html>

@@ -36,11 +36,23 @@ let selectedId = null;
 let crop = "wheat";
 const yieldHistory = {};  // crop -> yield_history JSON (cache)
 
-async function fetchJson(url) {
+async function fetchJson(url, cacheBust = false) {
+  // A GitHub Pages CDN ~10 percig cache-el; a naponta frissülő fájlokhoz napi
+  // cache-törő paramétert teszünk (a history snapshotok változatlanok, oda nem kell).
+  if (cacheBust) url += `?v=${new Date().toISOString().slice(0, 10)}`;
   const r = await fetch(url);
   if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
   return r.json();
 }
+
+// HTML-escape a JSON-ból érkező szövegekhez (védelem a template-interpolációnál)
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, ch =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+}
+
+// betöltési sorszám: a gyors termény-váltásnál a megkésett válasz eldobásához
+let loadSeq = 0;
 
 function layerValues(fc) {
   /* Rétegenkénti érték vármegyénként. Az anomáliánál Budapest = null (nincs
@@ -62,7 +74,9 @@ function paintForLayer(layer, fc) {
   const spec = LAYERS[layer];
   const vals = Object.values(layerValues(fc)).map(v => v[layer])
     .filter(v => v !== null && v !== undefined);
-  let [lo, hi] = spec.fixed || [Math.min(...vals), Math.max(...vals)];
+  let [lo, hi] = spec.fixed || (vals.length
+    ? [Math.min(...vals), Math.max(...vals)]
+    : [0, 1]);  // üres réteg — ne legyen Infinity/NaN a skálában
   if (lo === hi) { lo -= 1; hi += 1; }  // konstans réteg (pl. 0 hőstressznap)
 
   const interp = ["interpolate", ["linear"], ["feature-state", "v_" + layer]];
@@ -113,15 +127,15 @@ function renderNational(fc) {
   const s = v => (v > 0 ? "+" : "") + v.toFixed(1);
   const sc = fc.scenarios;
   const scHtml = sc
-    ? `<span class="nat-item" title="${sc.method}">forgatókönyvek (P10–P90):
+    ? `<span class="nat-item" title="${esc(sc.method)}">forgatókönyvek (P10–P90):
        ${sc.national.p10.toFixed(2)} – ${sc.national.p90.toFixed(2)} t/ha</span>`
     : "";
   const v = n.value;
   const gapCls = v && v.trend_gap_bn_huf < 0 ? "neg" : "pos";
   const valHtml = v
-    ? `<span class="nat-item" title="${v.note}">termelési érték:
+    ? `<span class="nat-item" title="${esc(v.note)}">termelési érték:
        ~${Math.round(v.production_value_bn_huf)} mrd Ft</span>
-       <span class="nat-item ${gapCls}" title="${v.note}">trend-rés:
+       <span class="nat-item ${gapCls}" title="${esc(v.note)}">trend-rés:
        ${v.trend_gap_bn_huf > 0 ? "+" : ""}${Math.round(v.trend_gap_bn_huf)} mrd Ft</span>
        <span class="nat-item">ár (${v.price_year}):
        ${(v.price_huf_per_t / 1000).toFixed(1)} eFt/t</span>`
@@ -137,6 +151,9 @@ function renderNational(fc) {
 /* Kézi SVG vonaldiagram: historikus hozamok + idei becslés sávval.
    Semmi külső könyvtár — statikus oldal marad. */
 function yieldChartSVG(years, yields, cur) {
+  if (!years || !years.length || !yields || years.length !== yields.length) {
+    return "";  // nincs/inkonzisztens idősor — ne rajzoljunk NaN-koordinátákat
+  }
   const W = 268, H = 130, PL = 30, PR = 8, PT = 8, PB = 18;
   const allY = yields.concat(cur ? [cur.low, cur.high] : []);
   const allX = years.concat(cur ? [cur.year] : []);
@@ -200,14 +217,14 @@ function showPanel(nutsId) {
             yieldChartSVG(hc.years, hc.yields, cur);
   }
   if (c.predicted_yield_t_ha === null) {
-    body.innerHTML = `<p class="note">${c.note || "Nincs becslés."}</p>${chart}${wxRows}`;
+    body.innerHTML = `<p class="note">${esc(c.note || "Nincs becslés.")}</p>${chart}${wxRows}`;
   } else {
     const cls = c.anomaly_pct < 0 ? "neg" : "pos";
     const sign = c.anomaly_pct > 0 ? "+" : "";
     const scc = currentForecast.scenarios
       && currentForecast.scenarios.counties[nutsId];
     const scRow = scc
-      ? `<div class="band" title="${currentForecast.scenarios.method}">
+      ? `<div class="band" title="${esc(currentForecast.scenarios.method)}">
          időjárás-forgatókönyvek (P10–P90): ${scc.p10.toFixed(2)} – ${scc.p90.toFixed(2)} t/ha</div>`
       : "";
     body.innerHTML = `
@@ -235,26 +252,38 @@ function setupTimeline() {
 }
 
 document.getElementById("slider").addEventListener("input", async e => {
+  const seq = loadSeq;             // pillanatkép: melyik termény-betöltéshez tartozunk
+  const cropNow = crop;
   const d = historyDates[Number(e.target.value)];
+  if (!d) return;
   document.getElementById("slider-date").textContent = d;
   try {
-    applyForecast(await fetchJson(`data/history/${crop}/${d}.json`));
+    const snap = await fetchJson(`data/history/${cropNow}/${d}.json`);
+    if (seq !== loadSeq) return;   // közben terményt váltottak
+    applyForecast(snap);
   } catch (err) { console.error(err); }
 });
 
 async function loadCrop(newCrop) {
+  const seq = ++loadSeq;  // e betöltés sorszáma
   crop = newCrop;
-  document.querySelectorAll("#crop-switch button").forEach(b =>
-    b.classList.toggle("active", b.dataset.crop === crop));
-  const fc = await fetchJson(`data/forecast_${crop}.json`);
-  if (!yieldHistory[crop]) {
+  document.querySelectorAll("#crop-switch button").forEach(b => {
+    const active = b.dataset.crop === crop;
+    b.classList.toggle("active", active);
+    b.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  const fc = await fetchJson(`data/forecast_${crop}.json`, true);
+  if (!yieldHistory[newCrop]) {
     try {
-      yieldHistory[crop] = await fetchJson(`data/yield_history_${crop}.json`);
+      yieldHistory[newCrop] = await fetchJson(`data/yield_history_${newCrop}.json`);
     } catch (e) { console.error("yield_history betöltés:", e); }
   }
+  let dates = [];
   try {
-    historyDates = await fetchJson(`data/history/${crop}/index.json`);
-  } catch { historyDates = []; }
+    dates = await fetchJson(`data/history/${newCrop}/index.json`, true);
+  } catch { /* nincs history — üres marad */ }
+  if (seq !== loadSeq) return;  // közben másik terményre váltottak — eldobjuk
+  historyDates = dates;
   applyForecast(fc);
   setupTimeline();
 }
