@@ -1,0 +1,17 @@
+# Nyers és köztes adat — nem verziózzuk
+data/raw/
+data/interim/
+data/processed/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Web futásidejű adat (a cron generálja) — a struktúrát tartjuk, a tartalmat nem
+web/data/forecast.json
+web/data/history/*.json
