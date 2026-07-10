@@ -116,12 +116,22 @@ function renderNational(fc) {
     ? `<span class="nat-item" title="${sc.method}">forgatókönyvek (P10–P90):
        ${sc.national.p10.toFixed(2)} – ${sc.national.p90.toFixed(2)} t/ha</span>`
     : "";
+  const v = n.value;
+  const gapCls = v && v.trend_gap_bn_huf < 0 ? "neg" : "pos";
+  const valHtml = v
+    ? `<span class="nat-item" title="${v.note}">termelési érték:
+       ~${Math.round(v.production_value_bn_huf)} mrd Ft</span>
+       <span class="nat-item ${gapCls}" title="${v.note}">trend-rés:
+       ${v.trend_gap_bn_huf > 0 ? "+" : ""}${Math.round(v.trend_gap_bn_huf)} mrd Ft</span>
+       <span class="nat-item">ár (${v.price_year}):
+       ${(v.price_huf_per_t / 1000).toFixed(1)} eFt/t</span>`
+    : "";
   el.innerHTML = `
     <span class="nat-item"><b>Országos becslés:</b> ${n.predicted_yield_t_ha.toFixed(2)} t/ha</span>
     <span class="nat-item ${cls}">${s(n.anomaly_pct)}% a trendhez képest</span>
     <span class="nat-item">${s(n.yoy_pct)}% vs ${n.prev_year} (${n.prev_year_yield_t_ha.toFixed(2)} t/ha)</span>
     <span class="nat-item">${n.rank_total} évből a ${n.rank_from_worst}. leggyengébb</span>
-    ${scHtml}`;
+    ${scHtml}${valHtml}`;
 }
 
 /* Kézi SVG vonaldiagram: historikus hozamok + idei becslés sávval.

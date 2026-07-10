@@ -251,7 +251,7 @@ def national_block(crop: str, crop_year: int, rows: list[dict],
     n_total = len(hist_anoms) + 1
 
     last_official = nat["yields"][-1]
-    return {
+    out = {
         "predicted_yield_t_ha": round(predicted, 2),
         "anomaly_pct": round(anomaly_pct, 1),
         "trend_t_ha": round(trend_now, 2),
@@ -262,6 +262,28 @@ def national_block(crop: str, crop_year: int, rows: list[dict],
         "rank_total": n_total,
         "weights": f"{last_year}. évi vármegyei betakarított területek, Budapest nélkül",
     }
+
+    # Forintosítás (ha van árfájl): termelési érték és a trendtől való elmaradás
+    # értéke, a LEGUTÓBBI elérhető évi termelői átlagáron (az ár-évjárat jelölve).
+    # Mértékegységek: (t/ha) x (ha) = t; t x (HUF/t) = HUF; /1e9 = mrd HUF.
+    prices_path = config.WEB_DATA / "prices.json"
+    if prices_path.exists():
+        prices = json.loads(prices_path.read_text(encoding="utf-8"))["crops"].get(crop)
+        if prices:
+            area_total = float(w.sum())
+            price = prices["latest_huf_per_t"]
+            value_bn = predicted * area_total * price / 1e9
+            trend_gap_bn = (predicted - trend_now) * area_total * price / 1e9
+            out["value"] = {
+                "price_huf_per_t": price,
+                "price_year": prices["latest_year"],
+                "area_ha": round(area_total),
+                "production_value_bn_huf": round(value_bn, 1),
+                "trend_gap_bn_huf": round(trend_gap_bn, 1),
+                "note": (f"a {prices['latest_year']}. évi termelői átlagáron, "
+                         f"a {last_year}. évi területtel számolva"),
+            }
+    return out
 
 
 def main(crop: str = config.DEFAULT_CROP) -> None:
