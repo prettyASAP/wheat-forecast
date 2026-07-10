@@ -45,21 +45,14 @@ def load_centroids() -> pd.DataFrame:
     return out
 
 
-def fetch_county(lat: float, lon: float, start: str, end: str) -> pd.DataFrame:
-    """Egy vármegye teljes napi ERA5 idősora DataFrame-ként (date + 5 változó)."""
-    params = {
-        "latitude": lat,
-        "longitude": lon,
-        "start_date": start,
-        "end_date": end,
-        "timezone": config.OPENMETEO_TIMEZONE,
-        "models": config.OPENMETEO_MODEL,
-        "daily": ",".join(config.OPENMETEO_DAILY_VARS),
-    }
-    # Az Open-Meteo súlyozottan számol: egy hosszú, több változós kérés sok "hívás".
-    # 429 (Too Many Requests) esetén várunk (Retry-After vagy alap) és újrapróbálunk.
+def get_daily(url: str, params: dict) -> pd.DataFrame:
+    """Open-Meteo napi lekérés backoff-fal. Visszaad: date + napi változók tábla.
+
+    Az Open-Meteo súlyozottan számol: egy hosszú, több változós kérés sok "hívás".
+    429 (Too Many Requests) esetén várunk (Retry-After vagy alap) és újrapróbálunk.
+    """
     for attempt in range(1, MAX_RETRIES + 1):
-        resp = requests.get(config.OPENMETEO_ARCHIVE_URL, params=params, timeout=TIMEOUT,
+        resp = requests.get(url, params=params, timeout=TIMEOUT,
                             headers={"User-Agent": "wheat-forecast/1.0"})
         if resp.status_code == 429:
             wait = int(resp.headers.get("Retry-After", RATE_LIMIT_WAIT))
@@ -71,11 +64,24 @@ def fetch_county(lat: float, lon: float, start: str, end: str) -> pd.DataFrame:
         resp.raise_for_status()
         daily = resp.json().get("daily")
         if not daily or "time" not in daily:
-            raise RuntimeError(f"Üres/hibás válasz ({lat},{lon}): {resp.text[:200]}")
+            raise RuntimeError(f"Üres/hibás válasz: {resp.text[:200]}")
         df = pd.DataFrame(daily).rename(columns={"time": "date"})
         df["date"] = pd.to_datetime(df["date"]).dt.date
         return df
     raise RuntimeError("Nem sikerült letölteni (rate limit).")  # elvileg elérhetetlen
+
+
+def fetch_county(lat: float, lon: float, start: str, end: str) -> pd.DataFrame:
+    """Egy vármegye teljes napi ERA5 idősora DataFrame-ként (date + 5 változó)."""
+    return get_daily(config.OPENMETEO_ARCHIVE_URL, {
+        "latitude": lat,
+        "longitude": lon,
+        "start_date": start,
+        "end_date": end,
+        "timezone": config.OPENMETEO_TIMEZONE,
+        "models": config.OPENMETEO_MODEL,
+        "daily": ",".join(config.OPENMETEO_DAILY_VARS),
+    })
 
 
 def main(force: bool = False) -> None:
