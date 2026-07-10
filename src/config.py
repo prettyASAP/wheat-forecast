@@ -143,4 +143,36 @@ KSH_TO_NUTS3: dict[str, str] = {
 KSH_NUTS3_LEVELS = {"vármegye", "vármegye, régió", "főváros, régió"}
 
 # Budapest kezelése a modellben: "drop" (kihagyás) vagy "merge_pest" (Pesthez).
+# Döntés: kihagyjuk — Budapest búzaterülete elhanyagolható (2020 óta < 600 ha),
+# a hozama zajos, torzítaná a modellt. A térképen "nincs becslés" jelölést kap.
 BUDAPEST_HANDLING = "drop"
+BUDAPEST_NUTS_ID = "HU110"
+
+# --------------------------------------------------------------------------- #
+# Modell (Fázis 4)
+# --------------------------------------------------------------------------- #
+# Időjárási magyarázók a feature táblából. A collinearitás miatt szűkített,
+# értelmezhető készlet: ablakos GDD-k, ablakos csapadék, stresszmutatók, vízmérleg.
+MODEL_FEATURES = [
+    "gdd_sowing_emergence",
+    "gdd_winter_dormancy",
+    "gdd_tillering",
+    "gdd_grain_filling",
+    "prec_sowing_emergence",
+    "prec_winter_dormancy",
+    "heat_days_grain_filling",
+    "frost_days_winter",
+    "wb_tillering",
+    "wb_grain_filling",
+    # Konvex halmozott aszályjelző: min(wb_total - vármegye-medián, 0), a modell
+    # számolja a tanítóminta mediánjával (look-ahead-mentes). A 2022-szerű,
+    # több ablakon átívelő szárazság megfogásához (mérési kapu iteráció).
+    "wb_deficit",
+]
+TREND_DEGREE = 1        # közös időtrend foka (1 = lineáris, 2 = kvadratikus)
+RIDGE_ALPHA = 25.0      # ridge büntetés az időjárási blokkra (0 = sima OLS);
+                        # LOYO ráccsal választva (validate.py, 2026-07)
+UNCERTAINTY_Z = 1.282   # 80%-os sáv a normál eloszlás alapján
+# As-of backtest dátuma: az adott év jún 15-ig ismert időjárás
+ASOF_MONTH, ASOF_DAY = 6, 15
+BACKTEST_YEARS = [2022, 2007, 2003]
