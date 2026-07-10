@@ -19,7 +19,7 @@ header {
   flex-wrap: wrap;
 }
 header h1 { font-size: 1.15rem; }
-#meta { font-size: 0.85rem; color: #6b7a86; }
+#meta { font-size: 0.85rem; color: #5a6a75; }
 
 #crop-switch { display: flex; gap: 4px; }
 #crop-switch button {
@@ -65,7 +65,8 @@ header h1 { font-size: 1.15rem; }
   background: #fbfcfd;
   border-bottom: 1px solid #e3e6e8;
 }
-#national:empty { display: none; }
+#national { min-height: 86px; }
+#national:empty { min-height: 0; padding: 0; border: 0; }
 
 .kpi {
   background: #fff;
@@ -80,12 +81,12 @@ header h1 { font-size: 1.15rem; }
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #90a0ab;
+  color: #6e7f8b;
   margin-bottom: 2px;
 }
 .kpi-value { font-size: 1.45rem; font-weight: 700; color: #2c3e50; line-height: 1.15; }
 .kpi-value small { font-size: 0.8rem; font-weight: 500; color: #6b7a86; }
-.kpi-sub { font-size: 0.74rem; color: #6b7a86; margin-top: 3px; }
+.kpi-sub { font-size: 0.74rem; color: #5a6a75; margin-top: 3px; }
 .kpi-viz { margin: 2px 0; }
 
 .chip {
@@ -96,9 +97,9 @@ header h1 { font-size: 1.15rem; }
   font-size: 0.74rem;
 }
 .chip.neg { background: #fdecea; color: #c0392b; }
-.chip.pos { background: #e8f6ee; color: #1e8449; }
+.chip.pos { background: #e8f6ee; color: #17693a; }
 
-.chart-title { font-size: 0.72rem; color: #90a0ab; margin: 8px 0 2px; }
+.chart-title { font-size: 0.72rem; color: #6e7f8b; margin: 8px 0 2px; }
 
 .track-row {
   display: flex;
@@ -126,7 +127,8 @@ header h1 { font-size: 1.15rem; }
   transform: translate(-50%, -50%);
 }
 .track-value {
-  flex: 0 0 62px;
+  flex: 0 0 74px;
+  white-space: nowrap;
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
@@ -151,12 +153,14 @@ main { flex: 1; position: relative; min-height: 0; }
 #panel.hidden { display: none; }
 #panel h2 { font-size: 1.05rem; margin-bottom: 8px; padding-right: 20px; }
 #panel-close {
-  position: absolute; top: 8px; right: 10px;
+  position: absolute; top: 4px; right: 4px;
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
   border: none; background: none; font-size: 1.3rem;
-  cursor: pointer; color: #90a0ab;
+  cursor: pointer; color: #6e7f8b;
 }
-.big-number { font-size: 1.7rem; font-weight: 700; }
-.band { color: #6b7a86; font-size: 0.85rem; margin-bottom: 8px; }
+.big-number { font-size: 1.5rem; font-weight: 700; }
+.band { color: #5a6a75; font-size: 0.85rem; margin-bottom: 8px; }
 .anomaly { font-weight: 600; margin-bottom: 10px; }
 .anomaly.neg { color: #c0392b; }
 .anomaly.pos { color: #1e8449; }
@@ -189,7 +193,7 @@ main { flex: 1; position: relative; min-height: 0; }
 }
 #legend-bar {
   width: 140px; height: 10px; border-radius: 5px;
-  background: linear-gradient(to right, #b03a2e, #e67e22, #f5e8c8, #82c07a, #1e8449);
+  background: linear-gradient(to right, #b03a2e, #e67e22, #f5e8c8, #7fb3d5, #2874a6);
 }
 .legend-note { margin-left: 6px; }
 
@@ -198,15 +202,40 @@ footer {
   background: #fff;
   border-top: 1px solid #e3e6e8;
   font-size: 0.72rem;
-  color: #90a0ab;
+  color: #6e7f8b;
 }
 footer a { color: #5d7a94; }
 
 @media (max-width: 640px) {
   header h1 { font-size: 1rem; }
-  #panel {
-    top: auto; bottom: 8px; left: 8px; right: 8px;
-    width: auto; max-height: 70%;
+  /* KPI-kártyák: vízszintes carousel, hogy a térkép kapja a helyet */
+  #national {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
   }
+  .kpi { flex: 0 0 240px; scroll-snap-align: start; }
+  /* panel: valódi bottom-sheet a viewporthoz méretezve, nem a main-hez */
+  #panel {
+    position: fixed;
+    top: auto; bottom: 0; left: 0; right: 0;
+    width: auto;
+    max-height: 60dvh;
+    border-radius: 12px 12px 0 0;
+    z-index: 20;
+  }
+  #crop-switch button, #layer-select, #table-link { padding: 8px 14px; }
   #legend { flex-wrap: wrap; }
+}
+
+#crop-switch button:not(.active):hover { border-color: #5d7a94; background: #f5f8fa; }
+:focus-visible { outline: 2px solid #2874a6; outline-offset: 2px; }
+.legend-swatch {
+  display: inline-block;
+  width: 12px; height: 12px;
+  border-radius: 3px;
+  background: #d5d8dc;
+  vertical-align: -2px;
+  margin-right: 3px;
 }

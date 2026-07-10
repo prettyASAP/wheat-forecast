@@ -19,7 +19,7 @@ header {
   flex-wrap: wrap;
 }
 header h1 { font-size: 1.15rem; }
-#meta { font-size: 0.85rem; color: #6b7a86; }
+#meta { font-size: 0.85rem; color: #5a6a75; }
 
 #crop-switch { display: flex; gap: 4px; }
 #crop-switch button {
@@ -94,7 +94,7 @@ main { flex: 1; padding: 12px 16px; min-width: 0; }
 #forecast-table th .arrow {
   display: inline-block;
   width: 1em;
-  color: #90a0ab;
+  color: #6e7f8b;
   font-size: 0.75em;
 }
 #forecast-table th.sorted { color: #2c3e50; }
@@ -113,11 +113,11 @@ main { flex: 1; padding: 12px 16px; min-width: 0; }
 td.anomaly-neg { color: #c0392b; font-weight: 600; }
 td.anomaly-pos { color: #1e8449; font-weight: 600; }
 
-tr.no-estimate td { color: #90a0ab; }
+tr.no-estimate td { color: #6e7f8b; }
 tr.no-estimate td:first-child { font-weight: 600; }
 td.na { font-style: italic; }
 
-#status { padding: 20px; text-align: center; color: #6b7a86; font-size: 0.9rem; }
+#status { padding: 20px; text-align: center; color: #5a6a75; font-size: 0.9rem; }
 #status.hidden { display: none; }
 #status.error { color: #c0392b; }
 
@@ -126,11 +126,38 @@ footer {
   background: #fff;
   border-top: 1px solid #e3e6e8;
   font-size: 0.72rem;
-  color: #90a0ab;
+  color: #6e7f8b;
 }
 
 @media (max-width: 640px) {
   header h1 { font-size: 1rem; }
   .header-actions { margin-left: 0; }
   main { padding: 8px; }
+}
+
+/* UX-audit: sticky első oszlop + fejléc mobil-görgetéshez */
+#forecast-table th:first-child, #forecast-table td:first-child {
+  position: sticky; left: 0; background: #fff; z-index: 1;
+  box-shadow: 1px 0 0 #e3e6e8;
+}
+#forecast-table thead th { position: sticky; top: 0; z-index: 2; background: #fff; }
+#forecast-table thead th:first-child { z-index: 3; }
+#forecast-table tbody tr:hover td:first-child { background: #fbfcfd; }
+
+:focus-visible { outline: 2px solid #2874a6; outline-offset: 2px; }
+
+/* vissza-link gombosítása (konzisztencia a Táblázat-linkkel) */
+#map-link {
+  font-size: 0.85rem;
+  color: #5d7a94;
+  text-decoration: none;
+  border: 1px solid #cfd8de;
+  border-radius: 8px;
+  padding: 3px 10px;
+  background: #fff;
+}
+#map-link:hover { border-color: #5d7a94; }
+
+@media (max-width: 640px) {
+  #crop-switch button, #map-link { padding: 8px 14px; }
 }
