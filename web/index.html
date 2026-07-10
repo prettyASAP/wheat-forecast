@@ -14,6 +14,13 @@
       <button data-crop="wheat" class="active" role="tab">Búza</button>
       <button data-crop="corn" role="tab">Kukorica</button>
     </div>
+    <select id="layer-select" aria-label="Térképréteg">
+      <option value="anomaly" selected>Hozam-anomália</option>
+      <option value="wb">Vízmérleg (mm)</option>
+      <option value="prec">Csapadék (mm)</option>
+      <option value="heat">Hőstressznapok</option>
+      <option value="gdd">Hőösszeg (GDD)</option>
+    </select>
     <div id="meta">betöltés…</div>
   </header>
   <div id="national"></div>
@@ -35,10 +42,10 @@
   </div>
 
   <div id="legend">
-    <span>−20%</span>
+    <span id="legend-min">−20%</span>
     <div id="legend-bar"></div>
-    <span>+20%</span>
-    <span class="legend-note">anomália a trendhez képest</span>
+    <span id="legend-max">+20%</span>
+    <span class="legend-note" id="legend-note">anomália a trendhez képest</span>
   </div>
 
   <footer>

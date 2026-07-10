@@ -14,6 +14,23 @@ const COLORS = {
   border: "#7f8c8d",
 };
 
+/* Térképrétegek. Az időjárási rétegeknél NINCS fix skála: az aktuális
+   vármegye-értékek min-max tartományát színezzük (relatív, országon belüli
+   összevetés), a jelmagyarázat a tényleges min/max értéket mutatja. */
+const LAYERS = {
+  anomaly: { note: "anomália a trendhez képest", unit: "%", fixed: [-20, 20],
+             colors: ["#b03a2e", "#e67e22", "#f5e8c8", "#82c07a", "#1e8449"] },
+  wb:   { note: "vízmérleg (csapadék − párolgás), termésév eddig", unit: " mm",
+          colors: ["#b03a2e", "#e8c78f", "#7fb3d5", "#2874a6"] },
+  prec: { note: "csapadékösszeg, termésév eddig", unit: " mm",
+          colors: ["#e8c78f", "#a9cce3", "#5499c7", "#1a5276"] },
+  heat: { note: "hőstressznapok a kritikus ablakban", unit: " nap",
+          colors: ["#f5e8c8", "#e67e22", "#b03a2e", "#78281f"] },
+  gdd:  { note: "hőösszeg (GDD, 0 °C bázis), termésév eddig", unit: "",
+          colors: ["#fdf2d0", "#f5b041", "#dc7633", "#a04000"] },
+};
+let currentLayer = "anomaly";
+
 let map, geojson, historyDates = [], currentForecast = null;
 let selectedId = null;
 let crop = "wheat";
@@ -25,25 +42,62 @@ async function fetchJson(url) {
   return r.json();
 }
 
-function anomalyColorExpr() {
+function layerValues(fc) {
+  /* Rétegenkénti érték vármegyénként. Az anomáliánál Budapest = null (nincs
+     modell); az időjárási rétegeknél mind a 20 egységre van érték. */
+  const out = {};
+  for (const c of fc.counties) {
+    out[c.nuts_id] = {
+      anomaly: c.predicted_yield_t_ha === null ? null : c.anomaly_pct,
+      wb: c.weather_todate.wb_total_mm,
+      prec: c.weather_todate.prec_total_mm,
+      heat: c.weather_todate.heat_days,
+      gdd: c.weather_todate.gdd_total,
+    };
+  }
+  return out;
+}
+
+function paintForLayer(layer, fc) {
+  const spec = LAYERS[layer];
+  const vals = Object.values(layerValues(fc)).map(v => v[layer])
+    .filter(v => v !== null && v !== undefined);
+  let [lo, hi] = spec.fixed || [Math.min(...vals), Math.max(...vals)];
+  if (lo === hi) { lo -= 1; hi += 1; }  // konstans réteg (pl. 0 hőstressznap)
+
+  const interp = ["interpolate", ["linear"], ["feature-state", "v_" + layer]];
+  spec.colors.forEach((c, i) =>
+    interp.push(lo + (hi - lo) * i / (spec.colors.length - 1), c));
   const expr = ["case",
-    ["==", ["feature-state", "hasData"], false], COLORS.noData,
-    ["interpolate", ["linear"], ["feature-state", "anomaly"]]];
-  const interp = expr[expr.length - 1];
-  for (const [v, c] of COLORS.scale) interp.push(v, c);
+    ["==", ["feature-state", "has_" + layer], false], COLORS.noData, interp];
+
+  // jelmagyarázat frissítése a TÉNYLEGES tartománnyal
+  const fmt = v => spec.unit === "%"
+    ? (v > 0 ? "+" : "") + v + "%"
+    : Math.round(v).toLocaleString("hu-HU") + spec.unit;
+  document.getElementById("legend-min").textContent = fmt(lo);
+  document.getElementById("legend-max").textContent = fmt(hi);
+  document.getElementById("legend-note").textContent = spec.note;
+  document.getElementById("legend-bar").style.background =
+    `linear-gradient(to right, ${spec.colors.join(", ")})`;
   return expr;
 }
 
 function applyForecast(fc) {
   currentForecast = fc;
-  const byId = Object.fromEntries(fc.counties.map(c => [c.nuts_id, c]));
+  const vals = layerValues(fc);
   for (const f of geojson.features) {
     const id = f.properties.NUTS_ID;
-    const c = byId[id];
-    const has = !!(c && c.predicted_yield_t_ha !== null);
-    map.setFeatureState({ source: "counties", id },
-      { hasData: has, anomaly: has ? c.anomaly_pct : 0 });
+    const v = vals[id] || {};
+    const state = {};
+    for (const key of Object.keys(LAYERS)) {
+      const has = v[key] !== null && v[key] !== undefined;
+      state["has_" + key] = has;
+      state["v_" + key] = has ? v[key] : 0;
+    }
+    map.setFeatureState({ source: "counties", id }, state);
   }
+  map.setPaintProperty("counties-fill", "fill-color", paintForLayer(currentLayer, fc));
   document.getElementById("meta").textContent =
     `${fc.crop} · ${fc.crop_year}-es termésév · frissítve: ${fc.updated_at}` +
     ` · időjárás eddig: ${fc.weather_known_until}`;
@@ -185,6 +239,14 @@ async function loadCrop(newCrop) {
 document.querySelectorAll("#crop-switch button").forEach(b =>
   b.addEventListener("click", () => loadCrop(b.dataset.crop).catch(console.error)));
 
+document.getElementById("layer-select").addEventListener("change", e => {
+  currentLayer = e.target.value;
+  if (currentForecast) {
+    map.setPaintProperty("counties-fill", "fill-color",
+      paintForLayer(currentLayer, currentForecast));
+  }
+});
+
 async function init() {
   const gj = await fetchJson("data/nuts3_hu.geojson");
   geojson = gj;
@@ -214,7 +276,8 @@ async function init() {
       id: "counties-fill",
       type: "fill",
       source: "counties",
-      paint: { "fill-color": anomalyColorExpr(), "fill-opacity": 0.88 },
+      // a tényleges színezést applyForecast() állítja be az adat betöltése után
+      paint: { "fill-color": COLORS.noData, "fill-opacity": 0.88 },
     });
     map.addLayer({
       id: "counties-line",
