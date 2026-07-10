@@ -127,6 +127,18 @@
 
     tbody.textContent = "";
     var rows = sortedRows();
+
+    // oszloponkénti min-max az adatsávokhoz (infografikai heatmap-cellák)
+    var ranges = {};
+    COLUMNS.forEach(function (col) {
+      if (!col.numeric) return;
+      var vals = rows.map(function (r) { return r[col.key]; })
+        .filter(function (v) { return v !== null && v !== undefined; });
+      if (vals.length) {
+        ranges[col.key] = [Math.min.apply(null, vals), Math.max.apply(null, vals)];
+      }
+    });
+
     rows.forEach(function (row) {
       var tr = document.createElement("tr");
       if (!row.hasEstimate) tr.classList.add("no-estimate");
@@ -144,6 +156,17 @@
           if (col.anomaly) {
             if (v < 0) td.classList.add("anomaly-neg");
             else if (v > 0) td.classList.add("anomaly-pos");
+          }
+          // adatsáv a cella hátterében: az oszlop min-max tartományán belüli
+          // pozíció (csak számított %-érték kerül a style-ba — XSS-mentes)
+          var rg = ranges[col.key];
+          if (rg && rg[1] > rg[0]) {
+            var pct = 100 * (v - rg[0]) / (rg[1] - rg[0]);
+            var color = col.anomaly
+              ? (v < 0 ? "rgba(192,57,43,.14)" : "rgba(30,132,73,.14)")
+              : "rgba(93,122,148,.13)";
+            td.style.background = "linear-gradient(to right, " + color + " " +
+              pct.toFixed(1) + "%, transparent " + pct.toFixed(1) + "%)";
           }
         }
         tr.appendChild(td);
