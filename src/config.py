@@ -102,6 +102,10 @@ def weather_end(today: date | None = None) -> str:
 #
 # Fenológiai ablakok: (kezdő_hónap, kezdő_nap, záró_hónap, záró_nap, év_eltolás),
 #   év_eltolás = -1 -> a termésévhez képest az előző naptári év (Y-1); 0 -> Y.
+# Megjegyzés: a téli ablak feb 28-án zárul — szökőévben a feb 29. kimarad az
+# ablakos mutatókból (a szezon-szintűekben benne van). Szándékos: így az ablak
+# minden évben 90 napos; auditált hatás: a 26 évben egyetlen fagynap sem esett
+# feb 29-re (Tmin min. -3.4 °C volt).
 # season: (kezdő_hónap, záró_hónap) — a termésévhez tartozó időjárási ablak.
 #   Ha kezdő > záró (búza: 10..6), az ablak átnyúlik az évhatáron: a Y termésév
 #   a Y-1 okt 1 – Y jún 30 időjárást kapja. Ha kezdő < záró (kukorica: 4..9),

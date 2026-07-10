@@ -12,13 +12,13 @@ Panelregresszió: vármegye-fixhatás + közös lineáris időtrend (a technoló
 |---|---|---|---|
 | **panelmodell** | 0.529 | 11.4% | 0.725 |
 | naiv: vármegye-trend | 0.682 | 14.7% | 0.542 |
-| naiv: előző 3 év átlaga | 0.780 | 16.8% | 0.402 |
+| naiv: előző 3 év átlaga | 0.782 | 16.9% | 0.398 |
 
 A bizonytalansági sáv a LOYO reziduumok szórásából: ±1.282·0.529 t/ha (névleges 80%); tényleges lefedettség **82.0%**.
 
 ## 3. As-of backtest (06. hó 15. napi tudásállapot)
 
-A feature-ök a célév as-of napjáig ismert időjárásból + a hátralévő napokra a többi év klimatológiájából; a modell a célév nélkül tanítva (nincs look-ahead).
+A feature-ök a célév as-of napjáig ismert időjárásból + a hátralévő napokra a többi év klimatológiájából; a modell a célév nélkül tanítva (LOYO-konvenció: a célév kizárva, de a célév UTÁNI évek benne vannak a tanításban és a klimatológiában — egy valódi korabeli futás ennél kevesebb adatot látott volna).
 
 | Év | Jósolt anomália (átlag) | Tényleges anomália (átlag) | Iránytalálat (vármegye) |
 |---|---|---|---|

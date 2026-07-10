@@ -125,8 +125,12 @@ def predict_naive_last3(train: pd.DataFrame, test: pd.DataFrame) -> np.ndarray:
         last3 = hist.sort_values("crop_year").tail(3)["yield_t_ha"]
         if len(last3):
             out[i] = last3.mean()
-        else:  # év eleji évek: nincs korábbi adat -> vármegye-átlag a tanítóból
-            out[i] = train[train["nuts_id"] == c]["yield_t_ha"].mean()
+        else:
+            # nincs korábbi adat (első év): vármegye-átlag a tanítóból, a célévet
+            # EXPLICIT kihagyva (audit-javítás: a teljes df-fel hívva a célév
+            # értéke beszivárgott a saját baseline-jába)
+            prior = train[(train["nuts_id"] == c) & (train["crop_year"] != y)]
+            out[i] = prior["yield_t_ha"].mean()
     return out
 
 
