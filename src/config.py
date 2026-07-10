@@ -162,6 +162,38 @@ CROPS = {
         "asof": (8, 1),                   # as-of backtest: aug 1 (virágzás után)
         "backtest_years": [2022, 2012, 2007],
     },
+    "barley": {
+        # A KSH árpa-táblában az őszi árpa KÜLÖN szekcióban szerepel — tisztán
+        # az őszi árpát modellezzük (nincs őszi/tavaszi keverés). Fenológia:
+        # a búzánál ~10 nappal korábbi érés. A mérési kapu dönt a publikálásról.
+        "label": "őszi árpa",
+        "ksh_sections": {
+            "Őszi árpa betakarított területe, hektár": "area_ha",
+            "Őszi árpa betakarított összes termése, tonna": "production_t",
+            "Őszi árpa termésátlaga, kg/hektár": "yield_kg_ha",
+        },
+        "ksh_page": "https://www.ksh.hu/stadat_files/mez/hu/mez0073.html",
+        "ksh_slug": "mez0073",
+        "season": (10, 6),
+        "phenology": {
+            "sowing_emergence": (10, 1, 11, 10, -1),  # vetés/kelés (Y-1)
+            "winter_dormancy": (12, 1, 2, 28, -1),    # téli nyugalom (Y-1/Y)
+            "tillering": (3, 1, 4, 20, 0),            # bokrosodás (Y)
+            "grain_filling": (4, 21, 6, 10, 0),       # szemtelítődés KRIT (Y)
+        },
+        "heat_window": "grain_filling",
+        "heat_tmax_c": 30.0,
+        "use_frost": True,
+        "wb_windows": ["tillering", "grain_filling"],
+        "model_features": [
+            "gdd_sowing_emergence", "gdd_winter_dormancy", "gdd_tillering",
+            "gdd_grain_filling", "prec_sowing_emergence", "prec_winter_dormancy",
+            "heat_days", "frost_days_winter", "wb_tillering", "wb_grain_filling",
+            "wb_deficit",
+        ],
+        "asof": (6, 15),
+        "backtest_years": [2022, 2007, 2003],
+    },
 }
 DEFAULT_CROP = "wheat"
 

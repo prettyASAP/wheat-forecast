@@ -31,10 +31,11 @@ jobs:
       - name: Függőségek
         run: pip install -r requirements.txt
 
-      - name: Élő előrejelzés futtatása (búza + kukorica)
+      - name: Élő előrejelzés futtatása (mindhárom termény)
         run: |
           python -m src.predict_live --crop wheat
           python -m src.predict_live --crop corn
+          python -m src.predict_live --crop barley
 
       - name: Friss forecast commit
         run: |

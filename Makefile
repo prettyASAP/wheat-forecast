@@ -40,6 +40,7 @@ report:           ## as-of backtest + magyar riport mindkét terményre
 live:             ## élő előrejelzés mindkét terményre (forecast_*.json)
 	$(PY) -m src.predict_live --crop wheat
 	$(PY) -m src.predict_live --crop corn
+	$(PY) -m src.predict_live --crop barley
 
 clean:            ## nyers/köztes adat törlése
 	rm -rf data/raw/* data/interim/* data/processed/*

@@ -47,13 +47,18 @@ def ksh_national_official(crop: str) -> dict[str, dict[int, float]]:
     years = [int(c) for c in header if c.strip().isdigit()]
     year_start = next(i for i, c in enumerate(header) if c.strip().isdigit())
 
+    sections = config.CROPS[crop].get("ksh_sections", KSH_SECTIONS)
     out: dict[str, dict[int, float]] = {}
     section = None
     for ln in lines[2:]:
         cells = ln.split(";")
         first = cells[0].strip()
-        if first in KSH_SECTIONS:
-            section = KSH_SECTIONS[first]
+        if first in sections:
+            section = sections[first]
+            continue
+        if (first.endswith(("hektár", "tonna", "kg/hektár"))
+                and len(cells) > 1 and not cells[1].strip()):
+            section = None  # másik (nem kért) szekció
             continue
         if section and first == "Ország összesen":
             vals = {}

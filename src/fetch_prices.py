@@ -26,7 +26,11 @@ EUROSTAT_URL = (
     "apri_ap_crpouta?format=JSON&geo=HU&currency=NAC&lang=en"
 )
 # Eurostat termékkód -> a mi termény-kulcsunk
-PROD_CODES = {"01110000": "wheat", "01500000": "corn"}  # soft wheat, maize
+PROD_CODES = {
+    "01110000": "wheat",   # soft wheat
+    "01500000": "corn",    # grain maize
+    "01300000": "barley",  # barley (az Eurostat nem bont őszi/tavaszi szerint)
+}
 RAW_PATH = config.DATA_RAW / "prices" / "eurostat_apri_ap_crpouta_hu.json"
 PRICES_JSON = config.WEB_DATA / "prices.json"
 
