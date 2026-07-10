@@ -12,6 +12,5 @@ __pycache__/
 # OS
 .DS_Store
 
-# Web futásidejű adat (a cron generálja) — a struktúrát tartjuk, a tartalmat nem
-web/data/forecast.json
-web/data/history/*.json
+# A web/data/ alatti JSON-okat VERZIÓZZUK: a napi cron commitolja a friss
+# forecast.json-t és a history snapshotokat, a GitHub Pages onnan szolgálja.

@@ -1,0 +1,100 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #2c3e50;
+  background: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1px solid #e3e6e8;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+header h1 { font-size: 1.15rem; }
+#meta { font-size: 0.85rem; color: #6b7a86; }
+
+main { flex: 1; position: relative; min-height: 0; }
+#map { position: absolute; inset: 0; }
+
+#panel {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 300px;
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 18px rgba(0,0,0,.15);
+  padding: 14px 16px;
+  z-index: 5;
+}
+#panel.hidden { display: none; }
+#panel h2 { font-size: 1.05rem; margin-bottom: 8px; padding-right: 20px; }
+#panel-close {
+  position: absolute; top: 8px; right: 10px;
+  border: none; background: none; font-size: 1.3rem;
+  cursor: pointer; color: #90a0ab;
+}
+.big-number { font-size: 1.7rem; font-weight: 700; }
+.band { color: #6b7a86; font-size: 0.85rem; margin-bottom: 8px; }
+.anomaly { font-weight: 600; margin-bottom: 10px; }
+.anomaly.neg { color: #c0392b; }
+.anomaly.pos { color: #1e8449; }
+#panel table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+#panel td { padding: 3px 0; border-top: 1px solid #f0f2f3; }
+#panel td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.note { font-size: 0.85rem; color: #6b7a86; font-style: italic; }
+
+#timeline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: #fff;
+  border-top: 1px solid #e3e6e8;
+  font-size: 0.85rem;
+}
+#timeline.hidden { display: none; }
+#slider { flex: 1; }
+#slider-date { font-variant-numeric: tabular-nums; min-width: 84px; }
+
+#legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: #fff;
+  font-size: 0.78rem;
+  color: #6b7a86;
+}
+#legend-bar {
+  width: 140px; height: 10px; border-radius: 5px;
+  background: linear-gradient(to right, #b03a2e, #e67e22, #f5e8c8, #82c07a, #1e8449);
+}
+.legend-note { margin-left: 6px; }
+
+footer {
+  padding: 6px 16px 9px;
+  background: #fff;
+  border-top: 1px solid #e3e6e8;
+  font-size: 0.72rem;
+  color: #90a0ab;
+}
+footer a { color: #5d7a94; }
+
+@media (max-width: 640px) {
+  header h1 { font-size: 1rem; }
+  #panel {
+    top: auto; bottom: 8px; left: 8px; right: 8px;
+    width: auto; max-height: 55%;
+  }
+  #legend { flex-wrap: wrap; }
+}

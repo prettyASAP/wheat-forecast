@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Búzahozam-előrejelző — Magyarország</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Búzahozam-előrejelző</h1>
+    <div id="meta">betöltés…</div>
+  </header>
+
+  <main>
+    <div id="map"></div>
+
+    <aside id="panel" class="hidden">
+      <button id="panel-close" aria-label="Bezárás">×</button>
+      <h2 id="panel-name"></h2>
+      <div id="panel-body"></div>
+    </aside>
+  </main>
+
+  <div id="timeline" class="hidden">
+    <label for="slider">Előrejelzés alakulása:</label>
+    <input type="range" id="slider" min="0" max="0" value="0">
+    <span id="slider-date"></span>
+  </div>
+
+  <div id="legend">
+    <span>−20%</span>
+    <div id="legend-bar"></div>
+    <span>+20%</span>
+    <span class="legend-note">anomália a trendhez képest</span>
+  </div>
+
+  <footer>
+    Adatok: <a href="https://open-meteo.com/">Open-Meteo</a> (ERA5, CC BY 4.0) ·
+    <a href="https://www.ksh.hu/stadat_files/mez/hu/mez0071.html">KSH</a> (vármegyei búza-termésátlag) ·
+    <a href="https://ec.europa.eu/eurostat/web/gisco">Eurostat GISCO</a> (NUTS3 határok, © EuroGeographics).
+    A becslés statisztikai modell, nem hivatalos adat.
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
