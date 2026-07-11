@@ -6,10 +6,11 @@
 const GLOSSARY = {
   becsles: {
     title: "Becslés (t/ha)",
-    text: "A várható termésátlag tonna/hektárban, vármegyénként. A modell a KSH " +
-      "2000 óta mért vármegyei hozamait tanulta össze az ugyanott mért időjárással " +
-      "(hőmérséklet, csapadék, párolgás), és ebből számolja, mit ígér az idei szezon " +
-      "időjárása. Nem hivatalos adat — statisztikai becslés.",
+    text: "A várható termésátlag tonna/hektárban, vármegyénként. A szoftver a KSH " +
+      "2000 óta mért vármegyei hozamai és az ugyanott mért időjárás (hőmérséklet, " +
+      "csapadék, párolgás) közti, statisztikailag kimutatott összefüggésekből számolja, " +
+      "mit ígér az idei szezon időjárása. Nem hivatalos adat — statisztikai becslés; " +
+      "a pontos számítás a lap alján, a Szakmai leírásban.",
   },
   szokasos: {
     title: "Eltérés a szokásostól (%)",
@@ -72,9 +73,10 @@ const GLOSSARY = {
   hostressz: {
     title: "Hőstressznapok",
     text: "Hány napon volt a csúcshőmérséklet a károsodási küszöb felett a termény " +
-      "legérzékenyebb időszakában: búzánál és árpánál 30 °C felett a szemtelítődés " +
-      "alatt (május–június), kukoricánál 32 °C felett a virágzás idején (július). " +
-      "Ilyenkor a növény a hőség miatt kevesebb és apróbb szemet nevel.",
+      "legérzékenyebb időszakában: búzánál 30 °C felett a szemtelítődés alatt " +
+      "(május–június közepe), őszi árpánál ugyanez korábban (április vége–június " +
+      "eleje), kukoricánál 32 °C felett a virágzás idején (július). Ilyenkor a " +
+      "növény a hőség miatt kevesebb és apróbb szemet nevel.",
   },
   fagynapok: {
     title: "Téli fagynapok",
@@ -123,10 +125,11 @@ const GLOSSARY = {
     text: "1) A KSH 2000 óta mért vármegyei termésátlagai + az ERA5 időjárási " +
       "adatbázis napi adatai vármegyénként. 2) Az időjárásból a növény szempontjából " +
       "fontos mutatókat számolunk (hőösszeg, hőstressz, fagy, vízmérleg — a fejlődési " +
-      "szakaszokra bontva). 3) Egy statisztikai modell megtanulja, ezek hogyan " +
-      "mozgatták a hozamot 26 éven át, vármegyénként. 4) Az idei szezon időjárását " +
-      "behelyettesítve kapjuk a becslést. A modellt minden évre visszamértük: az " +
-      "aszályéveket (2003, 2007, 2012, 2022) iránytartóan jelezte előre.",
+      "szakaszokra bontva). 3) Regressziós modell számszerűsíti, hogy e mutatók " +
+      "egy-egy egységnyi változása átlagosan mennyivel mozdította el a hozamot a 26 év " +
+      "vármegyei adataiban. 4) Az idei szezon mutatóit behelyettesítve kapjuk a " +
+      "becslést. A modellt minden évre visszamértük: az aszályéveket (2003, 2007, " +
+      "2012, 2022) iránytartóan jelezte előre. Részletek: Szakmai leírás a lap alján.",
   },
 };
 
