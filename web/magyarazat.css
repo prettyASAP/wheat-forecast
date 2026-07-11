@@ -72,3 +72,27 @@
   padding: 3px 10px;
   background: #fff;
 }
+
+/* szakmai szekció (lenyitható) */
+.tech-section {
+  background: #fff;
+  border: 1px solid #dfe4e8;
+  border-radius: 10px;
+  padding: 4px 16px 6px;
+  margin-top: 22px;
+}
+.tech-section summary {
+  cursor: pointer;
+  padding: 10px 0;
+  list-style-position: inside;
+}
+.tech-section summary h2 { display: inline; font-size: 1.05rem; color: #2c3e50; }
+.tech-section[open] summary { border-bottom: 1px solid #eef1f3; margin-bottom: 8px; }
+.tech-section h3 { font-size: 0.92rem; color: #2c3e50; margin: 14px 0 6px; }
+.tech-section p, .tech-section li {
+  font-size: 0.85rem; color: #4a5a66; line-height: 1.6;
+}
+.tech-section ul { padding-left: 20px; margin: 4px 0 10px; }
+.tech-section li { margin-bottom: 5px; }
+.tech-section a { color: #5d7a94; }
+.bib li { font-size: 0.8rem; color: #5a6a75; }

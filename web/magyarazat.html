@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mi mit jelent? — Terméshozam-előrejelző</title>
   <link rel="stylesheet" href="style.css?v=10">
-  <link rel="stylesheet" href="magyarazat.css?v=1">
+  <link rel="stylesheet" href="magyarazat.css?v=2">
 </head>
 <body>
   <div class="glossary-list">
@@ -19,8 +19,120 @@
     <p class="glossary-lead">A becslés statisztikai modell eredménye, nem hivatalos
       adat. Adatforrások: KSH (vármegyei termésátlagok), Open-Meteo/ERA5 (időjárás,
       CC BY 4.0), Eurostat (termelői árak, NUTS3 határok © EuroGeographics).</p>
+
+    <details class="tech-section" id="szakmai">
+      <summary><h2>Szakmai leírás — mit és hogyan számol a szoftver</h2></summary>
+
+      <h3>1. Bemeneti adatok</h3>
+      <ul>
+        <li><b>Hozamadatok:</b> KSH STADAT 19.1.2.4–19.1.2.6 táblák (búza, kukorica,
+          árpa termelése vármegye szerint): betakarított terület (ha), betakarított
+          összes termés (t), termésátlag (kg/ha), 2000–2025, 19 vármegye + Budapest.
+          Az árpánál kizárólag az őszi árpa szekciót használjuk. A beolvasott
+          vármegyei összegeket a program minden futáskor egyezteti a KSH saját
+          „Ország összesen” soraival.</li>
+        <li><b>Időjárás:</b> ERA5 reanalízis (ECMWF; Hersbach et al. 2020), az
+          Open-Meteo archív API-n keresztül, vármegye-centroidokra, napi felbontásban:
+          T<sub>max</sub>, T<sub>min</sub>, T<sub>közép</sub>, csapadékösszeg és
+          FAO-56 referencia-párolgás (ET₀; Allen et al. 1998, Penman–Monteith).
+          Historikus idősor: 1999. október 1-től.</li>
+        <li><b>Termelői árak:</b> Eurostat apri_ap_crpouta (nemzeti éves termelői
+          átlagárak, HUF/100 kg → HUF/t), a legutolsó lezárt évjárat.</li>
+        <li><b>Térkép:</b> Eurostat GISCO NUTS3 2024 (1:20M).</li>
+      </ul>
+
+      <h3>2. Termésév és fenológiai ablakok</h3>
+      <p>Az Y termésév időjárási ablaka őszi vetésű terménynél Y−1. okt. 1. –
+        Y. jún. 30., kukoricánál Y. ápr. 1. – szept. 30. Az ablakokon belül
+        fejlődési szakaszokra bontott mutatókat számolunk:</p>
+      <ul>
+        <li><b>Búza:</b> vetés–kelés (okt. 1.–nov. 15.), téli nyugalom
+          (dec. 1.–febr. 28.), bokrosodás (márc. 1.–ápr. 30.), szemtelítődés
+          (máj. 1.–jún. 20.). <b>Őszi árpa</b> (korábbi vetés és érés): vetés–kelés
+          okt. 1.–nov. 10., bokrosodás márc. 1.–ápr. 20., kalászolás–szemtelítődés
+          ápr. 21.–jún. 10.</li>
+        <li><b>Kukorica:</b> vetés–kelés (ápr. 15.–máj. 31.), intenzív növekedés
+          (jún.), virágzás (júl.), szemtelítődés (aug. 1.–szept. 15.).</li>
+        <li><b>Mutatók:</b> hőösszeg GDD = Σ max(T<sub>közép</sub>, 0 °C)
+          (McMaster–Wilhelm 1997); hőstressznapok: T<sub>max</sub> &gt; 30 °C a
+          szemtelítődés alatt (búza/árpa; Porter–Gawith 1999), ill. &gt; 32 °C a
+          virágzáskor (kukorica; Schlenker–Roberts 2009); téli fagynapok:
+          T<sub>min</sub> &lt; −15 °C (dec.–febr.); vízmérleg: Σ(csapadék − ET₀)
+          ablakonként és a teljes szezonra; halmozott aszály-tag:
+          wb_deficit = min(WB<sub>szezon</sub> − vármegyei medián, 0) — csak a
+          szokásosnál nagyobb hiány számít, a többlet nem.</li>
+      </ul>
+
+      <h3>3. A modell</h3>
+      <p>Panel lineáris regresszió (vö. Lobell–Burke 2010): a függő változó a
+        vármegyei termésátlag (t/ha); magyarázók: 19 vármegye-fixhatás, közös
+        lineáris évtrend (a fajta- és technológiai fejlődés leválasztására), és
+        standardizált időjárási mutatók (a fenti ablakos GDD-k, csapadékok,
+        stresszmutatók, vízmérlegek — terményenként 10–11 változó). A becslés zárt
+        alakú legkisebb négyzetek, szelektív ridge-büntetéssel (α = 25, kizárólag
+        az időjárási blokkon; a fixhatás és a trend büntetlen). Minta: ~494
+        megfigyelés terményenként (19 vármegye × 26 év). Budapest a modellből
+        kizárva (elhanyagolható és zajos termőterület). A trend, a standardizálás
+        és a wb_deficit-medián kizárólag a mindenkori tanítómintából számolódik
+        (nincs adatszivárgás a tesztévből).</p>
+
+      <h3>4. Validáció (mért eredmények)</h3>
+      <p>Leave-one-year-out keresztvalidáció: a modellt 26-szor illesztjük, mindig
+        egy teljes év kihagyásával, és a kihagyott évre jelzünk előre.
+        Out-of-sample hibák (RMSE): <b>búza 0,53 t/ha (11,4%)</b>,
+        <b>kukorica 1,40 t/ha (22,9%)</b>, <b>őszi árpa 0,55 t/ha (12,1%)</b> —
+        mindhárom terménynél érdemben jobb, mint a naiv trend-előrejelzés
+        (0,68 / 1,73 / 0,69 t/ha). A 80%-os sáv (±1,282·reziduum-szórás) tényleges
+        utólagos lefedettsége 82 / 85 / 81%. Szezonközi („as-of”) visszatesztek
+        aszályévekre: 2003 és 2007 19/19 vármegyében helyes irány (búza), a 2022-es
+        kukorica-összeomlást az augusztus 1-i tudásállapot 19/19 vármegyében
+        jelezte. A teljes visszamérési riportok a nyílt forráskódú tárolóban:
+        <a href="https://github.com/prettyASAP/wheat-forecast/tree/main/reports">
+        github.com/prettyASAP/wheat-forecast/reports</a>.</p>
+
+      <h3>5. Napi élő becslés</h3>
+      <p>A szezon eltelt részére mért adat kerül a mutatókba (plusz legfeljebb 7 nap
+        meteorológiai előrejelzés). A hátralévő napokra 26 analóg-pálya készül: a
+        szezon maradékát rendre a 2000–2025-ös évek tényleges időjárásával
+        folytatjuk, és mindegyikre kiszámoljuk a modell előrejelzését. A
+        középbecslés az együttes átlaga (a nemlineáris wb_deficit-tag miatt az
+        „átlagos időjárás” behelyettesítése torzítana — Jensen-egyenlőtlenség); a
+        P10–P90 sáv az együttes 10. és 90. percentilise. A közölt 80%-os sáv szezon
+        közben a modellhiba és az időjárási bizonytalanság négyzetes összege:
+        σ = √(σ<sub>modell</sub>² + σ<sub>időjárás</sub>²). A rendszer minden nap
+        04:30 UTC-kor automatikusan újraszámol.</p>
+
+      <h3>6. Módszertani irodalom</h3>
+      <ul class="bib">
+        <li>Allen, R. G., Pereira, L. S., Raes, D., Smith, M. (1998): <i>Crop
+          evapotranspiration — Guidelines for computing crop water requirements.</i>
+          FAO Irrigation and Drainage Paper 56. (ET₀ referencia-párolgás)</li>
+        <li>Hersbach, H. et al. (2020): The ERA5 global reanalysis. <i>Quarterly
+          Journal of the Royal Meteorological Society</i> 146: 1999–2049.
+          (időjárási adatbázis)</li>
+        <li>McMaster, G. S., Wilhelm, W. W. (1997): Growing degree-days: one
+          equation, two interpretations. <i>Agricultural and Forest Meteorology</i>
+          87: 291–300. (hőösszeg-számítás)</li>
+        <li>Porter, J. R., Gawith, M. (1999): Temperatures and the growth and
+          development of wheat: a review. <i>European Journal of Agronomy</i>
+          10: 23–36. (búza hőmérsékleti küszöbei)</li>
+        <li>Schlenker, W., Roberts, M. J. (2009): Nonlinear temperature effects
+          indicate severe damages to U.S. crop yields under climate change.
+          <i>PNAS</i> 106: 15594–15598. (nemlineáris hőhatás, kukorica-küszöb)</li>
+        <li>Lobell, D. B., Burke, M. B. (2010): On the use of statistical models
+          to predict crop yield responses to climate change. <i>Agricultural and
+          Forest Meteorology</i> 150: 1443–1452. (statisztikai hozammodellezés
+          panel-regresszióval)</li>
+      </ul>
+      <p class="glossary-lead">A modell e szakirodalomban bevett megközelítéseket
+        követi; a konkrét implementáció (ablakhatárok, küszöbök, ridge-paraméter)
+        a magyar vármegyei adatokon végzett keresztvalidációval lett rögzítve.
+        A teljes forráskód nyilvános:
+        <a href="https://github.com/prettyASAP/wheat-forecast">
+        github.com/prettyASAP/wheat-forecast</a>.</p>
+    </details>
   </div>
-  <script src="magyarazat.js?v=1"></script>
+  <script src="magyarazat.js?v=2"></script>
   <script>
     (function () {
       var order = ["modszertan", "becsles", "szokasos", "tartomany", "tevedes",
