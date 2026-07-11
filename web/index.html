@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Terméshozam-előrejelző — Magyarország</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="style.css?v=9">
+  <link rel="stylesheet" href="style.css?v=10">
+  <link rel="stylesheet" href="magyarazat.css?v=1">
 </head>
 <body>
   <header>
@@ -23,6 +24,7 @@
       <option value="gdd">Hőösszeg</option>
     </select>
     <a id="table-link" href="tabla.html">Táblázat ↗</a>
+    <a id="glossary-link" href="magyarazat.html">Mi mit jelent?</a>
     <div id="meta">betöltés…</div>
   </header>
   <div id="headline"></div>
@@ -48,7 +50,7 @@
     <span id="legend-min">−20%</span>
     <div id="legend-bar"></div>
     <span id="legend-max">+20%</span>
-    <span class="legend-note" id="legend-note">anomália a trendhez képest</span>
+    <span class="legend-note" id="legend-note">eltérés a szokásos hozamtól</span><button class="info-btn" id="legend-info" data-explain="szokasos" aria-label="Magyarázat">i</button>
     <span class="legend-note"><span class="legend-swatch"></span>nincs becslés</span>
   </div>
 
@@ -57,10 +59,11 @@
     <a href="https://www.ksh.hu/stadat_files/mez/hu/mez0071.html">KSH</a> (vármegyei termésátlagok: búza, kukorica, őszi árpa) ·
     <a href="https://ec.europa.eu/eurostat/web/gisco">Eurostat GISCO</a> (NUTS3 határok, © EuroGeographics) ·
     <a href="https://ec.europa.eu/eurostat/databrowser/view/apri_ap_crpouta/">Eurostat</a> (termelői árak).
-    A becslés statisztikai modell, nem hivatalos adat.
+    A becslés statisztikai modell, nem hivatalos adat. · <a href="magyarazat.html">Mi mit jelent? — minden magyarázat</a>
   </footer>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-  <script src="app.js?v=9"></script>
+  <script src="magyarazat.js?v=1"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>

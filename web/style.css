@@ -46,7 +46,7 @@ header h1 { font-size: 1.15rem; }
   font-size: 0.85rem;
 }
 
-#table-link {
+#table-link, #glossary-link {
   font-size: 0.85rem;
   color: #5d7a94;
   text-decoration: none;
@@ -55,7 +55,7 @@ header h1 { font-size: 1.15rem; }
   padding: 3px 10px;
   background: #fff;
 }
-#table-link:hover { border-color: #5d7a94; }
+#table-link:hover, #glossary-link:hover { border-color: #5d7a94; }
 
 #headline {
   padding: 10px 16px 6px;
@@ -246,7 +246,7 @@ footer a { color: #5d7a94; }
     border-radius: 12px 12px 0 0;
     z-index: 20;
   }
-  #crop-switch button, #layer-select, #table-link { padding: 8px 14px; }
+  #crop-switch button, #layer-select, #table-link, #glossary-link { padding: 8px 14px; }
   #legend { flex-wrap: wrap; }
 }
 
