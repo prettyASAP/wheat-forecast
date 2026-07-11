@@ -3,14 +3,14 @@
 
   var COLUMNS = [
     { key: "county_name", label: "Vármegye", numeric: false },
-    { key: "predicted_yield_t_ha", label: "Becslés (t/ha)", numeric: true, decimals: 2 },
-    { key: "anomaly_pct", label: "Eltérés a szokásostól (%)", numeric: true, decimals: 1, anomaly: true },
-    { key: "low", label: "Legalább (t/ha)", numeric: true, decimals: 2, tip: "80%-os valószínűségi sáv alja" },
-    { key: "high", label: "Legfeljebb (t/ha)", numeric: true, decimals: 2, tip: "80%-os valószínűségi sáv teteje" },
-    { key: "prec_total_mm", label: "Csapadék (mm)", numeric: true, decimals: 1 },
-    { key: "wb_total_mm", label: "Vízmérleg (mm)", numeric: true, decimals: 1 },
-    { key: "heat_days", label: "Hőstressznapok", numeric: true, decimals: 0 },
-    { key: "gdd_total", label: "Hőösszeg", numeric: true, decimals: 0, tip: "a vetés óta felgyűlt meleg (fok x nap, GDD)" }
+    { key: "predicted_yield_t_ha", label: "Becslés (t/ha)", numeric: true, decimals: 2, explain: "becsles" },
+    { key: "anomaly_pct", label: "Eltérés a szokásostól (%)", numeric: true, decimals: 1, anomaly: true, explain: "szokasos" },
+    { key: "low", label: "Legalább (t/ha)", numeric: true, decimals: 2, tip: "80%-os valószínűségi sáv alja", explain: "tartomany" },
+    { key: "high", label: "Legfeljebb (t/ha)", numeric: true, decimals: 2, tip: "80%-os valószínűségi sáv teteje", explain: "tartomany" },
+    { key: "prec_total_mm", label: "Csapadék (mm)", numeric: true, decimals: 1, explain: "csapadek" },
+    { key: "wb_total_mm", label: "Vízmérleg (mm)", numeric: true, decimals: 1, explain: "vizmerleg" },
+    { key: "heat_days", label: "Hőstressznapok", numeric: true, decimals: 0, explain: "hostressz" },
+    { key: "gdd_total", label: "Hőösszeg", numeric: true, decimals: 0, tip: "a vetés óta felgyűlt meleg (fok x nap, GDD)", explain: "hoosszeg" }
   ];
 
   var state = {
@@ -39,6 +39,15 @@
     arrow.className = "arrow";
     arrow.setAttribute("aria-hidden", "true");
     th.appendChild(label);
+    if (col.explain) {
+      var infoBtn = document.createElement("button");
+      infoBtn.className = "info-btn";
+      infoBtn.dataset.explain = col.explain;
+      infoBtn.setAttribute("aria-label", "Magyarázat megnyitása");
+      infoBtn.textContent = "i";
+      th.appendChild(document.createTextNode(" "));
+      th.appendChild(infoBtn);
+    }
     th.appendChild(document.createTextNode(" "));
     th.appendChild(arrow);
     function toggleSort() {

@@ -54,12 +54,12 @@ header h1 { font-size: 1.15rem; }
 }
 #csv-btn:hover:not(:disabled) { background: #f0f3f5; }
 #csv-btn:disabled { opacity: 0.5; cursor: default; }
-#map-link {
+#map-link, #map-link2 {
   font-size: 0.85rem;
   color: #5d7a94;
   text-decoration: none;
 }
-#map-link:hover { text-decoration: underline; }
+#map-link:hover, #map-link2:hover { text-decoration: underline; }
 
 main { flex: 1; padding: 12px 16px; min-width: 0; }
 
@@ -147,7 +147,7 @@ footer {
 :focus-visible { outline: 2px solid #2874a6; outline-offset: 2px; }
 
 /* vissza-link gombosítása (konzisztencia a Táblázat-linkkel) */
-#map-link {
+#map-link, #map-link2 {
   font-size: 0.85rem;
   color: #5d7a94;
   text-decoration: none;
@@ -156,8 +156,8 @@ footer {
   padding: 3px 10px;
   background: #fff;
 }
-#map-link:hover { border-color: #5d7a94; }
+#map-link:hover, #map-link2:hover { border-color: #5d7a94; }
 
 @media (max-width: 640px) {
-  #crop-switch button, #map-link { padding: 8px 14px; }
+  #crop-switch button, #map-link, #map-link2 { padding: 8px 14px; }
 }

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi mit jelent? — Terméshozam-előrejelző</title>
+  <link rel="stylesheet" href="style.css?v=10">
+  <link rel="stylesheet" href="magyarazat.css?v=1">
+</head>
+<body>
+  <div class="glossary-list">
+    <a class="back-link" href="index.html">← Vissza a térképre</a>
+    <a class="back-link" href="tabla.html">Táblázat ↗</a>
+    <h1>Mi mit jelent?</h1>
+    <p class="glossary-lead">Minden adat és ábra magyarázata egy helyen — ugyanezek
+      a leírások érhetők el az oldalon a <span class="info-btn"
+      style="cursor:default">i</span> gombokkal.</p>
+    <div id="glossary"></div>
+    <p class="glossary-lead">A becslés statisztikai modell eredménye, nem hivatalos
+      adat. Adatforrások: KSH (vármegyei termésátlagok), Open-Meteo/ERA5 (időjárás,
+      CC BY 4.0), Eurostat (termelői árak, NUTS3 határok © EuroGeographics).</p>
+  </div>
+  <script src="magyarazat.js?v=1"></script>
+  <script>
+    (function () {
+      var order = ["modszertan", "becsles", "szokasos", "tartomany", "tevedes",
+        "forgatokonyvek", "helyezes", "ertek", "termesev", "idojaras_eddig",
+        "csapadek", "vizmerleg", "hostressz", "fagynapok", "hoosszeg",
+        "budapest", "frissites"];
+      var host = document.getElementById("glossary");
+      order.forEach(function (key) {
+        var g = GLOSSARY[key];
+        if (!g) return;
+        var item = document.createElement("div");
+        item.className = "glossary-item";
+        item.id = key;
+        var h = document.createElement("h2");
+        h.textContent = g.title;
+        var p = document.createElement("p");
+        p.textContent = g.text;
+        item.appendChild(h); item.appendChild(p);
+        host.appendChild(item);
+      });
+    })();
+  </script>
+</body>
+</html>
