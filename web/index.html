@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Terméshozam-előrejelző — Magyarország</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="style.css?v=7">
+  <link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
   <header>
@@ -16,15 +16,16 @@
       <button data-crop="barley" role="tab">Őszi árpa</button>
     </div>
     <select id="layer-select" aria-label="Térképréteg">
-      <option value="anomaly" selected>Hozam-anomália</option>
+      <option value="anomaly" selected>Eltérés a szokásostól (%)</option>
       <option value="wb">Vízmérleg (mm)</option>
       <option value="prec">Csapadék (mm)</option>
       <option value="heat">Hőstressznapok</option>
-      <option value="gdd">Hőösszeg (GDD)</option>
+      <option value="gdd">Hőösszeg</option>
     </select>
     <a id="table-link" href="tabla.html">Táblázat ↗</a>
     <div id="meta">betöltés…</div>
   </header>
+  <div id="headline"></div>
   <div id="national"></div>
 
   <main>
@@ -53,13 +54,13 @@
 
   <footer>
     Adatok: <a href="https://open-meteo.com/">Open-Meteo</a> (ERA5, CC BY 4.0) ·
-    <a href="https://www.ksh.hu/stadat_files/mez/hu/mez0071.html">KSH</a> (vármegyei búza-termésátlag) ·
+    <a href="https://www.ksh.hu/stadat_files/mez/hu/mez0071.html">KSH</a> (vármegyei termésátlagok: búza, kukorica, őszi árpa) ·
     <a href="https://ec.europa.eu/eurostat/web/gisco">Eurostat GISCO</a> (NUTS3 határok, © EuroGeographics) ·
     <a href="https://ec.europa.eu/eurostat/databrowser/view/apri_ap_crpouta/">Eurostat</a> (termelői árak).
     A becslés statisztikai modell, nem hivatalos adat.
   </footer>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>

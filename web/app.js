@@ -18,7 +18,7 @@ const COLORS = {
    vármegye-értékek min-max tartományát színezzük (relatív, országon belüli
    összevetés), a jelmagyarázat a tényleges min/max értéket mutatja. */
 const LAYERS = {
-  anomaly: { note: "anomália a trendhez képest (piros = elmaradás, kék = többlet)",
+  anomaly: { note: "eltérés a szokásos hozamtól (piros = elmaradás, kék = többlet)",
              unit: "%", fixed: [-20, 20],
              // piros–kék divergens: színtévesztő-biztos (a piros–zöld nem az)
              colors: ["#b03a2e", "#e67e22", "#f5e8c8", "#7fb3d5", "#2874a6"] },
@@ -96,7 +96,11 @@ function paintForLayer(layer, fc) {
     : Math.round(v).toLocaleString("hu-HU") + spec.unit;
   document.getElementById("legend-min").textContent = fmt(lo);
   document.getElementById("legend-max").textContent = fmt(hi);
-  document.getElementById("legend-note").textContent = spec.note;
+  let note = spec.note;
+  if (layer === "wb" && hi < 0) {
+    note += " — idén mindenhol hiány; a kék a KISEBB hiányt jelenti";
+  }
+  document.getElementById("legend-note").textContent = note;
   document.getElementById("legend-bar").style.background =
     `linear-gradient(to right, ${spec.colors.join(", ")})`;
   return expr;
@@ -117,11 +121,73 @@ function applyForecast(fc) {
     map.setFeatureState({ source: "counties", id }, state);
   }
   map.setPaintProperty("counties-fill", "fill-color", paintForLayer(currentLayer, fc));
+  const wxNote = fc.scenarios
+    ? `időjárási adat (mért + 7 napos előrejelzés): ${fc.weather_known_until}-ig`
+    : `az időjárási adat a teljes szezont lefedi`;
   document.getElementById("meta").textContent =
-    `${fc.crop} · ${fc.crop_year}-es termésév · frissítve: ${fc.updated_at}` +
-    ` · időjárás eddig: ${fc.weather_known_until}`;
+    `${fc.crop} · ${fc.crop_year}-es termésév · frissítve: ${fc.updated_at} · ${wxNote}`;
+  renderHeadline(fc);
   renderNational(fc);
   if (selectedId) showPanel(selectedId);
+}
+
+/* Vezetői headline: kimondott üzenet a számok helyett (infografikai review).
+   A mondat a national blokk mezőiből áll össze — ugyanez a sablon szolgálja
+   majd a napi PDF-jelentés fejlécét is. */
+function renderHeadline(fc) {
+  const el = document.getElementById("headline");
+  const n = fc.national;
+  if (!n) { el.innerHTML = ""; return; }
+  const a = n.anomaly_pct, v = n.value, sc = fc.scenarios;
+  const cap = fc.crop.charAt(0).toUpperCase() + fc.crop.slice(1);
+
+  let main;
+  if (a <= -3) {
+    main = `A ${esc(fc.crop)} idei termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül
+      várható, <b>${hu(Math.abs(a), 1)}%-kal a sokéves szokásos alatt</b>` +
+      (v ? ` — ez a ${v.price_year}-es árakon kb.
+       <b>${Math.round(Math.abs(v.trend_gap_bn_huf))} mrd Ft kiesés</b>.` : ".");
+  } else if (a >= 3) {
+    main = `A ${esc(fc.crop)} termése <b>${hu(a, 1)}%-kal a szokásos felett</b> várható
+      (${hu(n.predicted_yield_t_ha)} t/ha)` +
+      (v ? ` — kb. <b>${Math.round(v.trend_gap_bn_huf)} mrd Ft többlet</b>
+       a ${v.price_year}-es árakon.` : ".");
+  } else {
+    main = `${cap}: a termés a szokásos szint közelében alakul
+      (<b>${hu(n.predicted_yield_t_ha)} t/ha</b>, ${a > 0 ? "+" : ""}${hu(a, 1)}%) —
+      érdemi kiesés vagy többlet egyelőre nem látszik.`;
+  }
+
+  const clauses = [];
+  // ellentmondó előjelek feloldása (pl. kukorica: rossz tavalyi év + gyenge trend)
+  if (a < 0 && n.yoy_pct >= 3) {
+    clauses.push(`Jóval jobb, mint a tavalyi gyenge év
+      (+${hu(n.yoy_pct, 1)}% vs ${n.prev_year}), de a megszokott szinttől elmarad.`);
+  } else if (a > 0 && n.yoy_pct <= -3) {
+    clauses.push(`A tavalyi kiugró évnél gyengébb
+      (${hu(n.yoy_pct, 1)}% vs ${n.prev_year}), de a megszokott szint felett.`);
+  }
+  if (n.rank_from_worst <= 5) {
+    clauses.push(`Ha így marad, a ${n.rank_total} év
+      ${n.rank_from_worst}. leggyengébb éve lenne.`);
+  } else if (n.rank_from_worst >= n.rank_total - 4) {
+    clauses.push(`Ha így marad, a ${n.rank_total} év
+      ${n.rank_total - n.rank_from_worst + 1}. legerősebb éve lenne.`);
+  }
+
+  const cert = sc
+    ? `<span class="badge open">MÉG VÁLTOZHAT</span> A szezonból
+       <b>${sc.remaining_days} nap</b> van hátra — az időjárástól függően
+       <b>${hu(sc.national.p10)}–${hu(sc.national.p90)} t/ha</b> között alakulhat.`
+    : `<span class="badge final">VÉGLEGES KÖZELI</span> A szezon időjárása teljes
+       egészében ismert — a becslés már érdemben nem változik.`;
+  const err = n.model_error_pct
+    ? ` A becslés tipikus tévedése a múltban ±${hu(n.model_error_pct, 1)}% volt.`
+    : "";
+
+  el.innerHTML = `
+    <div class="headline-main">${main} ${clauses.join(" ")}</div>
+    <div class="headline-sub">${cert}${err}</div>`;
 }
 
 /* Delta-chip: színezett +/- badge */
@@ -192,22 +258,22 @@ function renderNational(fc) {
     <div class="kpi">
       <div class="kpi-label">Országos becslés · ${fc.crop_year}</div>
       <div class="kpi-value">${hu(n.predicted_yield_t_ha)} <small>t/ha</small></div>
-      <div class="kpi-sub">${chip(n.anomaly_pct, "%")} a trendhez ·
+      <div class="kpi-sub">${chip(n.anomaly_pct, "%")} a szokásoshoz ·
         ${chip(n.yoy_pct, "%")} vs ${n.prev_year}</div>
     </div>`);
   cards.push(`
     <div class="kpi">
-      <div class="kpi-label">Történelmi helyezés</div>
+      <div class="kpi-label">Hol áll ez az elmúlt évek közt?</div>
       <div class="kpi-viz">${rankStripSVG(fc)}</div>
-      <div class="kpi-sub">${n.rank_total} évből a ${n.rank_from_worst}. leggyengébb · szaggatott: trend (0%)</div>
+      <div class="kpi-sub">${n.rank_total} évből a ${n.rank_from_worst}. leggyengébb · a szaggatott vonal a szokásos szint</div>
     </div>`);
   if (sc) {
     cards.push(`
       <div class="kpi" title="${esc(sc.method)}">
-        <div class="kpi-label">Forgatókönyvek (P10–P90)</div>
+        <div class="kpi-label">Mi lehet még belőle? (${sc.remaining_days} nap hátra)</div>
         <div class="kpi-viz">${scenarioBandSVG(sc.national.p10, sc.national.p50,
                                                sc.national.p90, n.predicted_yield_t_ha)}</div>
-        <div class="kpi-sub">▲ becslés · függőleges vonal: medián pálya</div>
+        <div class="kpi-sub">▲ mostani becslés · vonal: legvalószínűbb kimenet · a sáv széle: kedvezőtlen/kedvező időjárás</div>
       </div>`);
   }
   if (v) {
@@ -215,8 +281,8 @@ function renderNational(fc) {
       <div class="kpi" title="${esc(v.note)}">
         <div class="kpi-label">Termelési érték</div>
         <div class="kpi-value">~${Math.round(v.production_value_bn_huf)} <small>mrd Ft</small></div>
-        <div class="kpi-sub">${chip(v.trend_gap_bn_huf, " mrd Ft")} trend-rés ·
-          ár (${v.price_year}): ${hu(v.price_huf_per_t / 1000, 1)} eFt/t</div>
+        <div class="kpi-sub">${chip(v.trend_gap_bn_huf, " mrd Ft")} ${v.trend_gap_bn_huf < 0 ? "kiesés" : "többlet"} a szokásoshoz ·
+          a legutolsó hivatalos áron (${v.price_year}): ${hu(v.price_huf_per_t / 1000, 1)} eFt/t</div>
       </div>`);
   }
   el.innerHTML = cards.join("");
@@ -299,8 +365,8 @@ function showPanel(nutsId) {
       </div>`;
   }
   const wxRows = `
-    <div class="chart-title">Időjárás eddig — a pötty a 20 vármegye tartományán belüli
-    helyet mutatja</div>
+    <div class="chart-title">Időjárás eddig — a pötty: hol áll a vármegye a 20 közül
+    (bal = legalacsonyabb, jobb = legmagasabb érték)</div>
     ${trackRow("Csapadék", wx.prec_total_mm, " mm", "#5499c7")}
     ${trackRow("Vízmérleg", wx.wb_total_mm, " mm", "#2874a6")}
     ${trackRow("Hőstressznapok", wx.heat_days, "", "#c0392b")}
@@ -329,15 +395,17 @@ function showPanel(nutsId) {
       && currentForecast.scenarios.counties[nutsId];
     const scRow = scc
       ? `<div class="band" title="${esc(currentForecast.scenarios.method)}">
-         időjárás-forgatókönyvek (P10–P90):</div>
+         ha az időjárás a betakarításig kedvezőtlen: ${hu(scc.p10)}, ha kedvező: ${hu(scc.p90)} t/ha</div>
          <div class="kpi-viz">${scenarioBandSVG(scc.p10, scc.p50, scc.p90,
                                                 c.predicted_yield_t_ha, 250)}</div>`
       : "";
     body.innerHTML = `
       <div class="big-number">${hu(c.predicted_yield_t_ha)} t/ha</div>
-      <div class="band">80%-os sáv${currentForecast.scenarios ? " (modell + hátralévő időjárás)" : " (modell)"}: ${hu(c.low)} – ${hu(c.high)} t/ha</div>
+      <div class="band" title="80%-os valószínűségi sáv${currentForecast.scenarios ? ' — a modell hibája és a hátralévő időjárás bizonytalansága együtt' : ''}">Várható tartomány: ${hu(c.low)} – ${hu(c.high)} t/ha — 10-ből 8 esetben ebbe esik</div>
       ${scRow}
-      <div class="anomaly ${cls}">${sign}${hu(c.anomaly_pct, 1)}% a trendhez képest</div>
+      <div class="anomaly ${cls}">${sign}${hu(c.anomaly_pct, 1)}% a szokásoshoz képest</div>
+      ${c.value_bn_huf !== undefined ? `<div class="band">termelési érték: ~${hu(c.value_bn_huf, 1)} mrd Ft
+        (${c.trend_gap_bn_huf < 0 ? "kiesés" : "többlet"} a szokásoshoz: ${hu(Math.abs(c.trend_gap_bn_huf), 1)} mrd Ft)</div>` : ""}
       ${chart}${wxRows}`;
   }
   document.getElementById("panel").classList.remove("hidden");

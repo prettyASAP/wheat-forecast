@@ -4,13 +4,13 @@
   var COLUMNS = [
     { key: "county_name", label: "Vármegye", numeric: false },
     { key: "predicted_yield_t_ha", label: "Becslés (t/ha)", numeric: true, decimals: 2 },
-    { key: "anomaly_pct", label: "Anomália (%)", numeric: true, decimals: 1, anomaly: true },
-    { key: "low", label: "Sáv alja", numeric: true, decimals: 2 },
-    { key: "high", label: "Sáv teteje", numeric: true, decimals: 2 },
+    { key: "anomaly_pct", label: "Eltérés a szokásostól (%)", numeric: true, decimals: 1, anomaly: true },
+    { key: "low", label: "Legalább (t/ha)", numeric: true, decimals: 2, tip: "80%-os valószínűségi sáv alja" },
+    { key: "high", label: "Legfeljebb (t/ha)", numeric: true, decimals: 2, tip: "80%-os valószínűségi sáv teteje" },
     { key: "prec_total_mm", label: "Csapadék (mm)", numeric: true, decimals: 1 },
     { key: "wb_total_mm", label: "Vízmérleg (mm)", numeric: true, decimals: 1 },
     { key: "heat_days", label: "Hőstressznapok", numeric: true, decimals: 0 },
-    { key: "gdd_total", label: "GDD", numeric: true, decimals: 0 }
+    { key: "gdd_total", label: "Hőösszeg", numeric: true, decimals: 0, tip: "a vetés óta felgyűlt meleg (fok x nap, GDD)" }
   ];
 
   var state = {
@@ -32,6 +32,7 @@
   COLUMNS.forEach(function (col) {
     var th = document.createElement("th");
     th.dataset.key = col.key;
+    if (col.tip) th.title = col.tip;
     var label = document.createElement("span");
     label.textContent = col.label;
     var arrow = document.createElement("span");

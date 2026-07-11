@@ -224,6 +224,14 @@ def scenario_ensemble(season_daily: pd.DataFrame, known_until, crop: str,
     return payload, ens.mean(axis=1), ens.std(axis=1, ddof=1)
 
 
+def _load_price(crop: str) -> dict | None:
+    """A termény legutolsó hivatalos termelői ára a prices.json-ból (vagy None)."""
+    prices_path = config.WEB_DATA / "prices.json"
+    if not prices_path.exists():
+        return None
+    return json.loads(prices_path.read_text(encoding="utf-8"))["crops"].get(crop)
+
+
 def national_block(crop: str, crop_year: int, rows: list[dict],
                    df_model: pd.DataFrame) -> dict:
     """Országos fejléc-mutatók a forecast JSON-ba.
@@ -271,14 +279,17 @@ def national_block(crop: str, crop_year: int, rows: list[dict],
         "rank_from_worst": weaker + 1,
         "rank_total": n_total,
         "weights": f"{last_year}. évi vármegyei betakarított területek, Budapest nélkül",
+        # a bizalmi kérdésre ("mekkorát szokott tévedni?"): a LOYO out-of-sample
+        # hiba a jelenlegi trend-szint százalékában
+        "model_error_pct": round(100 * json.loads(
+            loyo_summary_json(crop).read_text())["oos_std"] / trend_now, 1),
     }
 
     # Forintosítás (ha van árfájl): termelési érték és a trendtől való elmaradás
     # értéke, a LEGUTÓBBI elérhető évi termelői átlagáron (az ár-évjárat jelölve).
     # Mértékegységek: (t/ha) x (ha) = t; t x (HUF/t) = HUF; /1e9 = mrd HUF.
-    prices_path = config.WEB_DATA / "prices.json"
-    if prices_path.exists():
-        prices = json.loads(prices_path.read_text(encoding="utf-8"))["crops"].get(crop)
+    prices = _load_price(crop)
+    if True:
         if prices:
             area_total = float(w.sum())
             price = prices["latest_huf_per_t"]
@@ -346,6 +357,13 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
             return float(np.sqrt(oos_std ** 2 + float(ens_std[nid]) ** 2))
         return float(oos_std)
 
+    # vármegyénkénti forintosítás (érthetőség-teszt kérése: a döntéshozó első
+    # kérdése megyei szinten is a pénz) — a legutóbbi ismert évi területtel és a
+    # legutolsó hivatalos árral, mint az országos blokkban
+    last_year = int(df["crop_year"].max())
+    county_area = df[df["crop_year"] == last_year].set_index("nuts_id")["area_ha"]
+    price_info = _load_price(crop)
+
     pred_map = dict(zip(model_feats["nuts_id"], zip(preds, baseline)))
     for _, c in counties.sort_values("nuts_id").iterrows():
         f = feats_todate[feats_todate["nuts_id"] == c["nuts_id"]].iloc[0]
@@ -358,14 +376,20 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
         }
         if c["nuts_id"] in pred_map:  # Budapest kimarad a modellből
             p, b = pred_map[c["nuts_id"]]
-            rows.append({
+            row = {
                 "nuts_id": c["nuts_id"], "county_name": c["county_name"],
                 "predicted_yield_t_ha": round(float(p), 2),
                 "anomaly_pct": round(100 * (p - b) / b, 1),
                 "low": round(float(p - z * _sigma_tot(c["nuts_id"])), 2),
                 "high": round(float(p + z * _sigma_tot(c["nuts_id"])), 2),
                 "weather_todate": wx,
-            })
+            }
+            if price_info and c["nuts_id"] in county_area.index:
+                area = float(county_area[c["nuts_id"]])
+                price = price_info["latest_huf_per_t"]
+                row["value_bn_huf"] = round(p * area * price / 1e9, 1)
+                row["trend_gap_bn_huf"] = round((p - b) * area * price / 1e9, 1)
+            rows.append(row)
         else:
             rows.append({
                 "nuts_id": c["nuts_id"], "county_name": c["county_name"],
