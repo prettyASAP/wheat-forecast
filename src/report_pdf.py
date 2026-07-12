@@ -23,9 +23,11 @@ from datetime import date, datetime
 
 import matplotlib
 matplotlib.use("Agg")
+import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.colors import LinearSegmentedColormap, Normalize
 from matplotlib.patches import FancyBboxPatch, Rectangle
 
 from src import config
@@ -192,6 +194,43 @@ def card(page_ax, x, y, w, h, fc_color=CARD_BG):
         transform=page_ax.transAxes, zorder=1))
 
 
+ANOM_COLORS = ["#b03a2e", "#e67e22", "#f5e8c8", "#7fb3d5", "#2874a6"]
+ANOM_CMAP = LinearSegmentedColormap.from_list("anom", ANOM_COLORS)
+ANOM_NORM = Normalize(vmin=-20, vmax=20)
+NO_DATA = "#d5d8dc"
+
+
+def draw_anom_map(fig, rect, fc: dict, gdf, focus_outline: bool = True):
+    """Anomália-choropleth (piros-kék, Budapest szürke); a fókusz-vármegyék
+    vastagabb körvonalat kapnak — vizuális kapocs a fókusz-táblához."""
+    ax = fig.add_axes(rect)
+    anoms = {c["nuts_id"]: (c["anomaly_pct"] if c["predicted_yield_t_ha"] is not None
+                            else None) for c in fc["counties"]}
+    g = gdf.copy()
+    g["anom"] = g["NUTS_ID"].map(anoms)
+    g[g["anom"].isna()].plot(ax=ax, color=NO_DATA, edgecolor="#7f8c8d", linewidth=0.4)
+    g[g["anom"].notna()].plot(ax=ax, column="anom", cmap=ANOM_CMAP, norm=ANOM_NORM,
+                              edgecolor="#7f8c8d", linewidth=0.4)
+    if focus_outline:
+        focus_ids = {c["nuts_id"] for c in fc["counties"]
+                     if c["county_name"] in config.REPORT_FOCUS_COUNTIES}
+        sel = g[g["NUTS_ID"].isin(focus_ids)]
+        if len(sel):
+            sel.plot(ax=ax, facecolor="none", edgecolor=INK, linewidth=1.3)
+    ax.set_axis_off()
+    return ax
+
+
+def draw_anom_colorbar(fig, rect):
+    cax = fig.add_axes(rect)
+    cb = fig.colorbar(plt.cm.ScalarMappable(norm=ANOM_NORM, cmap=ANOM_CMAP),
+                      cax=cax, orientation="horizontal")
+    cb.set_ticks([-20, -10, 0, 10, 20])
+    cb.ax.set_xticklabels(["−20%", "−10%", "0", "+10%", "+20%"], fontsize=FS)
+    cb.ax.tick_params(length=2, colors=MUTED)
+    cb.outline.set_edgecolor(BORDER)
+
+
 def pill(page_ax, x, y, text, live: bool, ha="left"):
     col, bg = ("#9a6a12", "#fdf3e0") if live else (GREEN, "#e8f6ee")
     page_ax.text(x, y, f" {text} ", fontsize=FS, color=col, fontweight="bold",
@@ -256,7 +295,7 @@ def crop_column(fig, page, x, w, fc: dict, d: dict | None):
     n = fc["national"]
     v = n.get("value")
     live = fc.get("scenarios") is not None
-    top, height = 0.822, 0.405
+    top, height = 0.838, 0.335
     card(page, x, top - height, w, height)
     pad = 0.014
     cx = x + pad
@@ -317,9 +356,8 @@ def crop_column(fig, page, x, w, fc: dict, d: dict | None):
         page.text(cx, y, f"{v['price_year']}-es áron — indikatív",
                   fontsize=FS, color=LIGHT, va="top", style="italic")
         y -= 0.022
-    # 8. rövid headline
-    sh = textwrap.wrap(short_headline(fc), 26)[:3]
-    page.text(cx, y, "\n".join(sh), fontsize=FS, color=INK, va="top", linespacing=1.3)
+    # (a rövid headline kikerült: számai — eltérés % és mrd Ft — fent szerepelnek;
+    # a felszabaduló hely a térkép-soré)
 
 
 def fc_crop_key(fc: dict) -> str:
@@ -361,7 +399,7 @@ def draw_focus_table(page, y_top: float, fcs: dict[str, dict]) -> float:
         pad = (hi - lo) * 0.06 or 0.3
         scales[fc["crop"]] = (lo - pad, hi + pad)
 
-    line_h = 0.021
+    line_h = 0.019
     # oszlop-x pozíciók (jobbra zárt számok)
     x_name, x_pred, x_anom, x_vs = M + 0.012, M + 0.28, M + 0.40, M + 0.585
     bar_x0, bar_x1 = M + 0.615, 1 - M - 0.012
@@ -401,7 +439,7 @@ def draw_focus_table(page, y_top: float, fcs: dict[str, dict]) -> float:
             page.scatter([X(rec["predicted_yield_t_ha"])], [bar_y], s=32,
                          color=INK, transform=page.transAxes, zorder=4)
             y -= line_h
-        y -= 0.007
+        y -= 0.004
     page.text(M, y, "sáv: várható tartomány (80%), terményenként közös skálán · "
               "pont: becslés · vonás: országos", fontsize=FS, color=LIGHT, va="top")
     return y - line_h
@@ -411,7 +449,7 @@ def draw_focus_table(page, y_top: float, fcs: dict[str, dict]) -> float:
 # 1. oldal — vezetői összefoglaló
 # ---------------------------------------------------------------------------- #
 def draw_summary_page(pdf: PdfPages, fcs: dict[str, dict], deltas: dict,
-                      total_pages: int) -> None:
+                      total_pages: int, gdf=None) -> None:
     fig = plt.figure(figsize=(8.27, 11.69))
     page = fig.add_axes([0, 0, 1, 1]); page.set_axis_off()
     page.set_xlim(0, 1); page.set_ylim(0, 1)
@@ -453,11 +491,24 @@ def draw_summary_page(pdf: PdfPages, fcs: dict[str, dict], deltas: dict,
     for i, (crop, fc) in enumerate(fcs.items()):
         crop_column(fig, page, M + i * (col_w + 0.016), col_w, fc, deltas[crop])
 
+    # térkép-sor: terményenként egy mini-choropleth, közös skálával
+    page.text(M, 0.496, "TERÜLETI KÉP — eltérés a szokásostól (%)",
+              fontsize=13, fontweight="bold", color=LIGHT, va="top")
+    if gdf is not None:
+        for i, (crop, fc) in enumerate(fcs.items()):
+            mx = M + i * (col_w + 0.016)
+            draw_anom_map(fig, [mx + 0.01, 0.362, col_w - 0.02, 0.112], fc, gdf)
+            page.text(mx + col_w / 2, 0.360, fc["crop"], fontsize=FS,
+                      color=MUTED, va="top", ha="center")
+        draw_anom_colorbar(fig, [M + 0.02, 0.339, 0.30, 0.009])
+        page.text(M + 0.36, 0.348, "szürke: nincs becslés · vastag keret: "
+                  "fókusz-vármegye", fontsize=FS, color=LIGHT, va="top")
+
     # fókusz-vármegye tábla
-    draw_focus_table(page, 0.395, fcs)
+    draw_focus_table(page, 0.316, fcs)
 
     # láblécsor
-    page.text(M, 0.018, f"1/{total_pages} · Terméshozam-előrejelző · generálva: "
+    page.text(M, 0.010, f"1/{total_pages} · Terméshozam-előrejelző · generálva: "
               f"{datetime.now().strftime('%Y-%m-%d %H:%M')} · Módszertan: utolsó oldal.",
               fontsize=FS, color=LIGHT, va="bottom")
     pdf.savefig(fig)
@@ -468,7 +519,7 @@ def draw_summary_page(pdf: PdfPages, fcs: dict[str, dict], deltas: dict,
 # 2+. oldal — "Ami még él" (futó szezonú termény)
 # ---------------------------------------------------------------------------- #
 def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
-                   is_last: bool) -> None:
+                   is_last: bool, gdf=None) -> None:
     crop = fc_crop_key(fc)
     n = fc["national"]
     v = n.get("value")
@@ -626,6 +677,19 @@ def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
         "A vízmérleg = csapadék − párolgás a szezon eddigi részében; "
         "minél negatívabb, annál nagyobb az aszálynyomás.", 82),
         fontsize=FS, color=MUTED, va="top", linespacing=1.3)
+    y -= 0.052
+
+    # területi kép: kompakt anomália-térkép a lábléc fölé
+    if gdf is not None:
+        page.text(M, y, "TERÜLETI KÉP — eltérés a szokásostól (%)",
+                  fontsize=13, fontweight="bold", color=LIGHT, va="top")
+        map_h = max(0.10, y - 0.155)          # a lábléc (0.118) fölött marad
+        draw_anom_map(fig, [M, y - 0.022 - map_h, 0.36, map_h], fc, gdf)
+        draw_anom_colorbar(fig, [0.50, y - 0.055, 0.30, 0.009])
+        page.text(0.50, y - 0.075, textwrap.fill(
+            "Vastag keret: fókusz-vármegyék. Szürke: nincs becslés (Budapest). "
+            "A színskála a weboldal térképével azonos.", 44),
+            fontsize=FS, color=MUTED, va="top", linespacing=1.35)
 
     # módszertani lábléc — csak a legutolsó oldalon
     if is_last:
@@ -651,16 +715,17 @@ def main() -> None:
     JELENTES_DIR.mkdir(parents=True, exist_ok=True)
 
     fcs = {crop: load_fc(crop) for crop in config.CROPS}
+    gdf = gpd.read_file(config.WEB_DATA / "nuts3_hu.geojson")
     deltas = {crop: daily_delta(crop) for crop in config.CROPS}
     live_crops = [c for c, fc in fcs.items() if fc.get("scenarios")]
     total_pages = 1 + len(live_crops)
 
     out = JELENTES_DIR / f"jelentes_{today}.pdf"
     with PdfPages(out) as pdf:
-        draw_summary_page(pdf, fcs, deltas, total_pages)
+        draw_summary_page(pdf, fcs, deltas, total_pages, gdf)
         for i, crop in enumerate(live_crops):
             draw_live_page(pdf, fcs[crop], 2 + i, total_pages,
-                           is_last=(i == len(live_crops) - 1))
+                           is_last=(i == len(live_crops) - 1), gdf=gdf)
         info = pdf.infodict()
         info["Title"] = f"Napi vezetői jelentés — {today}"
         info["Author"] = "Terméshozam-előrejelző (statisztikai modell)"
