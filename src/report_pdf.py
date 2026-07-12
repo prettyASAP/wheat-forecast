@@ -1,18 +1,18 @@
-"""Napi vezetői PDF-jelentés (terminál-bővítés: PDF-kör).
+"""Napi vezetői PDF-jelentés — 2 oldalas szerkezet (ügyfél-igényfelmérés + UX-spec).
 
-Terményenként egy A4-es oldal, az infografikai szerkesztő által megadott
-szerkezetben: headline-mondat + bizonyosság-jelvény → 4 kulcsszám → anomália-
-térkép + történelmi pöttysor (+ forgatókönyv-szalag szezon közben) → top/bottom
-vármegyék → időjárás-driver mondat → napi változás → lábjegyzet.
+1. oldal — Vezetői összefoglaló: NAPI VÁLTOZÁS sáv (a vezető fő kérdése) →
+  három termény-oszlop (becslés, eltérés, tegnap óta, sparkline, érték) →
+  fókusz-vármegyék táblája sáv-grafikával.
+2+. oldal — "Ami még él": minden futó szezonú terményre (most: kukorica):
+  teljes headline → forgatókönyvek t/ha + TONNA + FORINT táblával →
+  napi becslés-trend P10–P90 sávval → fókusz-vármegyék kilátása/időjárása →
+  módszertani lábléc (csak a legutolsó oldalon).
 
-Elvek:
-  - minden szöveg >= 12 pt (a felhasználó kifejezett kérése),
-  - minden elem fix rácspozíción (figure-koordináták), nincs átfedés,
-  - ugyanazok a számok és mondatok, mint a weben (a headline-logika a
-    web/app.js renderHeadline portja; a szövegek a fogalomtárral konzisztensek).
+Elvek: minden betű >= 12 pt; dinamikus y-folyás minden változó szöveg után;
+szín soha nem egyetlen jelzés (előjel + szó mindig); semmi hardcode (ár,
+terület, fókuszlista a JSON-ból/configból).
 
 Kimenet: web/data/jelentes/jelentes_YYYY-MM-DD.pdf + web/data/jelentes_latest.pdf
-
 Futtatás:  python -m src.report_pdf
 """
 from __future__ import annotations
@@ -23,12 +23,10 @@ from datetime import date, datetime
 
 import matplotlib
 matplotlib.use("Agg")
-import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
-from matplotlib.colors import LinearSegmentedColormap, Normalize
-from matplotlib.patches import FancyBboxPatch
+from matplotlib.patches import FancyBboxPatch, Rectangle
 
 from src import config
 
@@ -41,15 +39,16 @@ LIGHT = "#6e7f8b"
 RED = "#c0392b"
 GREEN = "#17693a"
 BLUE = "#2874a6"
+BAND = "#7fb3d5"
 BORDER = "#dfe4e8"
 CARD_BG = "#fbfcfd"
-NO_DATA = "#d5d8dc"
-ANOM_COLORS = ["#b03a2e", "#e67e22", "#f5e8c8", "#7fb3d5", "#2874a6"]
+INNER_BG = "#f2f5f7"
 
-FS = 12          # minimum betűméret (kérés: semmi nem lehet kisebb)
-FS_KPI = 19      # kulcsszámok
-FS_HEAD = 14.5   # headline
-FS_TITLE = 21    # oldalcím
+FS = 12          # minimum betűméret — SEMMI nem lehet kisebb
+FS_MID = 14
+FS_BIG = 16
+FS_KPI = 19
+FS_TITLE = 21
 
 plt.rcParams.update({
     "font.family": "DejaVu Sans",
@@ -59,17 +58,67 @@ plt.rcParams.update({
 })
 
 JELENTES_DIR = config.WEB_DATA / "jelentes"
+M = 0.06  # oldalmargó
 
 
 def hu(v: float, d: int = 2) -> str:
     return f"{v:.{d}f}".replace(".", ",")
 
 
+def signed(v: float, d: int = 2, unit: str = "") -> str:
+    """Előjeles magyar szám; a -0,0 elkerülésével."""
+    if abs(v) < 0.5 * 10 ** (-d):
+        return f"0{',' + '0' * d if d else ''}{unit}"
+    return f"{'+' if v > 0 else '−'}{hu(abs(v), d)}{unit}"
+
+
 # ---------------------------------------------------------------------------- #
-# Headline — a web/app.js renderHeadline() portja (ugyanaz az üzenet)
+# Adatbetöltés
+# ---------------------------------------------------------------------------- #
+def load_fc(crop: str) -> dict:
+    return json.loads((config.WEB_DATA / f"forecast_{crop}.json").read_text(encoding="utf-8"))
+
+
+def history_series(crop: str, max_days: int = 14) -> list[dict]:
+    """Napi snapshotok idősora: [{date, pred, p10, p90, value_bn}] (hiányzót kihagyja)."""
+    hdir = config.WEB_DATA / "history" / crop
+    out = []
+    for p in sorted(hdir.glob("????-??-??.json"))[-max_days:]:
+        d = json.loads(p.read_text(encoding="utf-8"))
+        nat = d.get("national") or {}
+        if nat.get("predicted_yield_t_ha") is None:
+            continue
+        sc = (d.get("scenarios") or {}).get("national") or {}
+        out.append({
+            "date": p.stem,
+            "pred": nat["predicted_yield_t_ha"],
+            "p10": sc.get("p10"),
+            "p90": sc.get("p90"),
+            "value_bn": (nat.get("value") or {}).get("production_value_bn_huf"),
+        })
+    return out
+
+
+def daily_delta(crop: str) -> dict | None:
+    """Δ tegnaphoz: {d_tha, d_bn, prev_date} vagy None (első nap / nem összevethető)."""
+    hs = history_series(crop, max_days=30)
+    if len(hs) < 2:
+        return None
+    prev, cur = hs[-2], hs[-1]
+    d = {
+        "d_tha": cur["pred"] - prev["pred"],
+        "prev_date": prev["date"],
+        "cur_date": cur["date"],
+    }
+    if cur.get("value_bn") is not None and prev.get("value_bn") is not None:
+        d["d_bn"] = cur["value_bn"] - prev["value_bn"]
+    return d
+
+
+# ---------------------------------------------------------------------------- #
+# Headline — a web renderHeadline() portja (teljes változat, 2. oldalra)
 # ---------------------------------------------------------------------------- #
 def headline_text(fc: dict) -> tuple[str, str, str]:
-    """(főmondat, bizonyosság-jelvény szövege, bizonyosság-mondat)"""
     n = fc["national"]
     a = n["anomaly_pct"]
     v = n.get("value")
@@ -79,23 +128,17 @@ def headline_text(fc: dict) -> tuple[str, str, str]:
     if a <= -3:
         main = (f"A {crop} idei termése {hu(n['predicted_yield_t_ha'])} t/ha körül "
                 f"várható, {hu(abs(a), 1)}%-kal a sokéves szokásos alatt")
-        if v:
-            main += (f" — ez a {v['price_year']}-es árakon kb. "
-                     f"{abs(v['trend_gap_bn_huf']):.0f} mrd Ft kiesés.")
-        else:
-            main += "."
+        main += (f" — ez a {v['price_year']}-es árakon kb. "
+                 f"{abs(v['trend_gap_bn_huf']):.0f} mrd Ft kiesés." if v else ".")
     elif a >= 3:
         main = (f"A {crop} termése {hu(a, 1)}%-kal a szokásos felett várható "
                 f"({hu(n['predicted_yield_t_ha'])} t/ha)")
-        if v:
-            main += (f" — kb. {v['trend_gap_bn_huf']:.0f} mrd Ft többlet "
-                     f"a {v['price_year']}-es árakon.")
-        else:
-            main += "."
+        main += (f" — kb. {v['trend_gap_bn_huf']:.0f} mrd Ft többlet "
+                 f"a {v['price_year']}-es árakon." if v else ".")
     else:
         main = (f"A {crop} termése a szokásos szint közelében alakul "
-                f"({hu(n['predicted_yield_t_ha'])} t/ha, {a:+.1f}%) — érdemi "
-                "kiesés vagy többlet egyelőre nem látszik.").replace(".", ",", 0)
+                f"({hu(n['predicted_yield_t_ha'])} t/ha, {signed(a, 1)}%) — érdemi "
+                "kiesés vagy többlet egyelőre nem látszik.")
 
     if a < 0 and n["yoy_pct"] >= 3:
         main += (f" Jóval jobb, mint a tavalyi gyenge év (+{hu(n['yoy_pct'], 1)}% "
@@ -111,7 +154,7 @@ def headline_text(fc: dict) -> tuple[str, str, str]:
                  f"{n['rank_total'] - n['rank_from_worst'] + 1}. legerősebb éve lenne.")
 
     if sc:
-        badge = "MÉG VÁLTOZHAT"
+        badge = f"MÉG VÁLTOZHAT · {sc['remaining_days']} nap"
         cert = (f"A szezonból {sc['remaining_days']} nap van hátra — az időjárástól "
                 f"függően {hu(sc['national']['p10'])}–{hu(sc['national']['p90'])} t/ha "
                 "között alakulhat.")
@@ -124,292 +167,481 @@ def headline_text(fc: dict) -> tuple[str, str, str]:
     return main, badge, cert
 
 
-def weather_driver_text(fc: dict) -> str:
-    """Országos időjárás-összefoglaló mondat a vármegyei adatokból."""
-    est = [c for c in fc["counties"] if c["predicted_yield_t_ha"] is not None]
-    wbs = [(c["weather_todate"]["wb_total_mm"], c["county_name"]) for c in est]
-    precs = [c["weather_todate"]["prec_total_mm"] for c in est]
-    heats = [(c["weather_todate"]["heat_days"], c["county_name"]) for c in est]
-    wb_min, wb_min_c = min(wbs)
-    wb_max, _ = max(wbs)
-    heat_max, heat_max_c = max(heats)
-    txt = (f"Vízmérleg (csapadék − párolgás) a szezon eddigi részében: "
-           f"{hu(wb_min, 0)} … {hu(wb_max, 0)} mm vármegyénként — a legszárazabb "
-           f"{wb_min_c}. Csapadék: {hu(min(precs), 0)}–{hu(max(precs), 0)} mm.")
-    if heat_max > 0:
-        txt += f" A legtöbb hőstressznap: {heat_max_c} ({heat_max} nap)."
+def short_headline(fc: dict) -> str:
+    """Rövid, 1. oldali headline (UX-spec 2/8. pont)."""
+    n = fc["national"]
+    a = n["anomaly_pct"]
+    v = n.get("value")
+    if abs(a) < 3:
+        return "a szokásos szint közelében."
+    gap = abs(v["trend_gap_bn_huf"]) if v else None
+    word = "kiesés" if a < 0 else "többlet"
+    txt = f"{signed(a, 1)}% a szokásoshoz"
+    if gap is not None:
+        txt += f" — kb. {gap:.0f} mrd Ft {word}."
     return txt
-
-
-def delta_text(crop: str, fc: dict) -> str:
-    """Napi változás az előző snapshothoz képest (history/)."""
-    hdir = config.WEB_DATA / "history" / crop
-    dates = sorted(p.stem for p in hdir.glob("????-??-??.json"))
-    if len(dates) < 2:
-        return "Változás tegnaphoz képest: első jelentési nap."
-    prev = json.loads((hdir / f"{dates[-2]}.json").read_text(encoding="utf-8"))
-    prev_nat = prev.get("national", {}).get("predicted_yield_t_ha")
-    if prev_nat is None:
-        return "Változás tegnaphoz képest: nem összevethető (formátumváltás)."
-    d = fc["national"]["predicted_yield_t_ha"] - prev_nat
-    if abs(d) < 0.005:
-        return f"Változás tegnaphoz ({dates[-2]}) képest: nincs érdemi változás."
-    return (f"Változás tegnaphoz ({dates[-2]}) képest: "
-            f"{hu(d, 2) if d < 0 else '+' + hu(d, 2)} t/ha "
-            f"({'javulás' if d > 0 else 'romlás'}).")
 
 
 # ---------------------------------------------------------------------------- #
 # Rajzoló segédek
 # ---------------------------------------------------------------------------- #
-def card(page_ax, x, y, w, h):
+def card(page_ax, x, y, w, h, fc_color=CARD_BG):
     page_ax.add_patch(FancyBboxPatch(
         (x, y), w, h, boxstyle="round,pad=0.004,rounding_size=0.008",
-        facecolor=CARD_BG, edgecolor=BORDER, linewidth=0.8,
+        facecolor=fc_color, edgecolor=BORDER, linewidth=0.9,
         transform=page_ax.transAxes, zorder=1))
 
 
-KPI_H = 0.086
-
-def kpi(page_ax, x, y, w, label, value, sub, sub_color=MUTED):
-    card(page_ax, x, y, w, KPI_H)
-    page_ax.text(x + 0.012, y + KPI_H - 0.012, label.upper(), fontsize=FS,
-                 color=LIGHT, va="top", transform=page_ax.transAxes)
-    page_ax.text(x + 0.012, y + KPI_H / 2 - 0.004, value, fontsize=FS_KPI,
-                 color=INK, fontweight="bold", va="center",
-                 transform=page_ax.transAxes)
-    page_ax.text(x + 0.012, y + 0.013, sub, fontsize=FS, color=sub_color,
-                 va="center", transform=page_ax.transAxes)
+def pill(page_ax, x, y, text, live: bool, ha="left"):
+    col, bg = ("#9a6a12", "#fdf3e0") if live else (GREEN, "#e8f6ee")
+    page_ax.text(x, y, f" {text} ", fontsize=FS, color=col, fontweight="bold",
+                 ha=ha, va="top", transform=page_ax.transAxes,
+                 bbox=dict(boxstyle="round,pad=0.32", fc=bg, ec=col, lw=0.8))
 
 
-def draw_map(fig, rect, fc, gdf):
+def delta_band_str(d: dict | None) -> tuple[str, str]:
+    """A felső sáv cellájába: t/ha + mrd Ft, szó nélkül (12pt-vel elfér)."""
+    if d is None:
+        return "első jelentési nap", MUTED
+    if abs(d["d_tha"]) < 0.005:
+        return "— változatlan", MUTED
+    arrow = "▲" if d["d_tha"] > 0 else "▼"
+    txt = f"{arrow} {signed(d['d_tha'], 2)} t/ha"
+    if d.get("d_bn") is not None and abs(d["d_bn"]) >= 0.05:
+        txt += f" · {signed(d['d_bn'], 1)} mrd"
+    return txt, (GREEN if d["d_tha"] > 0 else RED)
+
+
+def delta_str(d: dict | None, compact: bool = False) -> tuple[str, str]:
+    """(szöveg, szín) a napi változáshoz — előjel ÉS szó, sosem csak szín.
+    compact=True: rövid forma a szűk cellákba (a szó a 2. sorba kerül)."""
+    if d is None:
+        return "első jelentési nap", MUTED
+    if abs(d["d_tha"]) < 0.005:
+        return "— változatlan", MUTED
+    arrow = "▲" if d["d_tha"] > 0 else "▼"
+    word = "javulás" if d["d_tha"] > 0 else "romlás"
+    txt = f"{arrow} {signed(d['d_tha'], 2)} t/ha"
+    if compact:
+        return txt + f" ({word})", (GREEN if d["d_tha"] > 0 else RED)
+    if d.get("d_bn") is not None and abs(d["d_bn"]) >= 0.05:
+        txt += f" · {signed(d['d_bn'], 1)} mrd Ft"
+    txt += f" ({word})"
+    return txt, (GREEN if d["d_tha"] > 0 else RED)
+
+
+def draw_sparkline(fig, rect, hs: list[dict]):
+    """Mini idősor: napi becslések; y-tengely nem nullától, szélső értékek kiírva."""
     ax = fig.add_axes(rect)
-    anoms = {c["nuts_id"]: (c["anomaly_pct"] if c["predicted_yield_t_ha"] is not None
-                            else None) for c in fc["counties"]}
-    gdf = gdf.copy()
-    gdf["anom"] = gdf["NUTS_ID"].map(anoms)
-    cmap = LinearSegmentedColormap.from_list("anom", ANOM_COLORS)
-    norm = Normalize(vmin=-20, vmax=20)
-    gdf[gdf["anom"].isna()].plot(ax=ax, color=NO_DATA, edgecolor="#7f8c8d", linewidth=0.5)
-    gdf[gdf["anom"].notna()].plot(ax=ax, column="anom", cmap=cmap, norm=norm,
-                                  edgecolor="#7f8c8d", linewidth=0.5)
+    ys = [h["pred"] for h in hs]
+    xs = range(len(ys))
+    ax.plot(xs, ys, color=BLUE, lw=1.6, zorder=2)
+    ax.scatter(xs, ys, s=22, color=BLUE, zorder=3)
+    ax.scatter([len(ys) - 1], [ys[-1]], s=48, color=INK, zorder=4)
+    lo, hi = min(ys), max(ys)
+    pad = (hi - lo) * 0.25 or 0.05
+    ax.set_ylim(lo - pad, hi + pad)
+    ax.set_xlim(-0.5, len(ys) - 0.5)
     ax.set_axis_off()
-    ax.set_title("Eltérés a szokásos hozamtól, vármegyénként",
-                 fontsize=FS + 1, color=INK, pad=6)
-    # kompakt színskála a térkép alá
-    cax = fig.add_axes([rect[0] + rect[2] * 0.18, rect[1] - 0.012,
-                        rect[2] * 0.64, 0.010])
-    cb = fig.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap),
-                      cax=cax, orientation="horizontal")
-    cb.set_ticks([-20, -10, 0, 10, 20])
-    cb.ax.set_xticklabels(["−20%", "−10%", "0", "+10%", "+20%"], fontsize=FS)
-    cb.outline.set_edgecolor(BORDER)
+    # szélső értékek számmal (a levágott tengely ne "hazudjon")
+    ax.annotate(hu(ys[0]), (0, ys[0]), xytext=(-2, -14), textcoords="offset points",
+                fontsize=FS, color=MUTED, ha="left")
+    ax.annotate(hu(ys[-1]), (len(ys) - 1, ys[-1]), xytext=(2, 6),
+                textcoords="offset points", fontsize=FS, color=INK,
+                ha="right", fontweight="bold")
 
 
-def draw_rank_strip(fig, rect, fc, hist):
-    """Történelmi pöttysor: minden év trend-anomáliája + az idei kiemelve."""
-    ax = fig.add_axes(rect)
-    nat = hist["national"]
-    anoms, years = [], []
-    for y, v in zip(nat["years"], nat["yields"]):
-        tr = nat["trend_intercept"] + nat["trend_slope"] * (y - nat["trend_base_year"])
-        anoms.append(100 * (v - tr) / tr)
-        years.append(y)
-    cur = fc["national"]["anomaly_pct"]
-    ax.axvline(0, color="#b8c2ca", ls="--", lw=1)
-    ax.scatter(anoms, np.zeros(len(anoms)), s=55, color="#aab8c2", alpha=0.8, zorder=2)
-    cur_col = RED if cur < 0 else GREEN
-    ax.scatter([cur], [0], s=150, color=cur_col, edgecolor="white",
-               linewidth=1.5, zorder=3)
-    # szélső évek felirata (a szerkesztői kérés: a szélsők ne legyenek névtelenek)
-    i_min, i_max = int(np.argmin(anoms)), int(np.argmax(anoms))
-    ax.annotate(str(years[i_min]), (anoms[i_min], 0), xytext=(0, -16),
-                textcoords="offset points", ha="center", fontsize=FS, color=LIGHT)
-    ax.annotate(str(years[i_max]), (anoms[i_max], 0), xytext=(0, -16),
-                textcoords="offset points", ha="center", fontsize=FS, color=LIGHT)
-    ax.annotate(str(fc["crop_year"]), (cur, 0), xytext=(0, 11),
-                textcoords="offset points", ha="center", fontsize=FS,
-                color=cur_col, fontweight="bold")
-    ax.set_ylim(-1, 1)
-    lo, hi = min(anoms + [cur]), max(anoms + [cur])
-    pad = (hi - lo) * 0.08
-    ax.set_xlim(lo - pad, hi + pad)
-    ax.set_yticks([])
-    ax.spines[["left", "top", "right"]].set_visible(False)
-    ax.spines["bottom"].set_color(BORDER)
-    ax.tick_params(axis="x", labelsize=FS, colors=MUTED)
-    ax.set_title(f"Hol áll {fc['crop_year']} az évek közt? (%)",
-                 fontsize=FS + 1, color=INK, pad=4, loc="left")
-
-
-def draw_scenario_band(fig, rect, fc):
-    sc = fc["scenarios"]["national"]
-    point = fc["national"]["predicted_yield_t_ha"]
-    ax = fig.add_axes(rect)
-    lo = min(sc["p10"], point); hi = max(sc["p90"], point)
-    pad = (hi - lo) * 0.2 or 0.5
-    ax.barh(0, sc["p90"] - sc["p10"], left=sc["p10"], height=0.34,
-            color="#7fb3d5", alpha=0.5, zorder=2)
-    ax.plot([sc["p50"], sc["p50"]], [-0.3, 0.3], color=BLUE, lw=2.5, zorder=3)
-    ax.scatter([point], [0], marker="v", s=130, color=RED, zorder=4)
-    ax.annotate(f"kedvezőtlen\n{hu(sc['p10'])}", (sc["p10"], 0), xytext=(0, -30),
-                textcoords="offset points", ha="center", fontsize=FS, color=MUTED)
-    ax.annotate(f"kedvező\n{hu(sc['p90'])}", (sc["p90"], 0), xytext=(0, -30),
-                textcoords="offset points", ha="center", fontsize=FS, color=MUTED)
-    ax.annotate(f"becslés {hu(point)}", (point, 0), xytext=(0, 13),
-                textcoords="offset points", ha="center", fontsize=FS,
-                color=RED, fontweight="bold")
-    ax.set_xlim(lo - pad, hi + pad)
-    ax.set_ylim(-1.15, 0.9)
-    ax.set_axis_off()
-    ax.set_title(f"Mi lehet még belőle? ({fc['scenarios']['remaining_days']} nap hátra, t/ha)",
-                 fontsize=FS + 1, color=INK, pad=2)
-
-
-def draw_county_table(page_ax, x, y, w, fc):
-    """Top 3 / alsó 3 vármegye — kézzel pozicionált sorok (12 pt)."""
-    est = sorted([c for c in fc["counties"] if c["predicted_yield_t_ha"] is not None],
-                 key=lambda c: c["anomaly_pct"])
-    rows = [("A legnagyobb elmaradás", est[:3]),
-            ("A legjobban tartó vármegyék", est[-3:][::-1])]
-    short = {"Szabolcs-Szatmár-Bereg": "Szabolcs-Szat.-B.",
-             "Borsod-Abaúj-Zemplén": "Borsod-Abaúj-Z.",
-             "Jász-Nagykun-Szolnok": "Jász-Nagykun-Sz.",
-             "Győr-Moson-Sopron": "Győr-Moson-S."}
-    cols = [(0.0, ""), (0.40, ""), (0.63, ""), (0.81, "")]
-    line_h = 0.0195
-    yy = y
-    for title, group in rows:
-        page_ax.text(x, yy, title, fontsize=FS, color=LIGHT, fontweight="bold",
-                     transform=page_ax.transAxes, va="top")
-        yy -= line_h
-        for c in group:
-            gap = c.get("trend_gap_bn_huf")
-            if gap is not None and abs(gap) < 0.05:
-                gap = 0.0  # ne írjunk "-0,0"-t
-            vals = [short.get(c["county_name"], c["county_name"]),
-                    f"{hu(c['predicted_yield_t_ha'])} t/ha",
-                    f"{'+' if c['anomaly_pct'] > 0 else ''}{hu(c['anomaly_pct'], 1)}%",
-                    (f"{'+' if gap > 0 else ''}{hu(gap, 1)} mrd Ft" if gap is not None else "–")]
-            for (cx, _), val in zip(cols, vals):
-                color = INK
-                if val.endswith("%") or "mrd" in val:
-                    # előjel szerint: negatív piros, pozitív zöld, nulla semleges
-                    color = (RED if val.startswith("-")
-                             else GREEN if val.startswith("+") else INK)
-                page_ax.text(x + cx * w, yy, val, fontsize=FS, color=color,
-                             transform=page_ax.transAxes, va="top")
-            yy -= line_h
-        yy -= 0.006
-    return yy
-
-
-# ---------------------------------------------------------------------------- #
-# Egy termény = egy oldal
-# ---------------------------------------------------------------------------- #
-def draw_page(pdf: PdfPages, crop: str, gdf, page_no: int, total: int) -> None:
-    fc = json.loads((config.WEB_DATA / f"forecast_{crop}.json").read_text(encoding="utf-8"))
-    hist = json.loads((config.WEB_DATA / f"yield_history_{crop}.json").read_text(encoding="utf-8"))
+def crop_column(fig, page, x, w, fc: dict, d: dict | None):
+    """Egy termény-oszlop az 1. oldalon. A kártya fix magas, a tartalom folyik."""
     n = fc["national"]
     v = n.get("value")
-    main, badge, cert = headline_text(fc)
+    live = fc.get("scenarios") is not None
+    top, height = 0.822, 0.405
+    card(page, x, top - height, w, height)
+    pad = 0.014
+    cx = x + pad
+    y = top - 0.010
 
-    fig = plt.figure(figsize=(8.27, 11.69))  # A4 álló
+    # 1. terménynév
+    page.text(cx, y, fc["crop"].capitalize(), fontsize=15, fontweight="bold",
+              color=INK, va="top")
+    y -= 0.023
+    # 2. státusz-pill
+    pill(page, cx, y, "MÉG VÁLTOZHAT" if live else "VÉGLEGES KÖZELI", live)
+    if live:
+        page.text(cx + 0.208, y - 0.003, f"{fc['scenarios']['remaining_days']} nap",
+                  fontsize=FS, color=MUTED, va="top")
+    y -= 0.030
+    # 3. becslés
+    page.text(cx, y, f"{hu(n['predicted_yield_t_ha'])} t/ha", fontsize=FS_KPI,
+              fontweight="bold", color=INK, va="top")
+    y -= 0.031
+    page.text(cx, y, f"szokásos: {hu(n['trend_t_ha'])} · tavaly: "
+              f"{hu(n['prev_year_yield_t_ha'])}", fontsize=FS, color=MUTED, va="top")
+    y -= 0.022
+    # 4. eltérés
+    a = n["anomaly_pct"]
+    a_col = RED if a < -0.05 else GREEN if a > 0.05 else INK
+    page.text(cx, y, f"{signed(a, 1)}%", fontsize=FS_BIG, fontweight="bold",
+              color=a_col, va="top")
+    page.text(cx + 0.112, y - 0.004, "a szokásoshoz", fontsize=FS, color=MUTED, va="top")
+    y -= 0.030
+    # 5. TEGNAP ÓTA — hangsúlyos belső sáv
+    band_h = 0.040
+    page.add_patch(Rectangle((cx - 0.004, y - band_h), w - 2 * pad + 0.008, band_h,
+                             facecolor=INNER_BG, edgecolor="none",
+                             transform=page.transAxes, zorder=2))
+    page.text(cx, y - 0.006, "TEGNAP ÓTA", fontsize=FS, color=LIGHT, va="top", zorder=3)
+    dtxt, dcol = delta_str(d, compact=True)
+    page.text(cx, y - 0.023, dtxt, fontsize=FS_MID, fontweight="bold",
+              color=dcol, va="top", zorder=3)
+    y -= band_h + 0.012
+    # 6. sparkline
+    hs = history_series(fc_crop_key(fc))
+    if len(hs) >= 2:
+        draw_sparkline(fig, [x + pad, y - 0.048, w - 2 * pad, 0.042], hs)
+        y -= 0.056
+        page.text(cx, y, f"napi becslések ({len(hs)} nap)", fontsize=FS,
+                  color=LIGHT, va="top")
+        y -= 0.020
+    # 7. érték-hatás
+    if v:
+        gap = v["trend_gap_bn_huf"]
+        page.text(cx, y, f"{v['production_value_bn_huf']:.0f} mrd Ft",
+                  fontsize=FS_MID, fontweight="bold", color=INK, va="top")
+        y -= 0.021
+        g_col = RED if gap < -0.05 else GREEN if gap > 0.05 else INK
+        page.text(cx, y, f"vs szokásos: {signed(gap, 0)} mrd Ft",
+                  fontsize=FS, color=g_col, va="top")
+        y -= 0.019
+        page.text(cx, y, f"{v['price_year']}-es áron — indikatív",
+                  fontsize=FS, color=LIGHT, va="top", style="italic")
+        y -= 0.022
+    # 8. rövid headline
+    sh = textwrap.wrap(short_headline(fc), 26)[:3]
+    page.text(cx, y, "\n".join(sh), fontsize=FS, color=INK, va="top", linespacing=1.3)
+
+
+def fc_crop_key(fc: dict) -> str:
+    """crop kulcs (wheat/corn/barley) visszakeresése a label alapján."""
+    for key, spec in config.CROPS.items():
+        if spec["label"] == fc["crop"]:
+            return key
+    raise KeyError(fc["crop"])
+
+
+def focus_rows(fcs: dict[str, dict]) -> list[tuple[str, list[tuple[str, dict]]]]:
+    """[(vármegyenév, [(crop_label, county_rec vagy None), ...]), ...]"""
+    out = []
+    for name in config.REPORT_FOCUS_COUNTIES:
+        per_crop = []
+        for crop, fc in fcs.items():
+            rec = next((c for c in fc["counties"] if c["county_name"] == name), None)
+            per_crop.append((fc["crop"], rec, fc))
+        out.append((name, per_crop))
+    return out
+
+
+def draw_focus_table(page, y_top: float, fcs: dict[str, dict]) -> float:
+    """Fókusz-vármegyék blokkja az 1. oldalon. Visszaadja az alsó y-t."""
+    names = " · ".join(config.REPORT_FOCUS_COUNTIES)
+    page.text(M, y_top, f"FÓKUSZ-VÁRMEGYÉK — {names}", fontsize=13,
+              fontweight="bold", color=LIGHT, va="top")
+    y = y_top - 0.026
+
+    # terményenkénti közös sáv-skála (fókuszmegyék + országos)
+    scales = {}
+    for crop, fc in fcs.items():
+        lows, highs = [fc["national"]["predicted_yield_t_ha"]], []
+        for name in config.REPORT_FOCUS_COUNTIES:
+            rec = next((c for c in fc["counties"] if c["county_name"] == name), None)
+            if rec and rec["predicted_yield_t_ha"] is not None:
+                lows.append(rec["low"]); highs.append(rec["high"])
+        lo, hi = min(lows), max(highs + lows)
+        pad = (hi - lo) * 0.06 or 0.3
+        scales[fc["crop"]] = (lo - pad, hi + pad)
+
+    line_h = 0.021
+    # oszlop-x pozíciók (jobbra zárt számok)
+    x_name, x_pred, x_anom, x_vs = M + 0.012, M + 0.28, M + 0.40, M + 0.585
+    bar_x0, bar_x1 = M + 0.615, 1 - M - 0.012
+
+    for county, per_crop in focus_rows(fcs):
+        page.text(M, y, county, fontsize=13, fontweight="bold", color=INK, va="top")
+        y -= line_h
+        for label, rec, fc in per_crop:
+            page.text(x_name, y, label, fontsize=FS, color=MUTED, va="top")
+            if rec is None or rec["predicted_yield_t_ha"] is None:
+                page.text(x_pred, y, "nincs becslés (kevés termőterület)",
+                          fontsize=FS, color=MUTED, va="top")
+                y -= line_h
+                continue
+            nat_pred = fc["national"]["predicted_yield_t_ha"]
+            page.text(x_pred, y, f"{hu(rec['predicted_yield_t_ha'])} t/ha",
+                      fontsize=FS, fontweight="bold", color=INK, va="top", ha="right")
+            a = rec["anomaly_pct"]
+            a_col = RED if a < -0.05 else GREEN if a > 0.05 else INK
+            page.text(x_anom, y, f"{signed(a, 1)}%", fontsize=FS, color=a_col,
+                      va="top", ha="right")
+            dv = rec["predicted_yield_t_ha"] - nat_pred
+            vs = "≈ orsz." if abs(dv) < 0.05 else f"{signed(dv, 2)} vs orsz."
+            vs_col = MUTED if abs(dv) < 0.05 else (GREEN if dv > 0 else RED)
+            page.text(x_vs, y, vs, fontsize=FS, color=vs_col, va="top", ha="right")
+            # sáv-grafika: low–high téglalap + becslés-pont + országos vonás
+            lo_s, hi_s = scales[fc["crop"]]
+            def X(v):
+                return bar_x0 + (v - lo_s) / (hi_s - lo_s) * (bar_x1 - bar_x0)
+            bar_y = y - 0.012
+            page.add_patch(Rectangle((X(rec["low"]), bar_y - 0.004),
+                                     X(rec["high"]) - X(rec["low"]), 0.008,
+                                     facecolor=BAND, alpha=0.5, edgecolor="none",
+                                     transform=page.transAxes, zorder=2))
+            page.plot([X(nat_pred), X(nat_pred)], [bar_y - 0.007, bar_y + 0.007],
+                      color=MUTED, lw=1.8, transform=page.transAxes, zorder=3)
+            page.scatter([X(rec["predicted_yield_t_ha"])], [bar_y], s=32,
+                         color=INK, transform=page.transAxes, zorder=4)
+            y -= line_h
+        y -= 0.007
+    page.text(M, y, "sáv: várható tartomány (80%), terményenként közös skálán · "
+              "pont: becslés · vonás: országos", fontsize=FS, color=LIGHT, va="top")
+    return y - line_h
+
+
+# ---------------------------------------------------------------------------- #
+# 1. oldal — vezetői összefoglaló
+# ---------------------------------------------------------------------------- #
+def draw_summary_page(pdf: PdfPages, fcs: dict[str, dict], deltas: dict,
+                      total_pages: int) -> None:
+    fig = plt.figure(figsize=(8.27, 11.69))
     page = fig.add_axes([0, 0, 1, 1]); page.set_axis_off()
     page.set_xlim(0, 1); page.set_ylim(0, 1)
 
-    M = 0.06  # oldalmargó
-
-    # --- fejléc ---
-    page.text(M, 0.965, f"Napi terményjelentés — {fc['crop']}",
+    any_fc = next(iter(fcs.values()))
+    # fejléc
+    page.text(M, 0.972, "Napi vezetői jelentés",
               fontsize=FS_TITLE, fontweight="bold", color=INK, va="top")
-    page.text(1 - M, 0.965, f"{fc['updated_at']}", fontsize=FS + 2, color=MUTED,
+    page.text(1 - M, 0.972, any_fc["updated_at"], fontsize=FS_MID, color=MUTED,
               ha="right", va="top")
-    page.text(M, 0.936, f"{fc['crop_year']}-es termésév · Magyarország, vármegyei bontás",
+    page.text(M, 0.944, f"{any_fc['crop_year']}-es termésév · búza, kukorica, "
+              "őszi árpa · vármegyei statisztikai modell",
               fontsize=FS, color=MUTED, va="top")
-    # bizonyosság-jelvény
-    badge_col = "#9a6a12" if fc.get("scenarios") else GREEN
-    badge_bg = "#fdf3e0" if fc.get("scenarios") else "#e8f6ee"
-    page.text(1 - M, 0.936, f" {badge} ", fontsize=FS, color=badge_col,
-              ha="right", va="top", fontweight="bold",
-              bbox=dict(boxstyle="round,pad=0.35", fc=badge_bg, ec=badge_col, lw=0.8))
-    page.plot([M, 1 - M], [0.922, 0.922], color=BORDER, lw=1, transform=page.transAxes)
+    page.plot([M, 1 - M], [0.930, 0.930], color=BORDER, lw=1, transform=page.transAxes)
 
-    # --- headline (dinamikus magasság: a sorok száma tolja lejjebb a többit) ---
+    # NAPI VÁLTOZÁS SÁV
+    band_top, band_h = 0.920, 0.078
+    card(page, M, band_top - band_h, 1 - 2 * M, band_h)
+    d0 = next((d for d in deltas.values() if d), None)
+    rng = (f" ({d0['prev_date']} → {d0['cur_date']})" if d0 else "")
+    page.text(M + 0.012, band_top - 0.010, f"VÁLTOZÁS TEGNAP ÓTA{rng}",
+              fontsize=FS, fontweight="bold", color=LIGHT, va="top")
+    all_flat = all(d is None or abs(d["d_tha"]) < 0.005 for d in deltas.values())
+    if all_flat:
+        page.text(1 - M - 0.012, band_top - 0.010,
+                  "Nincs döntést igénylő változás tegnap óta.",
+                  fontsize=FS, color=GREEN, va="top", ha="right")
+    cell_w = (1 - 2 * M - 0.024) / 3
+    for i, (crop, fc) in enumerate(fcs.items()):
+        cx = M + 0.012 + i * cell_w
+        page.text(cx, band_top - 0.032, fc["crop"], fontsize=FS, color=MUTED, va="top")
+        dtxt, dcol = delta_band_str(deltas[crop])
+        page.text(cx, band_top - 0.052, dtxt, fontsize=FS,
+                  fontweight="bold" if dcol != MUTED else "normal",
+                  color=dcol, va="top")
+
+    # három termény-oszlop
+    col_w = (1 - 2 * M - 2 * 0.016) / 3
+    for i, (crop, fc) in enumerate(fcs.items()):
+        crop_column(fig, page, M + i * (col_w + 0.016), col_w, fc, deltas[crop])
+
+    # fókusz-vármegye tábla
+    draw_focus_table(page, 0.395, fcs)
+
+    # láblécsor
+    page.text(M, 0.018, f"1/{total_pages} · Terméshozam-előrejelző · generálva: "
+              f"{datetime.now().strftime('%Y-%m-%d %H:%M')} · Módszertan: utolsó oldal.",
+              fontsize=FS, color=LIGHT, va="bottom")
+    pdf.savefig(fig)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------- #
+# 2+. oldal — "Ami még él" (futó szezonú termény)
+# ---------------------------------------------------------------------------- #
+def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
+                   is_last: bool) -> None:
+    crop = fc_crop_key(fc)
+    n = fc["national"]
+    v = n.get("value")
+    sc = fc["scenarios"]
+    main, badge, cert = headline_text(fc)
+
+    fig = plt.figure(figsize=(8.27, 11.69))
+    page = fig.add_axes([0, 0, 1, 1]); page.set_axis_off()
+    page.set_xlim(0, 1); page.set_ylim(0, 1)
+
+    # fejléc
+    page.text(M, 0.972, f"Ami még él — {fc['crop']}", fontsize=FS_TITLE,
+              fontweight="bold", color=INK, va="top")
+    page.text(1 - M, 0.972, fc["updated_at"], fontsize=FS_MID, color=MUTED,
+              ha="right", va="top")
+    page.text(M, 0.944, f"{sc['remaining_days']} nap a szezon végéig — "
+              "a becslés még változhat", fontsize=FS, color=MUTED, va="top")
+    pill(page, 1 - M, 0.978, "MÉG VÁLTOZHAT", live=True, ha="right")
+    page.plot([M, 1 - M], [0.928, 0.928], color=BORDER, lw=1, transform=page.transAxes)
+
+    # teljes headline
     head_lines = textwrap.wrap(main, 62)
-    page.text(M, 0.912, "\n".join(head_lines), fontsize=FS_HEAD, color=INK,
+    page.text(M, 0.918, "\n".join(head_lines), fontsize=14.5, color=INK,
               va="top", linespacing=1.4, fontweight="bold")
-    y_cursor = 0.912 - len(head_lines) * 0.0205 - 0.008
+    y = 0.918 - len(head_lines) * 0.0205 - 0.008
     cert_lines = textwrap.wrap(cert, 82)
-    page.text(M, y_cursor, "\n".join(cert_lines), fontsize=FS, color=MUTED,
+    page.text(M, y, "\n".join(cert_lines), fontsize=FS, color=MUTED,
               va="top", linespacing=1.35)
-    y_cursor -= len(cert_lines) * 0.0165 + 0.012
+    y -= len(cert_lines) * 0.0165 + 0.018
 
-    # --- 4 KPI kártya ---
-    kw = (1 - 2 * M - 3 * 0.016) / 4
-    ky = y_cursor - KPI_H
-    neg = n["anomaly_pct"] < 0
-    kpi(page, M, ky, kw, "Becslés", f"{hu(n['predicted_yield_t_ha'])} t/ha",
-        f"tavaly: {hu(n['prev_year_yield_t_ha'])}")
-    kpi(page, M + (kw + 0.016), ky, kw, "A szokásoshoz",
-        f"{'+' if not neg else ''}{hu(n['anomaly_pct'], 1)}%",
-        f"vs {n['prev_year']}: {'+' if n['yoy_pct'] > 0 else ''}{hu(n['yoy_pct'], 1)}%",
-        RED if neg else GREEN)
-    kpi(page, M + 2 * (kw + 0.016), ky, kw, "Helyezés",
-        f"{n['rank_from_worst']}.",
-        f"leggyengébb · {n['rank_total']} év")
-    if v:
-        gap = v["trend_gap_bn_huf"]
-        kpi(page, M + 3 * (kw + 0.016), ky, kw, "Termelési érték",
-            f"{v['production_value_bn_huf']:.0f} mrd Ft",
-            f"vs szokásos: {'+' if gap > 0 else ''}{gap:.0f} mrd",
-            RED if gap < 0 else GREEN)
+    # forgatókönyv-blokk: sáv balra, tonna/forint tábla jobbra
+    from_scenarios = sc["national"]
+    area = v["area_ha"] if v else None
+    price = v["price_huf_per_t"] if v else None
+    band_rect = [M, y - 0.115, 0.40, 0.085]
+    ax = fig.add_axes(band_rect)
+    p10, p50, p90 = from_scenarios["p10"], from_scenarios["p50"], from_scenarios["p90"]
+    point = n["predicted_yield_t_ha"]
+    lo, hi = min(p10, point), max(p90, point)
+    pad = (hi - lo) * 0.2 or 0.5
+    ax.barh(0, p90 - p10, left=p10, height=0.34, color=BAND, alpha=0.5, zorder=2)
+    ax.plot([p50, p50], [-0.3, 0.3], color=BLUE, lw=2.5, zorder=3)
+    ax.scatter([point], [0], marker="v", s=130, color=RED, zorder=4)
+    ax.annotate(f"kedvezőtlen\n{hu(p10)}", (p10, 0), xytext=(0, -32),
+                textcoords="offset points", ha="center", fontsize=FS, color=MUTED)
+    ax.annotate(f"kedvező\n{hu(p90)}", (p90, 0), xytext=(0, -32),
+                textcoords="offset points", ha="center", fontsize=FS, color=MUTED)
+    ax.annotate(f"becslés {hu(point)}", (point, 0), xytext=(0, 14),
+                textcoords="offset points", ha="center", fontsize=FS,
+                color=RED, fontweight="bold")
+    ax.set_xlim(lo - pad, hi + pad); ax.set_ylim(-1.3, 0.95)
+    ax.set_axis_off()
+    ax.set_title("Forgatókönyvek (t/ha)", fontsize=13, color=INK, pad=2, loc="left")
 
-    # --- térkép (bal) + pöttysor/szcenárió (jobb) — a KPI-sor aljához horgonyozva ---
-    map_top = ky - 0.022          # a kártyasor alja alatt
-    draw_map(fig, [M - 0.01, map_top - 0.295, 0.52, 0.27], fc, gdf)
-    draw_rank_strip(fig, [0.60, map_top - 0.115, 0.34, 0.075], fc, hist)
-    if fc.get("scenarios"):
-        draw_scenario_band(fig, [0.60, map_top - 0.265, 0.34, 0.075], fc)
-    else:
-        page.text(0.60, map_top - 0.19, textwrap.fill(
-            "Nincs időjárás-forgatókönyv: a szezon lezárult, az eredményt már "
-            "csak a hivatalos KSH-mérés pontosítja.", 40),
-            fontsize=FS, color=MUTED, va="top", linespacing=1.4)
+    # tonna/forint tábla
+    tx = 0.52
+    page.text(tx, y, "Terményben és forintban*", fontsize=13,
+              fontweight="bold", color=INK, va="top")
+    ty = y - 0.024
+    cols_x = [tx, tx + 0.20, tx + 0.31, tx + 0.42]
+    for cx_, htxt in zip(cols_x, ["", "t/ha", "M tonna", "mrd Ft*"]):
+        if htxt:
+            page.text(cx_, ty, htxt, fontsize=FS, color=LIGHT, va="top", ha="right")
+    ty -= 0.019
+    rows = [("Kedvezőtlen", p10, False),
+            ("Várható", p50, True),
+            ("Kedvező", p90, False)]
+    for label, p, bold in rows:
+        weight = "bold" if bold else "normal"
+        page.text(tx, ty, label, fontsize=FS, color=INK, va="top", fontweight=weight)
+        page.text(cols_x[1], ty, hu(p), fontsize=FS, color=INK, va="top",
+                  ha="right", fontweight=weight)
+        if area and price:
+            tons = p * area
+            page.text(cols_x[2], ty, hu(tons / 1e6), fontsize=FS,
+                      color=INK, va="top", ha="right", fontweight=weight)
+            page.text(cols_x[3], ty, f"{tons * price / 1e9:.0f}", fontsize=FS,
+                      color=INK, va="top", ha="right", fontweight=weight)
+        ty -= 0.019
+    y = min(y - 0.150, ty - 0.010)
+    if area and price:
+        risk = (p90 - p10) * area * price / 1e9
+        page.text(M, y, f"A kedvezőtlen és a kedvező kimenet közti különbség "
+                  f"kb. {risk:.0f} mrd Ft.", fontsize=FS,
+                  fontweight="bold", color=INK, va="top")
+        y -= 0.022
+    if area and price:
+        note = (f"*{v['price_year']}-es hivatalos termelői átlagáron "
+                f"({price:,.0f} Ft/t".replace(",", " ") +
+                f"), a legutóbbi lezárt évi vetésterülettel ({area / 1e3:.0f} ezer ha) "
+                "— indikatív, nem piaci árajánlat.")
+        page.text(M, y, textwrap.fill(note, 92), fontsize=FS, color=LIGHT,
+                  va="top", style="italic")
+        y -= 0.030
 
-    # --- vármegyei szélsők táblázata ---
-    table_top = map_top - 0.355
-    ty = draw_county_table(page, M, table_top, 0.46, fc)
+    # trend-részlet: napi becslések P10–P90 sávval
+    hs = history_series(crop, max_days=21)
+    if len(hs) >= 2:
+        ax2 = fig.add_axes([M + 0.02, y - 0.155, 1 - 2 * M - 0.04, 0.125])
+        xs = range(len(hs))
+        preds = [h["pred"] for h in hs]
+        if all(h["p10"] is not None for h in hs):
+            ax2.fill_between(xs, [h["p10"] for h in hs], [h["p90"] for h in hs],
+                             color=BAND, alpha=0.25, zorder=1)
+        ax2.plot(xs, preds, color=BLUE, lw=1.8, zorder=3)
+        ax2.scatter(xs, preds, s=26, color=BLUE, zorder=4)
+        ax2.annotate(hu(preds[-1]), (len(hs) - 1, preds[-1]), xytext=(0, 8),
+                     textcoords="offset points", ha="center", fontsize=FS,
+                     color=INK, fontweight="bold")
+        step = max(1, len(hs) // 6)
+        ax2.set_xticks(list(xs)[::step])
+        ax2.set_xticklabels([hs[i]["date"][5:] for i in list(xs)[::step]], fontsize=FS)
+        ax2.tick_params(axis="y", labelsize=FS, colors=MUTED)
+        ax2.spines[["top", "right"]].set_visible(False)
+        ax2.set_title("A becslés napi alakulása (P10–P90 sávval, t/ha)",
+                      fontsize=13, color=INK, loc="left", pad=4)
+        y -= 0.185
 
-    # --- driver + delta a táblázat mellett jobbra (dinamikus folyás) ---
-    rx, ry = 0.58, table_top
-    page.text(rx, ry, "Mi mozgatja?", fontsize=FS, color=LIGHT,
-              fontweight="bold", va="top")
-    ry -= 0.0195
-    drv_lines = textwrap.wrap(weather_driver_text(fc), 36)
-    page.text(rx, ry, "\n".join(drv_lines), fontsize=FS, color=INK,
-              va="top", linespacing=1.35)
-    ry -= len(drv_lines) * 0.0165 + 0.014
-    dlt_lines = textwrap.wrap(delta_text(crop, fc), 36)
-    page.text(rx, ry, "\n".join(dlt_lines), fontsize=FS, color=MUTED,
-              va="top", linespacing=1.35)
+    # fókusz-vármegyék kilátása + időjárása
+    page.text(M, y, "FÓKUSZ-VÁRMEGYÉK — kilátás és időjárás", fontsize=13,
+              fontweight="bold", color=LIGHT, va="top")
+    y -= 0.022
+    heads = ["", "Becslés", "P10–P90", "Hőstressz", "Vízmérleg", "Csapadék"]
+    hx = [M, M + 0.26, M + 0.47, M + 0.61, M + 0.755, M + 0.88]
+    for cx_, htxt in zip(hx[1:], heads[1:]):
+        page.text(cx_, y, htxt, fontsize=FS, color=LIGHT, va="top", ha="right")
+    y -= 0.019
+    sc_counties = sc.get("counties") or {}
+    for name in config.REPORT_FOCUS_COUNTIES:
+        rec = next((c for c in fc["counties"] if c["county_name"] == name), None)
+        if rec is None:
+            continue
+        page.text(M, y, name, fontsize=FS, color=INK, va="top")
+        if rec["predicted_yield_t_ha"] is None:
+            page.text(hx[1], y, "nincs becslés", fontsize=FS, color=MUTED,
+                      va="top", ha="right")
+            y -= 0.019
+            continue
+        page.text(hx[1], y, f"{hu(rec['predicted_yield_t_ha'])} t/ha", fontsize=FS,
+                  fontweight="bold", color=INK, va="top", ha="right")
+        scc = sc_counties.get(rec["nuts_id"])
+        page.text(hx[2], y, f"{hu(scc['p10'])}–{hu(scc['p90'])}" if scc else "–",
+                  fontsize=FS, color=MUTED, va="top", ha="right")
+        wx = rec["weather_todate"]
+        heat = wx["heat_days"]
+        page.text(hx[3], y, f"{heat} nap", fontsize=FS,
+                  color=RED if heat > 5 else INK, va="top", ha="right")
+        wb = wx["wb_total_mm"]
+        page.text(hx[4], y, f"{hu(wb, 0)} mm", fontsize=FS,
+                  color=RED if wb < -300 else INK, va="top", ha="right")
+        page.text(hx[5], y, f"{hu(wx['prec_total_mm'], 0)} mm", fontsize=FS,
+                  color=INK, va="top", ha="right")
+        y -= 0.019
+    page.text(M, y - 0.002, textwrap.fill(
+        "A vízmérleg = csapadék − párolgás a szezon eddigi részében; "
+        "minél negatívabb, annál nagyobb az aszálynyomás.", 82),
+        fontsize=FS, color=MUTED, va="top", linespacing=1.3)
 
-    # --- lábjegyzet ---
-    page.plot([M, 1 - M], [0.132, 0.132], color=BORDER, lw=1, transform=page.transAxes)
-    foot = (
-        f"Módszertan: statisztikai modell a KSH 2000 óta mért vármegyei hozamaiból "
-        f"és az ERA5 időjárási adatokból; tipikus tévedés ±{hu(n.get('model_error_pct', 0), 1)}%. "
-        f"A „szokásos” a sokéves, technológiai fejlődéssel korrigált szint; "
-        f"ár: legutolsó hivatalos ({v['price_year'] if v else '–'}). Nem hivatalos adat. "
-        "Fogalomtár: prettyasap.github.io/wheat-forecast/magyarazat.html · "
-        "Adatok: KSH, Open-Meteo/ERA5 (CC BY 4.0), Eurostat."
-    )
-    page.text(M, 0.122, textwrap.fill(foot, 82), fontsize=FS, color=LIGHT,
-              va="top", linespacing=1.35)
-    page.text(M, 0.010, f"{page_no}/{total} · Terméshozam-előrejelző · "
+    # módszertani lábléc — csak a legutolsó oldalon
+    if is_last:
+        page.plot([M, 1 - M], [0.118, 0.118], color=BORDER, lw=1,
+                  transform=page.transAxes)
+        foot = (
+            "Módszertan: statisztikai modell (KSH vármegyei hozamok 2000-től + ERA5 "
+            "időjárás); tipikus tévedés terményenként ±9–20%. Nem hivatalos adat. "
+            "Részletek: prettyasap.github.io/wheat-forecast/magyarazat.html · "
+            "Adatok: KSH, Open-Meteo/ERA5 (CC BY 4.0), Eurostat."
+        )
+        page.text(M, 0.106, textwrap.fill(foot, 82), fontsize=FS, color=LIGHT,
+                  va="top", linespacing=1.35)
+    page.text(M, 0.008, f"{page_no}/{total_pages} · Terméshozam-előrejelző · "
               f"generálva: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
               fontsize=FS, color=LIGHT, va="bottom")
-
     pdf.savefig(fig)
     plt.close(fig)
 
@@ -417,19 +649,24 @@ def draw_page(pdf: PdfPages, crop: str, gdf, page_no: int, total: int) -> None:
 def main() -> None:
     today = date.today().isoformat()
     JELENTES_DIR.mkdir(parents=True, exist_ok=True)
-    gdf = gpd.read_file(config.WEB_DATA / "nuts3_hu.geojson")
+
+    fcs = {crop: load_fc(crop) for crop in config.CROPS}
+    deltas = {crop: daily_delta(crop) for crop in config.CROPS}
+    live_crops = [c for c, fc in fcs.items() if fc.get("scenarios")]
+    total_pages = 1 + len(live_crops)
 
     out = JELENTES_DIR / f"jelentes_{today}.pdf"
-    crops = list(config.CROPS)
     with PdfPages(out) as pdf:
-        for i, crop in enumerate(crops, 1):
-            draw_page(pdf, crop, gdf, i, len(crops))
+        draw_summary_page(pdf, fcs, deltas, total_pages)
+        for i, crop in enumerate(live_crops):
+            draw_live_page(pdf, fcs[crop], 2 + i, total_pages,
+                           is_last=(i == len(live_crops) - 1))
         info = pdf.infodict()
-        info["Title"] = f"Napi terményjelentés — {today}"
+        info["Title"] = f"Napi vezetői jelentés — {today}"
         info["Author"] = "Terméshozam-előrejelző (statisztikai modell)"
     latest = config.WEB_DATA / "jelentes_latest.pdf"
     latest.write_bytes(out.read_bytes())
-    print(f"[ok] {out} ({out.stat().st_size // 1024} KB, {len(crops)} oldal) "
+    print(f"[ok] {out} ({out.stat().st_size // 1024} KB, {total_pages} oldal) "
           f"+ jelentes_latest.pdf")
 
 

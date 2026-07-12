@@ -251,3 +251,10 @@ TREND_DEGREE = 1        # közös időtrend foka (1 = lineáris, 2 = kvadratikus
 RIDGE_ALPHA = 25.0      # ridge büntetés az időjárási blokkra (0 = sima OLS);
                         # LOYO ráccsal választva (validate.py, 2026-07)
 UNCERTAINTY_Z = 1.282   # 80%-os sáv a normál eloszlás alapján
+
+# --------------------------------------------------------------------------- #
+# Napi PDF-jelentés (report_pdf.py)
+# --------------------------------------------------------------------------- #
+# Fókusz-vármegyék az 1. oldal blokkjához (ügyfél-igényfelmérés alapján;
+# név szerint, a NUTS-kód futásidőben oldódik fel a forecast JSON-ból).
+REPORT_FOCUS_COUNTIES = ["Békés", "Hajdú-Bihar", "Fejér"]
