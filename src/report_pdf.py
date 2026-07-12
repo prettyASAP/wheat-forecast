@@ -60,11 +60,15 @@ plt.rcParams.update({
 })
 
 JELENTES_DIR = config.WEB_DATA / "jelentes"
-M = 0.06  # oldalmargó
+M = 0.07          # oldalmargó (levegősebb)
+GAP_SECTION = 0.034   # fő blokkok közti térköz
+GAP_ELEM = 0.012      # elemek közti térköz blokkon belül
+LINE = 0.0235         # 12 pt-s sor levegővel
+CARD_PAD = 0.018      # kártya belső margó
 
 
 def hu(v: float, d: int = 2) -> str:
-    return f"{v:.{d}f}".replace(".", ",")
+    return f"{v:.{d}f}".replace(".", ",").replace("-", "\u2212")
 
 
 def signed(v: float, d: int = 2, unit: str = "") -> str:
@@ -235,7 +239,7 @@ def pill(page_ax, x, y, text, live: bool, ha="left"):
     col, bg = ("#9a6a12", "#fdf3e0") if live else (GREEN, "#e8f6ee")
     page_ax.text(x, y, f" {text} ", fontsize=FS, color=col, fontweight="bold",
                  ha=ha, va="top", transform=page_ax.transAxes,
-                 bbox=dict(boxstyle="round,pad=0.32", fc=bg, ec=col, lw=0.8))
+                 bbox=dict(boxstyle="round,pad=0.32", fc=bg, ec=col, lw=0.9))
 
 
 def delta_band_str(d: dict | None) -> tuple[str, str]:
@@ -283,111 +287,203 @@ def draw_sparkline(fig, rect, hs: list[dict]):
     ax.set_xlim(-0.5, len(ys) - 0.5)
     ax.set_axis_off()
     # szélső értékek számmal (a levágott tengely ne "hazudjon")
-    ax.annotate(hu(ys[0]), (0, ys[0]), xytext=(-2, -14), textcoords="offset points",
-                fontsize=FS, color=MUTED, ha="left")
+    ax.annotate(hu(ys[0]), (0, ys[0]), xytext=(0, 6), textcoords="offset points",
+                fontsize=FS, color=MUTED, ha="left", va="bottom")
     ax.annotate(hu(ys[-1]), (len(ys) - 1, ys[-1]), xytext=(2, 6),
                 textcoords="offset points", fontsize=FS, color=INK,
                 ha="right", fontweight="bold")
 
 
-def crop_column(fig, page, x, w, fc: dict, d: dict | None):
-    """Egy termény-oszlop az 1. oldalon. A kártya fix magas, a tartalom folyik."""
+def crop_column(fig, page, x, w, top, height, fc: dict, d: dict | None):
+    """Egy termény-oszlop az 1. oldalon — a tartalomhoz zárt kártyával."""
     n = fc["national"]
     v = n.get("value")
     live = fc.get("scenarios") is not None
-    top, height = 0.838, 0.335
     card(page, x, top - height, w, height)
-    pad = 0.014
-    cx = x + pad
-    y = top - 0.010
+    cx = x + CARD_PAD
+    y = top - CARD_PAD
 
-    # 1. terménynév
-    page.text(cx, y, fc["crop"].capitalize(), fontsize=15, fontweight="bold",
+    page.text(cx, y, fc["crop"].capitalize(), fontsize=16, fontweight="bold",
               color=INK, va="top")
-    y -= 0.023
-    # 2. státusz-pill
+    y -= 0.032
     pill(page, cx, y, "MÉG VÁLTOZHAT" if live else "VÉGLEGES KÖZELI", live)
-    if live:
-        page.text(cx + 0.208, y - 0.003, f"{fc['scenarios']['remaining_days']} nap",
-                  fontsize=FS, color=MUTED, va="top")
     y -= 0.030
-    # 3. becslés
+    # státusz-részletsor (minden kártyán — a hármas rács együtt marad)
+    page.text(cx, y, f"{fc['scenarios']['remaining_days']} nap a szezon végéig"
+              if live else "a szezon lezárult", fontsize=FS, color=MUTED, va="top")
+    y -= LINE + GAP_ELEM
     page.text(cx, y, f"{hu(n['predicted_yield_t_ha'])} t/ha", fontsize=FS_KPI,
               fontweight="bold", color=INK, va="top")
-    y -= 0.031
-    page.text(cx, y, f"szokásos: {hu(n['trend_t_ha'])} · tavaly: "
-              f"{hu(n['prev_year_yield_t_ha'])}", fontsize=FS, color=MUTED, va="top")
-    y -= 0.022
-    # 4. eltérés
+    y -= 0.036
+    page.text(cx, y, f"szokásos: {hu(n['trend_t_ha'])}", fontsize=FS,
+              color=MUTED, va="top")
+    y -= LINE
+    page.text(cx, y, f"tavaly: {hu(n['prev_year_yield_t_ha'])}", fontsize=FS,
+              color=MUTED, va="top")
+    y -= LINE + GAP_ELEM
     a = n["anomaly_pct"]
     a_col = RED if a < -0.05 else GREEN if a > 0.05 else INK
     page.text(cx, y, f"{signed(a, 1)}%", fontsize=FS_BIG, fontweight="bold",
               color=a_col, va="top")
-    page.text(cx + 0.112, y - 0.004, "a szokásoshoz", fontsize=FS, color=MUTED, va="top")
     y -= 0.030
-    # 5. TEGNAP ÓTA — hangsúlyos belső sáv
-    band_h = 0.040
-    page.add_patch(Rectangle((cx - 0.004, y - band_h), w - 2 * pad + 0.008, band_h,
-                             facecolor=INNER_BG, edgecolor="none",
+    page.text(cx, y, "a szokásoshoz képest", fontsize=FS, color=MUTED, va="top")
+    y -= LINE + GAP_ELEM
+    # TEGNAP ÓTA — sorköz 1.4x (tipográfus B1)
+    band_h = 0.052
+    page.add_patch(Rectangle((cx - 0.006, y - band_h), w - 2 * CARD_PAD + 0.012,
+                             band_h, facecolor=INNER_BG, edgecolor="none",
                              transform=page.transAxes, zorder=2))
-    page.text(cx, y - 0.006, "TEGNAP ÓTA", fontsize=FS, color=LIGHT, va="top", zorder=3)
+    page.text(cx, y - 0.008, "TEGNAP ÓTA", fontsize=FS, color=LIGHT,
+              va="top", zorder=3)
     dtxt, dcol = delta_str(d, compact=True)
-    page.text(cx, y - 0.023, dtxt, fontsize=FS_MID, fontweight="bold",
+    page.text(cx, y - 0.030, dtxt, fontsize=FS, fontweight="bold",
               color=dcol, va="top", zorder=3)
-    y -= band_h + 0.012
-    # 6. sparkline
+    y -= band_h + GAP_ELEM + 0.008
     hs = history_series(fc_crop_key(fc))
     if len(hs) >= 2:
-        draw_sparkline(fig, [x + pad, y - 0.048, w - 2 * pad, 0.042], hs)
-        y -= 0.056
+        draw_sparkline(fig, [x + CARD_PAD, y - 0.052, w - 2 * CARD_PAD, 0.040], hs)
+        y -= 0.070
         page.text(cx, y, f"napi becslések ({len(hs)} nap)", fontsize=FS,
                   color=LIGHT, va="top")
-        y -= 0.020
-    # 7. érték-hatás
+        y -= LINE + GAP_ELEM
     if v:
         gap = v["trend_gap_bn_huf"]
         page.text(cx, y, f"{v['production_value_bn_huf']:.0f} mrd Ft",
                   fontsize=FS_MID, fontweight="bold", color=INK, va="top")
-        y -= 0.021
-        g_col = RED if gap < -0.05 else GREEN if gap > 0.05 else INK
+        y -= 0.027
+        # AD: piros-redukció — a "vs szokásos" semleges sötétszürke
         page.text(cx, y, f"vs szokásos: {signed(gap, 0)} mrd Ft",
-                  fontsize=FS, color=g_col, va="top")
-        y -= 0.019
+                  fontsize=FS, color="#444444", va="top")
+        y -= LINE
         page.text(cx, y, f"{v['price_year']}-es áron — indikatív",
                   fontsize=FS, color=LIGHT, va="top", style="italic")
-        y -= 0.022
-    # (a rövid headline kikerült: számai — eltérés % és mrd Ft — fent szerepelnek;
-    # a felszabaduló hely a térkép-soré)
 
 
 def fc_crop_key(fc: dict) -> str:
-    """crop kulcs (wheat/corn/barley) visszakeresése a label alapján."""
     for key, spec in config.CROPS.items():
         if spec["label"] == fc["crop"]:
             return key
     raise KeyError(fc["crop"])
 
 
-def focus_rows(fcs: dict[str, dict]) -> list[tuple[str, list[tuple[str, dict]]]]:
-    """[(vármegyenév, [(crop_label, county_rec vagy None), ...]), ...]"""
-    out = []
-    for name in config.REPORT_FOCUS_COUNTIES:
-        per_crop = []
-        for crop, fc in fcs.items():
-            rec = next((c for c in fc["counties"] if c["county_name"] == name), None)
-            per_crop.append((fc["crop"], rec, fc))
-        out.append((name, per_crop))
-    return out
+def page_frame(fig, title: str, subtitle: str, updated: str):
+    """Közös oldalkeret: cím + dátum + alcím + elválasztó. Visszaadja (page, y)."""
+    page = fig.add_axes([0, 0, 1, 1]); page.set_axis_off()
+    page.set_xlim(0, 1); page.set_ylim(0, 1)
+    page.text(M, 0.965, title, fontsize=FS_TITLE, fontweight="bold",
+              color=INK, va="top")
+    page.text(1 - M, 0.965, updated, fontsize=FS_MID, color=MUTED,
+              ha="right", va="top")
+    page.text(M, 0.936, subtitle, fontsize=FS, color=MUTED, va="top")
+    page.plot([M, 1 - M], [0.918, 0.918], color=BORDER, lw=0.9,
+              transform=page.transAxes)
+    return page, 0.918 - GAP_SECTION
 
 
+def page_footer(page, page_no: int, total: int, note: str = ""):
+    txt = (f"{page_no}/{total} · Terméshozam-előrejelző · generálva: "
+           f"{datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    if note:
+        txt += f" · {note}"
+    page.text(M, 0.022, txt, fontsize=FS, color=LIGHT, va="bottom")
+
+
+# ---------------------------------------------------------------------------- #
+# 1. oldal — vezetői összefoglaló (CSAK a napi sáv + három oszlop)
+# ---------------------------------------------------------------------------- #
+def draw_summary_page(pdf: PdfPages, fcs: dict[str, dict], deltas: dict,
+                      total_pages: int) -> None:
+    fig = plt.figure(figsize=(8.27, 11.69))
+    any_fc = next(iter(fcs.values()))
+    page, y = page_frame(
+        fig, "Napi vezetői jelentés",
+        f"{any_fc['crop_year']}-es termésév · búza, kukorica, őszi árpa · "
+        "vármegyei statisztikai modell", any_fc["updated_at"])
+
+    # NAPI VÁLTOZÁS SÁV — a nap híre (AD: headline-súly + élcsík)
+    band_h = 0.108
+    card(page, M, y - band_h, 1 - 2 * M, band_h)
+    d0 = next((d for d in deltas.values() if d), None)
+    any_change = any(d and abs(d["d_tha"]) >= 0.005 for d in deltas.values())
+    improving = any(d and d["d_tha"] > 0.005 for d in deltas.values())
+    if any_change:
+        stripe_col = GREEN if improving else RED
+        page.add_patch(Rectangle((M + 0.002, y - band_h + 0.006), 0.006,
+                                 band_h - 0.012, facecolor=stripe_col,
+                                 edgecolor="none", transform=page.transAxes,
+                                 zorder=2))
+    rng = (f" ({d0['prev_date']} → {d0['cur_date']})" if d0 else "")
+    page.text(M + CARD_PAD, y - CARD_PAD, f"VÁLTOZÁS TEGNAP ÓTA{rng}",
+              fontsize=FS, fontweight="bold", color=LIGHT, va="top")
+    if not any_change:
+        page.text(1 - M - CARD_PAD, y - CARD_PAD,
+                  "Nincs döntést igénylő változás tegnap óta.",
+                  fontsize=FS, color=GREEN, va="top", ha="right")
+    cell_w = (1 - 2 * M - 2 * CARD_PAD) / 3
+    for i, (crop, fc) in enumerate(fcs.items()):
+        cx = M + CARD_PAD + i * cell_w
+        page.text(cx, y - CARD_PAD - 0.024, fc["crop"], fontsize=FS,
+                  color=MUTED, va="top")
+        d = deltas[crop]
+        if d is None or abs(d["d_tha"]) < 0.005:
+            page.text(cx, y - CARD_PAD - 0.050,
+                      "— változatlan" if d else "első jelentési nap",
+                      fontsize=FS, color=MUTED, va="top")
+        else:
+            arrow = "▲" if d["d_tha"] > 0 else "▼"
+            dcol = GREEN if d["d_tha"] > 0 else RED
+            page.text(cx, y - CARD_PAD - 0.052, f"{arrow} {signed(d['d_tha'], 2)} t/ha",
+                      fontsize=FS_BIG, fontweight="bold", color=dcol, va="top")
+            if d.get("d_bn") is not None and abs(d["d_bn"]) >= 0.05:
+                page.text(cx, y - CARD_PAD - 0.078,
+                          f"{signed(d['d_bn'], 1)} mrd Ft "
+                          f"({'javulás' if d['d_tha'] > 0 else 'romlás'})",
+                          fontsize=FS, color=dcol, va="top")
+    y -= band_h + GAP_SECTION
+
+    # három termény-oszlop — a kártya a tartalomhoz zárva (tipográfus E2)
+    col_h = 0.505
+    col_w = (1 - 2 * M - 2 * 0.022) / 3
+    for i, (crop, fc) in enumerate(fcs.items()):
+        crop_column(fig, page, M + i * (col_w + 0.022), col_w, y, col_h,
+                    fc, deltas[crop])
+    y -= col_h + GAP_SECTION
+
+    # MA A LÉNYEG — a három termény együtt (AD #4: a felszabadult sáv tartalma)
+    vals = [fc["national"].get("value") for fc in fcs.values()]
+    if all(vals):
+        total_val = sum(v["production_value_bn_huf"] for v in vals)
+        total_gap = sum(v["trend_gap_bn_huf"] for v in vals)
+        page.plot([M, 1 - M], [y, y], color=BORDER, lw=0.9,
+                  transform=page.transAxes)
+        y -= 0.024
+        page.text(M, y, "MA A LÉNYEG", fontsize=FS, fontweight="bold",
+                  color=LIGHT, va="top")
+        y -= 0.028
+        page.text(M, y, f"A három termény együtt: ~{total_val:.0f} mrd Ft "
+                  "termelési érték,", fontsize=FS_MID, fontweight="bold",
+                  color=INK, va="top")
+        y -= 0.026
+        page.text(M, y, f"{signed(total_gap, 0)} mrd Ft a szokásoshoz képest",
+                  fontsize=FS_MID, fontweight="bold", color=INK, va="top")
+        y -= 0.026
+        page.text(M, y, "a legutolsó hivatalos (2024-es) termelői árakon — indikatív",
+                  fontsize=FS, color=LIGHT, va="top", style="italic")
+
+    page_footer(page, 1, total_pages, "Módszertan: utolsó oldal.")
+    pdf.savefig(fig)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------- #
+# 2. oldal — területi kép (nagy térképek) + fókusz-vármegyék
+# ---------------------------------------------------------------------------- #
 def draw_focus_table(page, y_top: float, fcs: dict[str, dict]) -> float:
-    """Fókusz-vármegyék blokkja az 1. oldalon. Visszaadja az alsó y-t."""
     names = " · ".join(config.REPORT_FOCUS_COUNTIES)
     page.text(M, y_top, f"FÓKUSZ-VÁRMEGYÉK — {names}", fontsize=13,
               fontweight="bold", color=LIGHT, va="top")
-    y = y_top - 0.026
+    y = y_top - 0.032
 
-    # terményenkénti közös sáv-skála (fókuszmegyék + országos)
     scales = {}
     for crop, fc in fcs.items():
         lows, highs = [fc["national"]["predicted_yield_t_ha"]], []
@@ -399,20 +495,18 @@ def draw_focus_table(page, y_top: float, fcs: dict[str, dict]) -> float:
         pad = (hi - lo) * 0.06 or 0.3
         scales[fc["crop"]] = (lo - pad, hi + pad)
 
-    line_h = 0.019
-    # oszlop-x pozíciók (jobbra zárt számok)
-    x_name, x_pred, x_anom, x_vs = M + 0.012, M + 0.28, M + 0.40, M + 0.585
-    bar_x0, bar_x1 = M + 0.615, 1 - M - 0.012
+    x_name, x_pred, x_anom, x_vs = M + 0.014, M + 0.27, M + 0.40, M + 0.585
+    bar_x0, bar_x1 = M + 0.62, 1 - M - 0.014
 
     for county, per_crop in focus_rows(fcs):
         page.text(M, y, county, fontsize=13, fontweight="bold", color=INK, va="top")
-        y -= line_h
+        y -= LINE
         for label, rec, fc in per_crop:
             page.text(x_name, y, label, fontsize=FS, color=MUTED, va="top")
             if rec is None or rec["predicted_yield_t_ha"] is None:
-                page.text(x_pred, y, "nincs becslés (kevés termőterület)",
-                          fontsize=FS, color=MUTED, va="top")
-                y -= line_h
+                page.text(x_pred, y, "nincs becslés", fontsize=FS, color=MUTED,
+                          va="top")
+                y -= LINE
                 continue
             nat_pred = fc["national"]["predicted_yield_t_ha"]
             page.text(x_pred, y, f"{hu(rec['predicted_yield_t_ha'])} t/ha",
@@ -425,101 +519,80 @@ def draw_focus_table(page, y_top: float, fcs: dict[str, dict]) -> float:
             vs = "≈ orsz." if abs(dv) < 0.05 else f"{signed(dv, 2)} vs orsz."
             vs_col = MUTED if abs(dv) < 0.05 else (GREEN if dv > 0 else RED)
             page.text(x_vs, y, vs, fontsize=FS, color=vs_col, va="top", ha="right")
-            # sáv-grafika: low–high téglalap + becslés-pont + országos vonás
             lo_s, hi_s = scales[fc["crop"]]
             def X(v):
                 return bar_x0 + (v - lo_s) / (hi_s - lo_s) * (bar_x1 - bar_x0)
-            bar_y = y - 0.012
+            bar_y = y - 0.013
             page.add_patch(Rectangle((X(rec["low"]), bar_y - 0.004),
                                      X(rec["high"]) - X(rec["low"]), 0.008,
                                      facecolor=BAND, alpha=0.5, edgecolor="none",
                                      transform=page.transAxes, zorder=2))
-            page.plot([X(nat_pred), X(nat_pred)], [bar_y - 0.007, bar_y + 0.007],
+            page.plot([X(nat_pred), X(nat_pred)], [bar_y - 0.008, bar_y + 0.008],
                       color=MUTED, lw=1.8, transform=page.transAxes, zorder=3)
-            page.scatter([X(rec["predicted_yield_t_ha"])], [bar_y], s=32,
+            page.scatter([X(rec["predicted_yield_t_ha"])], [bar_y], s=34,
                          color=INK, transform=page.transAxes, zorder=4)
-            y -= line_h
-        y -= 0.004
-    page.text(M, y, "sáv: várható tartomány (80%), terményenként közös skálán · "
-              "pont: becslés · vonás: országos", fontsize=FS, color=LIGHT, va="top")
-    return y - line_h
+            y -= LINE
+        y -= GAP_ELEM
+    page.text(M, y, "sáv: 80%-os tartomány · pont: becslés · vonás: országos",
+              fontsize=FS, color=LIGHT, va="top")
+    return y - LINE
 
 
-# ---------------------------------------------------------------------------- #
-# 1. oldal — vezetői összefoglaló
-# ---------------------------------------------------------------------------- #
-def draw_summary_page(pdf: PdfPages, fcs: dict[str, dict], deltas: dict,
-                      total_pages: int, gdf=None) -> None:
+def draw_map_page(pdf: PdfPages, fcs: dict[str, dict], gdf,
+                  page_no: int, total_pages: int) -> None:
     fig = plt.figure(figsize=(8.27, 11.69))
-    page = fig.add_axes([0, 0, 1, 1]); page.set_axis_off()
-    page.set_xlim(0, 1); page.set_ylim(0, 1)
-
     any_fc = next(iter(fcs.values()))
-    # fejléc
-    page.text(M, 0.972, "Napi vezetői jelentés",
-              fontsize=FS_TITLE, fontweight="bold", color=INK, va="top")
-    page.text(1 - M, 0.972, any_fc["updated_at"], fontsize=FS_MID, color=MUTED,
-              ha="right", va="top")
-    page.text(M, 0.944, f"{any_fc['crop_year']}-es termésév · búza, kukorica, "
-              "őszi árpa · vármegyei statisztikai modell",
-              fontsize=FS, color=MUTED, va="top")
-    page.plot([M, 1 - M], [0.930, 0.930], color=BORDER, lw=1, transform=page.transAxes)
+    page, y = page_frame(
+        fig, "Területi kép",
+        "eltérés a szokásos hozamtól vármegyénként · vastag keret: fókusz-vármegye",
+        any_fc["updated_at"])
 
-    # NAPI VÁLTOZÁS SÁV
-    band_top, band_h = 0.920, 0.078
-    card(page, M, band_top - band_h, 1 - 2 * M, band_h)
-    d0 = next((d for d in deltas.values() if d), None)
-    rng = (f" ({d0['prev_date']} → {d0['cur_date']})" if d0 else "")
-    page.text(M + 0.012, band_top - 0.010, f"VÁLTOZÁS TEGNAP ÓTA{rng}",
-              fontsize=FS, fontweight="bold", color=LIGHT, va="top")
-    all_flat = all(d is None or abs(d["d_tha"]) < 0.005 for d in deltas.values())
-    if all_flat:
-        page.text(1 - M - 0.012, band_top - 0.010,
-                  "Nincs döntést igénylő változás tegnap óta.",
-                  fontsize=FS, color=GREEN, va="top", ha="right")
-    cell_w = (1 - 2 * M - 0.024) / 3
-    for i, (crop, fc) in enumerate(fcs.items()):
-        cx = M + 0.012 + i * cell_w
-        page.text(cx, band_top - 0.032, fc["crop"], fontsize=FS, color=MUTED, va="top")
-        dtxt, dcol = delta_band_str(deltas[crop])
-        page.text(cx, band_top - 0.052, dtxt, fontsize=FS,
-                  fontweight="bold" if dcol != MUTED else "normal",
-                  color=dcol, va="top")
+    # három NAGY térkép egymás alatt kettő+egy elrendezés helyett: 2 felül, 1 alul balra,
+    # jobbra alul a jelmagyarázat — mindegyik térkép nagy és olvasható
+    map_w, map_h = 0.42, 0.185
+    positions = [(M, y - map_h), (1 - M - map_w, y - map_h),
+                 (M, y - 2 * map_h - 0.052)]
+    for (mx, my), (crop, fc) in zip(positions, fcs.items()):
+        draw_anom_map(fig, [mx, my, map_w, map_h], fc, gdf)
+        a = fc["national"]["anomaly_pct"]
+        page.text(mx + map_w / 2, my + map_h + 0.004,
+                  f"{fc['crop']} · országos: {signed(a, 1)}%",
+                  fontsize=13, fontweight="bold", color=INK, va="bottom",
+                  ha="center")
 
-    # három termény-oszlop
-    col_w = (1 - 2 * M - 2 * 0.016) / 3
-    for i, (crop, fc) in enumerate(fcs.items()):
-        crop_column(fig, page, M + i * (col_w + 0.016), col_w, fc, deltas[crop])
+    # jelmagyarázat a jobb alsó negyedben
+    lx = 1 - M - map_w + 0.03
+    ly = y - 2 * map_h - 0.052 + map_h - 0.055
+    draw_anom_colorbar(fig, [lx, ly, map_w - 0.10, 0.010])
+    page.text(lx, ly - 0.030, textwrap.fill(
+        "piros: elmaradás a szokásostól · kék: többlet · szürke: nincs "
+        "becslés (Budapest)", 34),
+        fontsize=FS, color=MUTED, va="top", linespacing=1.5)
 
-    # térkép-sor: terményenként egy mini-choropleth, közös skálával
-    page.text(M, 0.496, "TERÜLETI KÉP — eltérés a szokásostól (%)",
-              fontsize=13, fontweight="bold", color=LIGHT, va="top")
-    if gdf is not None:
-        for i, (crop, fc) in enumerate(fcs.items()):
-            mx = M + i * (col_w + 0.016)
-            draw_anom_map(fig, [mx + 0.01, 0.362, col_w - 0.02, 0.112], fc, gdf)
-            page.text(mx + col_w / 2, 0.360, fc["crop"], fontsize=FS,
-                      color=MUTED, va="top", ha="center")
-        draw_anom_colorbar(fig, [M + 0.02, 0.339, 0.30, 0.009])
-        page.text(M + 0.36, 0.348, "szürke: nincs becslés · vastag keret: "
-                  "fókusz-vármegye", fontsize=FS, color=LIGHT, va="top")
+    # fókusz-vármegyék táblája az alsó harmadban
+    draw_focus_table(page, y - 2 * map_h - 0.052 - GAP_SECTION, fcs)
 
-    # fókusz-vármegye tábla
-    draw_focus_table(page, 0.316, fcs)
-
-    # láblécsor
-    page.text(M, 0.010, f"1/{total_pages} · Terméshozam-előrejelző · generálva: "
-              f"{datetime.now().strftime('%Y-%m-%d %H:%M')} · Módszertan: utolsó oldal.",
-              fontsize=FS, color=LIGHT, va="bottom")
+    page_footer(page, page_no, total_pages)
     pdf.savefig(fig)
     plt.close(fig)
 
 
+def focus_rows(fcs: dict[str, dict]):
+    out = []
+    for name in config.REPORT_FOCUS_COUNTIES:
+        per_crop = []
+        for crop, fc in fcs.items():
+            rec = next((c for c in fc["counties"] if c["county_name"] == name), None)
+            per_crop.append((fc["crop"], rec, fc))
+        out.append((name, per_crop))
+    return out
+
+
 # ---------------------------------------------------------------------------- #
-# 2+. oldal — "Ami még él" (futó szezonú termény)
+# 3+. oldal — "Ami még él" (futó szezonú termény), levegős elrendezés
 # ---------------------------------------------------------------------------- #
 def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
-                   is_last: bool, gdf=None) -> None:
+                   is_last: bool) -> None:
     crop = fc_crop_key(fc)
     n = fc["national"]
     v = n.get("value")
@@ -527,126 +600,121 @@ def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
     main, badge, cert = headline_text(fc)
 
     fig = plt.figure(figsize=(8.27, 11.69))
-    page = fig.add_axes([0, 0, 1, 1]); page.set_axis_off()
-    page.set_xlim(0, 1); page.set_ylim(0, 1)
-
-    # fejléc
-    page.text(M, 0.972, f"Ami még él — {fc['crop']}", fontsize=FS_TITLE,
-              fontweight="bold", color=INK, va="top")
-    page.text(1 - M, 0.972, fc["updated_at"], fontsize=FS_MID, color=MUTED,
-              ha="right", va="top")
-    page.text(M, 0.944, f"{sc['remaining_days']} nap a szezon végéig — "
-              "a becslés még változhat", fontsize=FS, color=MUTED, va="top")
-    pill(page, 1 - M, 0.978, "MÉG VÁLTOZHAT", live=True, ha="right")
-    page.plot([M, 1 - M], [0.928, 0.928], color=BORDER, lw=1, transform=page.transAxes)
+    page, y = page_frame(
+        fig, f"Ami még él — {fc['crop']}",
+        f"{sc['remaining_days']} nap a szezon végéig — a becslés még változhat",
+        fc["updated_at"])
+    pill(page, 1 - M - 0.004, 0.9455, "MÉG VÁLTOZHAT", live=True, ha="right")
 
     # teljes headline
-    head_lines = textwrap.wrap(main, 62)
-    page.text(M, 0.918, "\n".join(head_lines), fontsize=14.5, color=INK,
-              va="top", linespacing=1.4, fontweight="bold")
-    y = 0.918 - len(head_lines) * 0.0205 - 0.008
-    cert_lines = textwrap.wrap(cert, 82)
+    head_lines = textwrap.wrap(main, 58)
+    page.text(M, y, "\n".join(head_lines), fontsize=14.5, color=INK,
+              va="top", linespacing=1.5, fontweight="bold")
+    y -= len(head_lines) * 0.0225 + GAP_ELEM
+    cert_lines = textwrap.wrap(cert, 76)
     page.text(M, y, "\n".join(cert_lines), fontsize=FS, color=MUTED,
-              va="top", linespacing=1.35)
-    y -= len(cert_lines) * 0.0165 + 0.018
+              va="top", linespacing=1.45)
+    y -= len(cert_lines) * 0.019 + 0.022
 
     # forgatókönyv-blokk: sáv balra, tonna/forint tábla jobbra
-    from_scenarios = sc["national"]
+    fsn = sc["national"]
     area = v["area_ha"] if v else None
     price = v["price_huf_per_t"] if v else None
-    band_rect = [M, y - 0.115, 0.40, 0.085]
-    ax = fig.add_axes(band_rect)
-    p10, p50, p90 = from_scenarios["p10"], from_scenarios["p50"], from_scenarios["p90"]
+    p10, p50, p90 = fsn["p10"], fsn["p50"], fsn["p90"]
     point = n["predicted_yield_t_ha"]
+
+    ax = fig.add_axes([M + 0.02, y - 0.118, 0.38, 0.085])
     lo, hi = min(p10, point), max(p90, point)
     pad = (hi - lo) * 0.2 or 0.5
     ax.barh(0, p90 - p10, left=p10, height=0.34, color=BAND, alpha=0.5, zorder=2)
     ax.plot([p50, p50], [-0.3, 0.3], color=BLUE, lw=2.5, zorder=3)
-    ax.scatter([point], [0], marker="v", s=130, color=RED, zorder=4)
-    ax.annotate(f"kedvezőtlen\n{hu(p10)}", (p10, 0), xytext=(0, -32),
-                textcoords="offset points", ha="center", fontsize=FS, color=MUTED)
-    ax.annotate(f"kedvező\n{hu(p90)}", (p90, 0), xytext=(0, -32),
-                textcoords="offset points", ha="center", fontsize=FS, color=MUTED)
-    ax.annotate(f"becslés {hu(point)}", (point, 0), xytext=(0, 14),
+    ax.scatter([point], [0], marker="v", s=130, color=INK, zorder=4)
+    ax.annotate(f"kedvezőtlen\n{hu(p10)}", (p10, 0), xytext=(0, -38),
                 textcoords="offset points", ha="center", fontsize=FS,
-                color=RED, fontweight="bold")
-    ax.set_xlim(lo - pad, hi + pad); ax.set_ylim(-1.3, 0.95)
+                color=MUTED, linespacing=1.45)
+    ax.annotate(f"kedvező\n{hu(p90)}", (p90, 0), xytext=(0, -38),
+                textcoords="offset points", ha="center", fontsize=FS,
+                color=MUTED, linespacing=1.45)
+    ax.annotate(f"becslés {hu(point)}", (point, 0), xytext=(0, 15),
+                textcoords="offset points", ha="center", fontsize=FS,
+                color=INK, fontweight="bold")
+    ax.set_xlim(lo - pad, hi + pad); ax.set_ylim(-1.5, 1.0)
     ax.set_axis_off()
-    ax.set_title("Forgatókönyvek (t/ha)", fontsize=13, color=INK, pad=2, loc="left")
+    ax.set_title("Forgatókönyvek (t/ha)", fontsize=13, color=INK, pad=4, loc="left")
 
-    # tonna/forint tábla
-    tx = 0.52
+    tx = 0.54
     page.text(tx, y, "Terményben és forintban*", fontsize=13,
               fontweight="bold", color=INK, va="top")
-    ty = y - 0.024
-    cols_x = [tx, tx + 0.20, tx + 0.31, tx + 0.42]
+    ty = y - 0.032
+    cols_x = [tx, tx + 0.20, tx + 0.31, tx + 0.40]
     for cx_, htxt in zip(cols_x, ["", "t/ha", "M tonna", "mrd Ft*"]):
         if htxt:
             page.text(cx_, ty, htxt, fontsize=FS, color=LIGHT, va="top", ha="right")
-    ty -= 0.019
-    rows = [("Kedvezőtlen", p10, False),
-            ("Várható", p50, True),
-            ("Kedvező", p90, False)]
-    for label, p, bold in rows:
+    ty -= LINE
+    for label, pv, bold in [("Kedvezőtlen", p10, False), ("Középső", p50, True),
+                            ("Kedvező", p90, False)]:
         weight = "bold" if bold else "normal"
         page.text(tx, ty, label, fontsize=FS, color=INK, va="top", fontweight=weight)
-        page.text(cols_x[1], ty, hu(p), fontsize=FS, color=INK, va="top",
+        page.text(cols_x[1], ty, hu(pv), fontsize=FS, color=INK, va="top",
                   ha="right", fontweight=weight)
         if area and price:
-            tons = p * area
-            page.text(cols_x[2], ty, hu(tons / 1e6), fontsize=FS,
-                      color=INK, va="top", ha="right", fontweight=weight)
+            tons = pv * area
+            page.text(cols_x[2], ty, hu(tons / 1e6), fontsize=FS, color=INK,
+                      va="top", ha="right", fontweight=weight)
             page.text(cols_x[3], ty, f"{tons * price / 1e9:.0f}", fontsize=FS,
                       color=INK, va="top", ha="right", fontweight=weight)
-        ty -= 0.019
-    y = min(y - 0.150, ty - 0.010)
+        ty -= LINE
+    y = min(y - 0.146, ty - GAP_ELEM)
+
     if area and price:
         risk = (p90 - p10) * area * price / 1e9
         page.text(M, y, f"A kedvezőtlen és a kedvező kimenet közti különbség "
-                  f"kb. {risk:.0f} mrd Ft.", fontsize=FS,
+                  f"kb. {risk:.0f} mrd Ft.", fontsize=FS_MID,
                   fontweight="bold", color=INK, va="top")
-        y -= 0.022
-    if area and price:
+        y -= 0.028
         note = (f"*{v['price_year']}-es hivatalos termelői átlagáron "
                 f"({price:,.0f} Ft/t".replace(",", " ") +
                 f"), a legutóbbi lezárt évi vetésterülettel ({area / 1e3:.0f} ezer ha) "
                 "— indikatív, nem piaci árajánlat.")
-        page.text(M, y, textwrap.fill(note, 92), fontsize=FS, color=LIGHT,
-                  va="top", style="italic")
-        y -= 0.030
+        note_lines = textwrap.wrap(note, 84)
+        page.text(M, y, "\n".join(note_lines), fontsize=FS, color=LIGHT,
+                  va="top", style="italic", linespacing=1.45)
+        y -= len(note_lines) * 0.019 + 0.022
 
-    # trend-részlet: napi becslések P10–P90 sávval
+    # trend-részlet
     hs = history_series(crop, max_days=21)
     if len(hs) >= 2:
-        ax2 = fig.add_axes([M + 0.02, y - 0.155, 1 - 2 * M - 0.04, 0.125])
+        ax2 = fig.add_axes([M + 0.045, y - 0.148, 1 - 2 * M - 0.065, 0.115])
         xs = range(len(hs))
         preds = [h["pred"] for h in hs]
         if all(h["p10"] is not None for h in hs):
             ax2.fill_between(xs, [h["p10"] for h in hs], [h["p90"] for h in hs],
                              color=BAND, alpha=0.25, zorder=1)
         ax2.plot(xs, preds, color=BLUE, lw=1.8, zorder=3)
-        ax2.scatter(xs, preds, s=26, color=BLUE, zorder=4)
-        ax2.annotate(hu(preds[-1]), (len(hs) - 1, preds[-1]), xytext=(0, 8),
+        ax2.scatter(xs, preds, s=28, color=BLUE, zorder=4)
+        ax2.annotate(hu(preds[-1]), (len(hs) - 1, preds[-1]), xytext=(0, 9),
                      textcoords="offset points", ha="center", fontsize=FS,
                      color=INK, fontweight="bold")
         step = max(1, len(hs) // 6)
         ax2.set_xticks(list(xs)[::step])
-        ax2.set_xticklabels([hs[i]["date"][5:] for i in list(xs)[::step]], fontsize=FS)
+        ax2.set_xticklabels([hs[i]["date"][5:] for i in list(xs)[::step]],
+                            fontsize=FS)
         ax2.tick_params(axis="y", labelsize=FS, colors=MUTED)
+        ax2.set_yticklabels([hu(t, 1) for t in ax2.get_yticks()])
         ax2.spines[["top", "right"]].set_visible(False)
         ax2.set_title("A becslés napi alakulása (P10–P90 sávval, t/ha)",
-                      fontsize=13, color=INK, loc="left", pad=4)
-        y -= 0.185
+                      fontsize=13, color=INK, loc="left", pad=6)
+        y -= 0.148 + 0.034
 
     # fókusz-vármegyék kilátása + időjárása
     page.text(M, y, "FÓKUSZ-VÁRMEGYÉK — kilátás és időjárás", fontsize=13,
               fontweight="bold", color=LIGHT, va="top")
-    y -= 0.022
+    y -= 0.026
     heads = ["", "Becslés", "P10–P90", "Hőstressz", "Vízmérleg", "Csapadék"]
-    hx = [M, M + 0.26, M + 0.47, M + 0.61, M + 0.755, M + 0.88]
+    hx = [M, M + 0.25, M + 0.46, M + 0.60, M + 0.745, M + 0.86]
     for cx_, htxt in zip(hx[1:], heads[1:]):
         page.text(cx_, y, htxt, fontsize=FS, color=LIGHT, va="top", ha="right")
-    y -= 0.019
+    y -= LINE
     sc_counties = sc.get("counties") or {}
     for name in config.REPORT_FOCUS_COUNTIES:
         rec = next((c for c in fc["counties"] if c["county_name"] == name), None)
@@ -656,7 +724,7 @@ def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
         if rec["predicted_yield_t_ha"] is None:
             page.text(hx[1], y, "nincs becslés", fontsize=FS, color=MUTED,
                       va="top", ha="right")
-            y -= 0.019
+            y -= LINE
             continue
         page.text(hx[1], y, f"{hu(rec['predicted_yield_t_ha'])} t/ha", fontsize=FS,
                   fontweight="bold", color=INK, va="top", ha="right")
@@ -672,40 +740,25 @@ def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
                   color=RED if wb < -300 else INK, va="top", ha="right")
         page.text(hx[5], y, f"{hu(wx['prec_total_mm'], 0)} mm", fontsize=FS,
                   color=INK, va="top", ha="right")
-        y -= 0.019
-    page.text(M, y - 0.002, textwrap.fill(
+        y -= LINE
+    page.text(M, y - 0.004, textwrap.fill(
         "A vízmérleg = csapadék − párolgás a szezon eddigi részében; "
         "minél negatívabb, annál nagyobb az aszálynyomás.", 82),
-        fontsize=FS, color=MUTED, va="top", linespacing=1.3)
-    y -= 0.052
-
-    # területi kép: kompakt anomália-térkép a lábléc fölé
-    if gdf is not None:
-        page.text(M, y, "TERÜLETI KÉP — eltérés a szokásostól (%)",
-                  fontsize=13, fontweight="bold", color=LIGHT, va="top")
-        map_h = max(0.10, y - 0.155)          # a lábléc (0.118) fölött marad
-        draw_anom_map(fig, [M, y - 0.022 - map_h, 0.36, map_h], fc, gdf)
-        draw_anom_colorbar(fig, [0.50, y - 0.055, 0.30, 0.009])
-        page.text(0.50, y - 0.075, textwrap.fill(
-            "Vastag keret: fókusz-vármegyék. Szürke: nincs becslés (Budapest). "
-            "A színskála a weboldal térképével azonos.", 44),
-            fontsize=FS, color=MUTED, va="top", linespacing=1.35)
+        fontsize=FS, color=MUTED, va="top", linespacing=1.4)
 
     # módszertani lábléc — csak a legutolsó oldalon
     if is_last:
-        page.plot([M, 1 - M], [0.118, 0.118], color=BORDER, lw=1,
+        page.plot([M, 1 - M], [0.142, 0.142], color=BORDER, lw=0.9,
                   transform=page.transAxes)
         foot = (
             "Módszertan: statisztikai modell (KSH vármegyei hozamok 2000-től + ERA5 "
             "időjárás); tipikus tévedés terményenként ±9–20%. Nem hivatalos adat. "
             "Részletek: prettyasap.github.io/wheat-forecast/magyarazat.html · "
-            "Adatok: KSH, Open-Meteo/ERA5 (CC BY 4.0), Eurostat."
+            "Adatok: KSH, Open-Meteo/ERA5, Eurostat."
         )
-        page.text(M, 0.106, textwrap.fill(foot, 82), fontsize=FS, color=LIGHT,
-                  va="top", linespacing=1.35)
-    page.text(M, 0.008, f"{page_no}/{total_pages} · Terméshozam-előrejelző · "
-              f"generálva: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-              fontsize=FS, color=LIGHT, va="bottom")
+        page.text(M, 0.130, textwrap.fill(foot, 80), fontsize=FS, color=LIGHT,
+                  va="top", linespacing=1.45)
+    page_footer(page, page_no, total_pages)
     pdf.savefig(fig)
     plt.close(fig)
 
@@ -718,14 +771,15 @@ def main() -> None:
     gdf = gpd.read_file(config.WEB_DATA / "nuts3_hu.geojson")
     deltas = {crop: daily_delta(crop) for crop in config.CROPS}
     live_crops = [c for c, fc in fcs.items() if fc.get("scenarios")]
-    total_pages = 1 + len(live_crops)
+    total_pages = 2 + len(live_crops)
 
     out = JELENTES_DIR / f"jelentes_{today}.pdf"
     with PdfPages(out) as pdf:
-        draw_summary_page(pdf, fcs, deltas, total_pages, gdf)
+        draw_summary_page(pdf, fcs, deltas, total_pages)
+        draw_map_page(pdf, fcs, gdf, 2, total_pages)
         for i, crop in enumerate(live_crops):
-            draw_live_page(pdf, fcs[crop], 2 + i, total_pages,
-                           is_last=(i == len(live_crops) - 1), gdf=gdf)
+            draw_live_page(pdf, fcs[crop], 3 + i, total_pages,
+                           is_last=(i == len(live_crops) - 1))
         info = pdf.infodict()
         info["Title"] = f"Napi vezetői jelentés — {today}"
         info["Author"] = "Terméshozam-előrejelző (statisztikai modell)"
