@@ -70,6 +70,14 @@ def get_daily(url: str, params: dict) -> pd.DataFrame:
             print(f"    [429] rate limit — várok {wait} mp, újrapróba {attempt}/{MAX_RETRIES-1}")
             time.sleep(wait)
             continue
+        if resp.status_code >= 500:
+            # átmeneti szerveroldali hiba (pl. 503) — rövid várással újrapróbáljuk
+            if attempt == MAX_RETRIES:
+                resp.raise_for_status()
+            print(f"    [{resp.status_code}] szerverhiba — várok 30 mp, "
+                  f"újrapróba {attempt}/{MAX_RETRIES-1}")
+            time.sleep(30)
+            continue
         resp.raise_for_status()
         daily = resp.json().get("daily")
         if not daily or "time" not in daily:
