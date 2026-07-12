@@ -41,6 +41,9 @@ report:           ## as-of backtest + magyar riport mindkét terményre
 	$(PY) -m src.backtest --crop corn
 	$(PY) -m src.backtest --crop barley
 
+pdf:              ## napi vezetői PDF-jelentés (web/data/jelentes/)
+	$(PY) -m src.report_pdf
+
 live:             ## élő előrejelzés mindkét terményre (forecast_*.json)
 	$(PY) -m src.predict_live --crop wheat
 	$(PY) -m src.predict_live --crop corn
