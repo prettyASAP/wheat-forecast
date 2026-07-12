@@ -20,8 +20,8 @@
    "price_huf_per_t": 69260,
    "price_year": 2024,
    "area_ha": 736918,
-   "production_value_bn_huf": 334.2,
-   "trend_gap_bn_huf": -25.1,
+   "production_value_bn_huf": 334.3,
+   "trend_gap_bn_huf": -25.0,
    "note": "a 2024. évi termelői átlagáron, a 2025. évi területtel számolva"
   }
  },
@@ -30,7 +30,7 @@
   "remaining_days": 74,
   "national": {
    "p10": 5.8,
-   "p50": 6.53,
+   "p50": 6.54,
    "p90": 7.35
   },
   "counties": {
@@ -46,13 +46,13 @@
    },
    "HU212": {
     "p10": 5.15,
-    "p50": 5.89,
-    "p90": 6.73
+    "p50": 5.88,
+    "p90": 6.72
    },
    "HU213": {
-    "p10": 4.56,
-    "p50": 5.1,
-    "p90": 5.88
+    "p10": 4.57,
+    "p50": 5.11,
+    "p90": 5.89
    },
    "HU221": {
     "p10": 4.76,
@@ -60,7 +60,7 @@
     "p90": 6.2
    },
    "HU222": {
-    "p10": 5.56,
+    "p10": 5.57,
     "p50": 6.2,
     "p90": 7.09
    },
@@ -191,7 +191,7 @@
    "high": 7.82,
    "weather_todate": {
     "prec_total_mm": 89.5,
-    "wb_total_mm": -418.7,
+    "wb_total_mm": -418.8,
     "heat_days": 3,
     "frost_days_winter": null,
     "gdd_total": 1921.0
@@ -208,10 +208,10 @@
    "high": 7.09,
    "weather_todate": {
     "prec_total_mm": 114.4,
-    "wb_total_mm": -349.7,
+    "wb_total_mm": -349.4,
     "heat_days": 0,
     "frost_days_winter": null,
-    "gdd_total": 1796.0
+    "gdd_total": 1795.0
    },
    "value_bn_huf": 5.0,
    "trend_gap_bn_huf": -1.2
@@ -238,14 +238,14 @@
    "county_name": "Vas",
    "predicted_yield_t_ha": 6.25,
    "anomaly_pct": -18.2,
-   "low": 4.3,
+   "low": 4.31,
    "high": 8.19,
    "weather_todate": {
     "prec_total_mm": 134.8,
-    "wb_total_mm": -349.2,
+    "wb_total_mm": -349.0,
     "heat_days": 5,
     "frost_days_winter": null,
-    "gdd_total": 1968.0
+    "gdd_total": 1967.0
    },
    "value_bn_huf": 9.5,
    "trend_gap_bn_huf": -2.1
@@ -253,13 +253,13 @@
   {
    "nuts_id": "HU223",
    "county_name": "Zala",
-   "predicted_yield_t_ha": 6.37,
+   "predicted_yield_t_ha": 6.38,
    "anomaly_pct": -17.1,
    "low": 4.43,
    "high": 8.32,
    "weather_todate": {
     "prec_total_mm": 148.0,
-    "wb_total_mm": -329.8,
+    "wb_total_mm": -329.6,
     "heat_days": 5,
     "frost_days_winter": null,
     "gdd_total": 1958.0
@@ -287,13 +287,13 @@
   {
    "nuts_id": "HU232",
    "county_name": "Somogy",
-   "predicted_yield_t_ha": 6.78,
+   "predicted_yield_t_ha": 6.79,
    "anomaly_pct": -13.1,
    "low": 4.84,
    "high": 8.73,
    "weather_todate": {
     "prec_total_mm": 137.4,
-    "wb_total_mm": -345.9,
+    "wb_total_mm": -345.8,
     "heat_days": 5,
     "frost_days_winter": null,
     "gdd_total": 1954.0
