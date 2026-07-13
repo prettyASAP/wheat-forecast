@@ -68,6 +68,21 @@ def compute_features(daily: pd.DataFrame, crop: str = config.DEFAULT_CROP) -> pd
         # Hőstressznapok a termény kritikus ablakában
         hw = _window_slice(g, cy, spec["phenology"][spec["heat_window"]])
         row["heat_days"] = int((hw["temperature_2m_max"] > spec["heat_tmax_c"]).sum())
+
+        # --- v2 feature-ök (testületi csomag, A1+A3) — a v1 MELLÉ számolva;
+        # hogy melyik készlet éles, azt a walk-forward kapu dönti el ---
+        # A1: termény-specifikus bázisú és plafonozott GDD (kukorica 10/30 °C)
+        base, cap = spec["gdd_base_c"], spec["gdd_cap_c"]
+        row["gddc_total"] = (np.clip(g["temperature_2m_mean"], base, cap) - base).sum()
+        for name, win in spec["phenology"].items():
+            w = _window_slice(g, cy, win)
+            row[f"gddc_{name}"] = (np.clip(w["temperature_2m_mean"], base, cap)
+                                   - base).sum()
+        # A3: hőstressz folytonos intenzitásként (EDD, Schlenker–Roberts) a
+        # bináris napszám helyett; + meleg éjszakák a kritikus ablakban
+        row["edd"] = float(np.maximum(hw["temperature_2m_max"]
+                                      - spec["heat_tmax_c"], 0).sum())
+        row["warm_nights"] = int((hw["temperature_2m_min"] > 20.0).sum())
         # Téli fagynapok (csak őszi vetésű terménynél)
         if spec["use_frost"]:
             wd = _window_slice(g, cy, spec["phenology"]["winter_dormancy"])

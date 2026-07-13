@@ -1,6 +1,6 @@
 # Backtest riport — kukoricahozam-előrejelző (mérési kapu)
 
-*Készült: 2026-07-10. Adat: KSH vármegyei kukorica-termésátlag (2000–2025), ERA5 (Open-Meteo), 19 vármegye (Budapest kihagyva — elhanyagolható termőterület).*
+*Készült: 2026-07-14. Adat: KSH vármegyei kukorica-termésátlag (2000–2025), ERA5 (Open-Meteo), 19 vármegye (Budapest kihagyva — elhanyagolható termőterület).*
 
 ## 1. Modell
 

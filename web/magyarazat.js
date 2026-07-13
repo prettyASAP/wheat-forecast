@@ -22,9 +22,11 @@ const GLOSSARY = {
   tartomany: {
     title: "Várható tartomány",
     text: "A becslés bizonytalansági sávja: 10-ből 8 esetben ebbe a tartományba esik " +
-      "a végleges hozam (80%-os valószínűségi sáv). Szélessége a modell múltbeli " +
-      "tévedéseiből számolódik; szezon közben a még hátralévő időjárás bizonytalansága " +
-      "is hozzáadódik, ezért ilyenkor szélesebb — a betakarítás felé szűkül.",
+      "a végleges hozam (80%-os valószínűségi sáv). A sáv a modell múltbeli, " +
+      "csak-múltból-jósolt tévedéseinek tényleges eloszlásából számolódik, " +
+      "vármegyénként eltérő szélességgel (az ingadozóbb megyékben szélesebb), és " +
+      "aszimmetrikus lehet: az aszályos lehúzás jellemzően nagyobb, mint a felfelé " +
+      "meglepetés. Szezon közben a hátralévő időjárás bizonytalansága is hozzáadódik.",
   },
   forgatokonyvek: {
     title: "Mi lehet még belőle? (forgatókönyvek)",
@@ -51,10 +53,11 @@ const GLOSSARY = {
   },
   tevedes: {
     title: "A becslés tipikus tévedése",
-    text: "Visszamértük a modellt az elmúlt 26 évre úgy, hogy mindig kihagytuk az " +
-      "adott évet a tanításból, és megnéztük, mennyit tévedett volna. A ±X% ennek a " +
-      "tévedésnek a tipikus (átlagos) mértéke — ekkora hibával érdemes olvasni minden " +
-      "számot. A kukoricánál nagyobb, mert az érzékenyebb a nyári időjárásra.",
+    text: "Visszamértük a modellt 2011-től évről évre úgy, hogy mindig CSAK a " +
+      "korábbi évekből jósolt — pontosan úgy, ahogy élesben is dolgozik. A ±X% " +
+      "ennek a tévedésnek a tipikus mértéke; szigorúbb (és nagyobb) szám, mint a " +
+      "korábban közölt, de erre lehet üzleti döntést alapozni. A kukoricánál " +
+      "nagyobb, mert az érzékenyebb a nyári időjárásra.",
   },
   csapadek: {
     title: "Csapadék (mm)",

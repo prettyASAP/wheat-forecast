@@ -77,8 +77,22 @@
         (nincs adatszivárgás a tesztévből).</p>
 
       <h3>4. Validáció (mért eredmények)</h3>
-      <p>Leave-one-year-out keresztvalidáció: a modellt 26-szor illesztjük, mindig
-        egy teljes év kihagyásával, és a kihagyott évre jelzünk előre.
+      <p><b>Walk-forward (expanding-window) backtest — az elsődleges mérce
+        (2026. júliusi testületi felülvizsgálat óta):</b> 2011-től minden évre
+        kizárólag a korábbi éveken tanított modell jelez előre; a
+        hiperparamétereket és a változókészletet minden tanítóablakon belül
+        beágyazott keresztvalidáció választja — a tesztév utáni információ sehol
+        nem szerepel. Eredmények (RMSE): <b>búza 0,57 t/ha</b>,
+        <b>kukorica 1,51 t/ha</b>, <b>őszi árpa 0,58 t/ha</b> — mindhárom veri a
+        naiv trend-előrejelzést (0,62 / 1,95 / 0,67). A sáv a walk-forward
+        reziduumok empirikus 10–90. percentiliséből számolódik, vármegyénként
+        zsugorított szórással; tényleges lefedettség 80%. A változó-cseréket
+        (terménybázisú, plafonozott GDD; EDD hőstressz-intenzitás; meleg
+        éjszakák) ugyanez a kapu döntötte el terményenként — a kukoricánál a
+        csere nem javított, ott a korábbi készlet maradt. Részletek:
+        reports/walkforward_report.md.</p>
+      <p>Kiegészítő diagnosztika — leave-one-year-out keresztvalidáció: a modellt
+        26-szor illesztjük, mindig egy teljes év kihagyásával.
         Out-of-sample hibák (RMSE): <b>búza 0,53 t/ha (11,4%)</b>,
         <b>kukorica 1,40 t/ha (22,9%)</b>, <b>őszi árpa 0,55 t/ha (12,1%)</b> —
         mindhárom terménynél érdemben jobb, mint a naiv trend-előrejelzés
@@ -132,7 +146,7 @@
         github.com/prettyASAP/wheat-forecast</a>.</p>
     </details>
   </div>
-  <script src="magyarazat.js?v=2"></script>
+  <script src="magyarazat.js?v=3"></script>
   <script>
     (function () {
       var order = ["modszertan", "becsles", "szokasos", "tartomany", "tevedes",
