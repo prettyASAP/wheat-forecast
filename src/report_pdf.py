@@ -133,7 +133,7 @@ def headline_text(fc: dict) -> tuple[str, str, str]:
 
     if a <= -3:
         main = (f"A {crop} idei termése {hu(n['predicted_yield_t_ha'])} t/ha körül "
-                f"várható, {hu(abs(a), 1)}%-kal a sokéves szokásos alatt")
+                f"várható, {hu(abs(a), 1)}%-kal a sokéves szokásos szint alatt")
         main += (f" — ez a {v['price_year']}-es árakon kb. "
                  f"{abs(v['trend_gap_bn_huf']):.0f} mrd Ft kiesés." if v else ".")
     elif a >= 3:
@@ -147,11 +147,12 @@ def headline_text(fc: dict) -> tuple[str, str, str]:
                 "kiesés vagy többlet egyelőre nem látszik.")
 
     if a < 0 and n["yoy_pct"] >= 3:
-        main += (f" Jóval jobb, mint a tavalyi gyenge év (+{hu(n['yoy_pct'], 1)}% "
-                 f"vs {n['prev_year']}), de a megszokott szinttől elmarad.")
+        main += (f" Jóval jobb, mint a tavalyi gyenge év ({n['prev_year']}-höz "
+                 f"képest +{hu(n['yoy_pct'], 1)}%), de a megszokott szinttől "
+                 "elmarad.")
     elif a > 0 and n["yoy_pct"] <= -3:
-        main += (f" A tavalyi kiugró évnél gyengébb ({hu(n['yoy_pct'], 1)}% "
-                 f"vs {n['prev_year']}), de a megszokott szint felett.")
+        main += (f" A tavalyi kiugró évnél gyengébb ({n['prev_year']}-höz képest "
+                 f"{hu(n['yoy_pct'], 1)}%), de a megszokott szint felett.")
     if n["rank_from_worst"] <= 5:
         main += (f" Ha így marad, a {n['rank_total']} év "
                  f"{n['rank_from_worst']}. leggyengébb éve lenne.")
@@ -186,6 +187,89 @@ def short_headline(fc: dict) -> str:
     if gap is not None:
         txt += f" — kb. {gap:.0f} mrd Ft {word}."
     return txt
+
+
+
+# ---------------------------------------------------------------------------- #
+# Sorkizárt szöveg (matplotlib-ben nincs natív) — mért szélességű szedés
+# ---------------------------------------------------------------------------- #
+import re as _re
+from matplotlib.font_manager import FontProperties as _FP
+from matplotlib.textpath import TextPath as _TP
+
+_PAGE_W_PT = 8.27 * 72
+_measure_cache: dict = {}
+
+
+def _measure(text: str, fontsize: float, bold: bool = False,
+             italic: bool = False) -> float:
+    """Szöveg szélessége figure-frakcióban (TextPath — renderer nélkül)."""
+    key = (text, fontsize, bold, italic)
+    if key not in _measure_cache:
+        fp = _FP(family="DejaVu Sans",
+                 weight="bold" if bold else "normal",
+                 style="italic" if italic else "normal")
+        if not text.strip():
+            # a csak-szóköz TextPath a matplotlibben hibázik -> különbségként mérjük
+            w = (_TP((0, 0), f"a{text}a", size=fontsize, prop=fp).get_extents().width
+                 - _TP((0, 0), "aa", size=fontsize, prop=fp).get_extents().width)
+        else:
+            w = _TP((0, 0), text, size=fontsize, prop=fp).get_extents().width
+        _measure_cache[key] = w / _PAGE_W_PT
+    return _measure_cache[key]
+
+
+def _bind_units(text: str) -> str:
+    """Nem törhető kötés a szám+mértékegység és hasonló párokba (NBSP)."""
+    t = text
+    t = _re.sub(r"(\d) (t/ha|mrd Ft|mrd|ezer ha|Ft/t|mm|nap|év|M tonna)",
+                "\\1\u00a0\\2", t)
+    t = _re.sub(r"(mrd|ezer) (Ft|ha|t)", "\\1\u00a0\\2", t)
+    t = t.replace("kb. ", "kb.\u00a0")
+    return t
+
+
+def draw_para(page, x: float, y_top: float, width: float, text: str,
+              fontsize: float = FS, color: str = INK, bold: bool = False,
+              italic: bool = False, justify: bool = True,
+              line_h: float | None = None) -> float:
+    """Bekezdés szedése: mért tördelés + sorkizárás (az utolsó sor balra zárt).
+    Visszaadja a bekezdés alatti y-t."""
+    if line_h is None:
+        line_h = fontsize / 12 * 0.0235 * 1.02
+    words = _bind_units(text).split()
+    space_w = _measure(" ", fontsize, bold, italic)
+    # mért sortörés
+    lines: list[list[str]] = [[]]
+    used = 0.0
+    for w_ in words:
+        ww = _measure(w_.replace("\u00a0", " "), fontsize, bold, italic)
+        add = ww if not lines[-1] else ww + space_w
+        if lines[-1] and used + add > width:
+            lines.append([w_]); used = ww
+        else:
+            lines[-1].append(w_); used += add
+    y = y_top
+    for i, line in enumerate(lines):
+        last = (i == len(lines) - 1)
+        widths = [_measure(w_.replace("\u00a0", " "), fontsize, bold, italic)
+                  for w_ in line]
+        if justify and not last and len(line) > 1:
+            gap = (width - sum(widths)) / (len(line) - 1)
+            cx = x
+            for w_, ww in zip(line, widths):
+                page.text(cx, y, w_.replace("\u00a0", " "), fontsize=fontsize,
+                          color=color, va="top",
+                          fontweight="bold" if bold else "normal",
+                          style="italic" if italic else "normal")
+                cx += ww + gap
+        else:
+            page.text(x, y, " ".join(line).replace("\u00a0", " "),
+                      fontsize=fontsize, color=color, va="top",
+                      fontweight="bold" if bold else "normal",
+                      style="italic" if italic else "normal")
+        y -= line_h
+    return y
 
 
 # ---------------------------------------------------------------------------- #
@@ -352,7 +436,7 @@ def crop_column(fig, page, x, w, top, height, fc: dict, d: dict | None):
                   fontsize=FS_MID, fontweight="bold", color=INK, va="top")
         y -= 0.027
         # AD: piros-redukció — a "vs szokásos" semleges sötétszürke
-        page.text(cx, y, f"vs szokásos: {signed(gap, 0)} mrd Ft",
+        page.text(cx, y, f"a szokásostól: {signed(gap, 0)} mrd Ft",
                   fontsize=FS, color="#444444", va="top")
         y -= LINE
         page.text(cx, y, f"{v['price_year']}-es áron — indikatív",
@@ -385,7 +469,7 @@ def page_footer(page, page_no: int, total: int, note: str = ""):
            f"{datetime.now().strftime('%Y-%m-%d %H:%M')}")
     if note:
         txt += f" · {note}"
-    page.text(M, 0.022, txt, fontsize=FS, color=LIGHT, va="bottom")
+    page.text(M, 0.007, txt, fontsize=FS, color=LIGHT, va="bottom")
 
 
 # ---------------------------------------------------------------------------- #
@@ -482,7 +566,7 @@ def draw_focus_table(page, y_top: float, fcs: dict[str, dict]) -> float:
     names = " · ".join(config.REPORT_FOCUS_COUNTIES)
     page.text(M, y_top, f"FÓKUSZ-VÁRMEGYÉK — {names}", fontsize=13,
               fontweight="bold", color=LIGHT, va="top")
-    y = y_top - 0.032
+    y = y_top - 0.030
 
     scales = {}
     for crop, fc in fcs.items():
@@ -495,8 +579,15 @@ def draw_focus_table(page, y_top: float, fcs: dict[str, dict]) -> float:
         pad = (hi - lo) * 0.06 or 0.3
         scales[fc["crop"]] = (lo - pad, hi + pad)
 
-    x_name, x_pred, x_anom, x_vs = M + 0.014, M + 0.27, M + 0.40, M + 0.585
-    bar_x0, bar_x1 = M + 0.62, 1 - M - 0.014
+    x_name, x_pred, x_anom, x_vs = M + 0.014, M + 0.26, M + 0.41, M + 0.585
+    bar_x0, bar_x1 = M + 0.615, 1 - M - 0.014
+
+    # fejléc-sor: a cellákban így csak számok maradnak (tipográfiai tisztaság)
+    for hx_, htxt in [(x_pred, "becslés"), (x_anom, "a szokásostól"),
+                      (x_vs, "az országostól")]:
+        page.text(hx_, y, htxt, fontsize=FS, color=LIGHT, va="top", ha="right")
+    page.text(bar_x0, y, "várható tartomány", fontsize=FS, color=LIGHT, va="top")
+    y -= LINE + 0.004
 
     for county, per_crop in focus_rows(fcs):
         page.text(M, y, county, fontsize=13, fontweight="bold", color=INK, va="top")
@@ -516,7 +607,7 @@ def draw_focus_table(page, y_top: float, fcs: dict[str, dict]) -> float:
             page.text(x_anom, y, f"{signed(a, 1)}%", fontsize=FS, color=a_col,
                       va="top", ha="right")
             dv = rec["predicted_yield_t_ha"] - nat_pred
-            vs = "≈ orsz." if abs(dv) < 0.05 else f"{signed(dv, 2)} vs orsz."
+            vs = "≈ 0" if abs(dv) < 0.05 else signed(dv, 2)
             vs_col = MUTED if abs(dv) < 0.05 else (GREEN if dv > 0 else RED)
             page.text(x_vs, y, vs, fontsize=FS, color=vs_col, va="top", ha="right")
             lo_s, hi_s = scales[fc["crop"]]
@@ -564,10 +655,9 @@ def draw_map_page(pdf: PdfPages, fcs: dict[str, dict], gdf,
     lx = 1 - M - map_w + 0.03
     ly = y - 2 * map_h - 0.052 + map_h - 0.055
     draw_anom_colorbar(fig, [lx, ly, map_w - 0.10, 0.010])
-    page.text(lx, ly - 0.030, textwrap.fill(
-        "piros: elmaradás a szokásostól · kék: többlet · szürke: nincs "
-        "becslés (Budapest)", 34),
-        fontsize=FS, color=MUTED, va="top", linespacing=1.5)
+    draw_para(page, lx, ly - 0.030, map_w - 0.10,
+              "piros: elmaradás a szokásostól · kék: többlet · szürke: nincs "
+              "becslés (Budapest)", fontsize=FS, color=MUTED, line_h=0.0245)
 
     # fókusz-vármegyék táblája az alsó harmadban
     draw_focus_table(page, y - 2 * map_h - 0.052 - GAP_SECTION, fcs)
@@ -606,15 +696,13 @@ def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
         fc["updated_at"])
     pill(page, 1 - M - 0.004, 0.9455, "MÉG VÁLTOZHAT", live=True, ha="right")
 
-    # teljes headline
-    head_lines = textwrap.wrap(main, 58)
-    page.text(M, y, "\n".join(head_lines), fontsize=14.5, color=INK,
-              va="top", linespacing=1.5, fontweight="bold")
-    y -= len(head_lines) * 0.0225 + GAP_ELEM
-    cert_lines = textwrap.wrap(cert, 76)
-    page.text(M, y, "\n".join(cert_lines), fontsize=FS, color=MUTED,
-              va="top", linespacing=1.45)
-    y -= len(cert_lines) * 0.019 + 0.022
+    # teljes headline — sorkizárt szedéssel
+    y = draw_para(page, M, y, 1 - 2 * M, main, fontsize=14.5, color=INK,
+                  bold=True, line_h=0.0255)
+    y -= GAP_ELEM
+    y = draw_para(page, M, y, 1 - 2 * M, cert, fontsize=FS, color=MUTED,
+                  line_h=0.0215)
+    y -= 0.020
 
     # forgatókönyv-blokk: sáv balra, tonna/forint tábla jobbra
     fsn = sc["national"]
@@ -676,10 +764,9 @@ def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
                 f"({price:,.0f} Ft/t".replace(",", " ") +
                 f"), a legutóbbi lezárt évi vetésterülettel ({area / 1e3:.0f} ezer ha) "
                 "— indikatív, nem piaci árajánlat.")
-        note_lines = textwrap.wrap(note, 84)
-        page.text(M, y, "\n".join(note_lines), fontsize=FS, color=LIGHT,
-                  va="top", style="italic", linespacing=1.45)
-        y -= len(note_lines) * 0.019 + 0.022
+        y = draw_para(page, M, y, 1 - 2 * M, note, fontsize=FS, color=LIGHT,
+                      italic=True, line_h=0.0215)
+        y -= 0.018
 
     # trend-részlet
     hs = history_series(crop, max_days=21)
@@ -741,23 +828,25 @@ def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
         page.text(hx[5], y, f"{hu(wx['prec_total_mm'], 0)} mm", fontsize=FS,
                   color=INK, va="top", ha="right")
         y -= LINE
-    page.text(M, y - 0.004, textwrap.fill(
-        "A vízmérleg = csapadék − párolgás a szezon eddigi részében; "
-        "minél negatívabb, annál nagyobb az aszálynyomás.", 82),
-        fontsize=FS, color=MUTED, va="top", linespacing=1.4)
+    y = draw_para(page, M, y - 0.004, 1 - 2 * M,
+                  "A vízmérleg a csapadék és a párolgás egyenlege a szezon eddigi "
+                  "részében; minél negatívabb, annál nagyobb az aszálynyomás.",
+                  fontsize=FS, color=MUTED, line_h=0.0215)
 
-    # módszertani lábléc — csak a legutolsó oldalon
+    # módszertani lábléc — csak a legutolsó oldalon, az értelmező sor ALÁ folyatva
     if is_last:
-        page.plot([M, 1 - M], [0.142, 0.142], color=BORDER, lw=0.9,
+        div_y = min(0.142, y - 0.008)
+        page.plot([M, 1 - M], [div_y, div_y], color=BORDER, lw=0.9,
                   transform=page.transAxes)
         foot = (
-            "Módszertan: statisztikai modell (KSH vármegyei hozamok 2000-től + ERA5 "
-            "időjárás); tipikus tévedés terményenként ±9–20%. Nem hivatalos adat. "
-            "Részletek: prettyasap.github.io/wheat-forecast/magyarazat.html · "
+            "Módszertan: statisztikai modell a KSH vármegyei hozamaiból (2000-től) "
+            "és az ERA5 időjárási adataiból; tipikus tévedés terményenként ±9–20%. "
+            "Nem hivatalos adat. Fogalomtár: "
+            "prettyasap.github.io/wheat-forecast/magyarazat.html · "
             "Adatok: KSH, Open-Meteo/ERA5, Eurostat."
         )
-        page.text(M, 0.130, textwrap.fill(foot, 80), fontsize=FS, color=LIGHT,
-                  va="top", linespacing=1.45)
+        draw_para(page, M, div_y - 0.012, 1 - 2 * M, foot, fontsize=FS,
+                  color=LIGHT, line_h=0.0205)
     page_footer(page, page_no, total_pages)
     pdf.savefig(fig)
     plt.close(fig)
