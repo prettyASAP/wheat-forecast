@@ -340,6 +340,7 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
     sigma_by_county = wf["sigma_by_county"]
     sigma_pooled = wf["sigma_pooled"]
     oos_std = sigma_pooled  # a szcenárió-kombinációhoz (σ_w mellé)
+    z = max(abs(q10), q90)  # ellenőrzési tolerancia: a sáv szélesebb oldala
 
     counties = pd.read_parquet(config.panel_parquet(crop))[
         ["nuts_id", "county_name"]].drop_duplicates()
