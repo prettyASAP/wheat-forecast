@@ -111,7 +111,11 @@ def weather_end(today: date | None = None) -> str:
 #   a Y-1 okt 1 – Y jún 30 időjárást kapja. Ha kezdő < záró (kukorica: 4..9),
 #   minden a Y naptári évben van.
 # --------------------------------------------------------------------------- #
-GDD_BASE_C = 0.0             # GDD bázishőmérséklet (mindkét terményre)
+GDD_BASE_C = 0.0             # örökölt közös bázis (a v1 feature-készlethez)
+# Termény-specifikus GDD-bázis és felső vágás (testületi döntés, A1):
+# a kukorica C4-es, ~10 °C alatt nincs fejlődés; a válasz ~30 °C-nál platózik.
+# A v2 feature-készlet (gddc_*) ezekkel számol; a v1 (gdd_*) változatlan marad,
+# a kettő közt a walk-forward kapu (src/walkforward.py) dönt.
 WINTER_FROST_TMIN_C = -15.0  # Tmin < -15 °C fagynap (őszi vetésű terményekre)
 
 CROPS = {
@@ -128,14 +132,16 @@ CROPS = {
         },
         "heat_window": "grain_filling",   # ebben az ablakban számoljuk a hőstresszt
         "heat_tmax_c": 30.0,
+        "gdd_base_c": 0.0, "gdd_cap_c": 30.0,
         "use_frost": True,                # téli fagynapok feature
         "wb_windows": ["tillering", "grain_filling"],  # ablakos vízmérlegek
+        # v2 készlet (walk-forward kapu, 2026-07: 0.573 vs v1 0.589) —
+        # plafonozott GDD + EDD; a warm_nights a búzánál a teljes-mintás belső
+        # LOYO szerint NEM került be (0.5294 vs 0.5285)
         "model_features": [
-            "gdd_sowing_emergence", "gdd_winter_dormancy", "gdd_tillering",
-            "gdd_grain_filling", "prec_sowing_emergence", "prec_winter_dormancy",
-            "heat_days", "frost_days_winter", "wb_tillering", "wb_grain_filling",
-            # Konvex halmozott aszályjelző: min(wb_total - vármegye-medián, 0),
-            # a tanítóminta mediánjával (look-ahead-mentes) — mérési kapu iteráció.
+            "gddc_sowing_emergence", "gddc_winter_dormancy", "gddc_tillering",
+            "gddc_grain_filling", "prec_sowing_emergence", "prec_winter_dormancy",
+            "edd", "frost_days_winter", "wb_tillering", "wb_grain_filling",
             "wb_deficit",
         ],
         "asof": (6, 15),                  # as-of backtest: jún 15
@@ -156,8 +162,11 @@ CROPS = {
         # a megporzás 32 °C felett károsodik.
         "heat_window": "flowering",
         "heat_tmax_c": 32.0,
+        "gdd_base_c": 10.0, "gdd_cap_c": 30.0,
         "use_frost": False,               # nincs téli kitettség
         "wb_windows": ["flowering", "grain_filling"],
+        # v1 MARAD: a walk-forward kapun a v2 csere rontott volna
+        # (1.519 vs 1.512, 2026-07) — a testületi szabály szerint nem cserélünk
         "model_features": [
             "gdd_sowing_emergence", "gdd_vegetative", "gdd_flowering",
             "gdd_grain_filling", "prec_sowing_emergence", "prec_vegetative",
@@ -187,13 +196,17 @@ CROPS = {
         },
         "heat_window": "grain_filling",
         "heat_tmax_c": 30.0,
+        "gdd_base_c": 0.0, "gdd_cap_c": 30.0,
+        "gdd_base_c": 0.0, "gdd_cap_c": 30.0,
         "use_frost": True,
         "wb_windows": ["tillering", "grain_filling"],
         "model_features": [
-            "gdd_sowing_emergence", "gdd_winter_dormancy", "gdd_tillering",
-            "gdd_grain_filling", "prec_sowing_emergence", "prec_winter_dormancy",
-            "heat_days", "frost_days_winter", "wb_tillering", "wb_grain_filling",
-            "wb_deficit",
+            # v2w készlet (walk-forward kapu: 0.576 vs v1 0.587; warm_nights a
+            # teljes-mintás belső LOYO szerint bekerült: 0.5445 vs 0.5461)
+            "gddc_sowing_emergence", "gddc_winter_dormancy", "gddc_tillering",
+            "gddc_grain_filling", "prec_sowing_emergence", "prec_winter_dormancy",
+            "edd", "frost_days_winter", "wb_tillering", "wb_grain_filling",
+            "wb_deficit", "warm_nights",
         ],
         "asof": (6, 15),
         "backtest_years": [2022, 2007, 2003],

@@ -279,10 +279,12 @@ def national_block(crop: str, crop_year: int, rows: list[dict],
         "rank_from_worst": weaker + 1,
         "rank_total": n_total,
         "weights": f"{last_year}. évi vármegyei betakarított területek, Budapest nélkül",
-        # a bizalmi kérdésre ("mekkorát szokott tévedni?"): a LOYO out-of-sample
-        # hiba a jelenlegi trend-szint százalékában
+        # a bizalmi kérdésre ("mekkorát szokott tévedni?"): a WALK-FORWARD
+        # (csak múltból jósolt) hiba a trend-szint százalékában — testületi
+        # döntés: ez az őszinte szám, nem a LOYO
         "model_error_pct": round(100 * json.loads(
-            loyo_summary_json(crop).read_text())["oos_std"] / trend_now, 1),
+            (config.DATA_PROCESSED / f"walkforward_summary_{crop}.json")
+            .read_text())["rmse_wf"] / trend_now, 1),
     }
 
     # Forintosítás (ha van árfájl): termelési érték és a trendtől való elmaradás
@@ -330,8 +332,14 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
 
     df = load_model_data(crop)
     m = fit_panel_model(df, crop=crop)
-    summary = json.loads(loyo_summary_json(crop).read_text())
-    oos_std, z = summary["oos_std"], config.UNCERTAINTY_Z
+    # M2 (testületi csomag): a sáv a walk-forward reziduumok EMPIRIKUS
+    # kvantiliseiből, vármegyénkénti zsugorított szórással — aszimmetrikus.
+    wf = json.loads((config.DATA_PROCESSED /
+                     f"walkforward_summary_{crop}.json").read_text())
+    q10, q90 = wf["q10"], wf["q90"]
+    sigma_by_county = wf["sigma_by_county"]
+    sigma_pooled = wf["sigma_pooled"]
+    oos_std = sigma_pooled  # a szcenárió-kombinációhoz (σ_w mellé)
 
     counties = pd.read_parquet(config.panel_parquet(crop))[
         ["nuts_id", "county_name"]].drop_duplicates()
@@ -352,10 +360,12 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
     # bizonytalansága, függetlenként kombinálva: sigma_tot = sqrt(m^2 + w^2)
     # (audit-észrevétel: a csak-modell sáv szezon közben alulbecsülte a teljeset)
     def _sigma_tot(nid: str) -> float:
-        # modell-hiba + (szezon közben) a hátralévő időjárás szórása, függetlenként
+        # vármegyei zsugorított modell-hiba + (szezon közben) a hátralévő
+        # időjárás szórása, függetlenként kombinálva
+        s_c = float(sigma_by_county.get(nid, sigma_pooled))
         if ens_std is not None and nid in ens_std.index:
-            return float(np.sqrt(oos_std ** 2 + float(ens_std[nid]) ** 2))
-        return float(oos_std)
+            return float(np.sqrt(s_c ** 2 + float(ens_std[nid]) ** 2))
+        return s_c
 
     # vármegyénkénti forintosítás (érthetőség-teszt kérése: a döntéshozó első
     # kérdése megyei szinten is a pénz) — a legutóbbi ismert évi területtel és a
@@ -380,8 +390,8 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
                 "nuts_id": c["nuts_id"], "county_name": c["county_name"],
                 "predicted_yield_t_ha": round(float(p), 2),
                 "anomaly_pct": round(100 * (p - b) / b, 1),
-                "low": round(float(p - z * _sigma_tot(c["nuts_id"])), 2),
-                "high": round(float(p + z * _sigma_tot(c["nuts_id"])), 2),
+                "low": round(float(p + q10 * _sigma_tot(c["nuts_id"])), 2),
+                "high": round(float(p + q90 * _sigma_tot(c["nuts_id"])), 2),
                 "weather_todate": wx,
             }
             if price_info and c["nuts_id"] in county_area.index:

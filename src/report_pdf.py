@@ -682,7 +682,7 @@ def focus_rows(fcs: dict[str, dict]):
 # 3+. oldal — "Ami még él" (futó szezonú termény), levegős elrendezés
 # ---------------------------------------------------------------------------- #
 def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
-                   is_last: bool) -> None:
+                   is_last: bool, err_range: str = "±9–22%") -> None:
     crop = fc_crop_key(fc)
     n = fc["national"]
     v = n.get("value")
@@ -840,7 +840,7 @@ def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
                   transform=page.transAxes)
         foot = (
             "Módszertan: statisztikai modell a KSH vármegyei hozamaiból (2000-től) "
-            "és az ERA5 időjárási adataiból; tipikus tévedés terményenként ±9–20%. "
+            f"és az ERA5 időjárási adataiból; tipikus tévedés terményenként {err_range}. "
             "Nem hivatalos adat. Fogalomtár: "
             "prettyasap.github.io/wheat-forecast/magyarazat.html · "
             "Adatok: KSH, Open-Meteo/ERA5, Eurostat."
@@ -861,6 +861,10 @@ def main() -> None:
     deltas = {crop: daily_delta(crop) for crop in config.CROPS}
     live_crops = [c for c, fc in fcs.items() if fc.get("scenarios")]
     total_pages = 2 + len(live_crops)
+    errs = [fc["national"]["model_error_pct"] for fc in fcs.values()
+            if fc.get("national", {}).get("model_error_pct")]
+    err_range = (f"±{hu(min(errs), 0)}–{hu(max(errs), 0)}%"
+                 if errs else "±9–22%")
 
     out = JELENTES_DIR / f"jelentes_{today}.pdf"
     with PdfPages(out) as pdf:
@@ -868,7 +872,8 @@ def main() -> None:
         draw_map_page(pdf, fcs, gdf, 2, total_pages)
         for i, crop in enumerate(live_crops):
             draw_live_page(pdf, fcs[crop], 3 + i, total_pages,
-                           is_last=(i == len(live_crops) - 1))
+                           is_last=(i == len(live_crops) - 1),
+                           err_range=err_range)
         info = pdf.infodict()
         info["Title"] = f"Napi vezetői jelentés — {today}"
         info["Author"] = "Terméshozam-előrejelző (statisztikai modell)"

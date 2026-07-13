@@ -41,6 +41,9 @@ report:           ## as-of backtest + magyar riport mindkét terményre
 	$(PY) -m src.backtest --crop corn
 	$(PY) -m src.backtest --crop barley
 
+walkforward:      ## testületi mérési kapu (expanding-window backtest)
+	$(PY) -m src.walkforward
+
 pdf:              ## napi vezetői PDF-jelentés (web/data/jelentes/)
 	$(PY) -m src.report_pdf
 
