@@ -153,7 +153,7 @@ function renderHeadline(fc) {
   let main;
   if (a <= -3) {
     main = `A ${esc(fc.crop)} idei termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül
-      várható, <b>${hu(Math.abs(a), 1)}%-kal a sokéves szokásos alatt</b>` +
+      várható, <b>${hu(Math.abs(a), 1)}%-kal a sokéves szokásos szint alatt</b>` +
       (v ? ` — ez a ${v.price_year}-es árakon kb.
        <b>${Math.round(Math.abs(v.trend_gap_bn_huf))} mrd Ft kiesés</b>.` : ".");
   } else if (a >= 3) {
@@ -171,10 +171,12 @@ function renderHeadline(fc) {
   // ellentmondó előjelek feloldása (pl. kukorica: rossz tavalyi év + gyenge trend)
   if (a < 0 && n.yoy_pct >= 3) {
     clauses.push(`Jóval jobb, mint a tavalyi gyenge év
-      (+${hu(n.yoy_pct, 1)}% vs ${n.prev_year}), de a megszokott szinttől elmarad.`);
+      (${n.prev_year}-höz képest +${hu(n.yoy_pct, 1)}%), de a megszokott
+      szinttől elmarad.`);
   } else if (a > 0 && n.yoy_pct <= -3) {
     clauses.push(`A tavalyi kiugró évnél gyengébb
-      (${hu(n.yoy_pct, 1)}% vs ${n.prev_year}), de a megszokott szint felett.`);
+      (${n.prev_year}-höz képest ${hu(n.yoy_pct, 1)}%), de a megszokott
+      szint felett.`);
   }
   if (n.rank_from_worst <= 5) {
     clauses.push(`Ha így marad, a ${n.rank_total} év
