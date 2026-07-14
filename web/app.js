@@ -135,6 +135,11 @@ function applyForecast(fc) {
     : `az időjárási adat a teljes szezont lefedi`;
   document.getElementById("meta").textContent =
     `${fc.crop} · ${fc.crop_year}-es termésév · frissítve: ${fc.updated_at} · ${wxNote}`;
+  // a PDF-link napi cache-törő paramétert kap, hogy sose régi (cache-elt)
+  // jelentés nyíljon meg
+  const pdfLink = document.getElementById("pdf-link");
+  if (pdfLink) pdfLink.href = "data/jelentes_latest.pdf?d=" +
+    encodeURIComponent(fc.updated_at || "");
   renderHeadline(fc);
   renderNational(fc);
   if (selectedId) showPanel(selectedId);
