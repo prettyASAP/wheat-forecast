@@ -153,30 +153,30 @@ function renderHeadline(fc) {
   let main;
   if (a <= -3) {
     main = `A ${esc(fc.crop)} idei termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül
-      várható, <b>${hu(Math.abs(a), 1)}%-kal a sokéves szokásos szint alatt</b>` +
-      (v ? ` — ez a ${v.price_year}-es árakon kb.
-       <b>${Math.round(Math.abs(v.trend_gap_bn_huf))} mrd Ft kiesés</b>.` : ".");
+      várható, ami <b>${hu(Math.abs(a), 1)}%-kal marad el a sokéves szokásos
+      szinttől</b>` +
+      (v ? ` — a ${v.price_year}-es árakon számolva ez kb.
+       <b>${Math.round(Math.abs(v.trend_gap_bn_huf))} mrd Ft kiesést jelent</b>.` : ".");
   } else if (a >= 3) {
-    main = `A ${esc(fc.crop)} termése <b>${hu(a, 1)}%-kal a szokásos felett</b> várható
-      (${hu(n.predicted_yield_t_ha)} t/ha)` +
-      (v ? ` — kb. <b>${Math.round(v.trend_gap_bn_huf)} mrd Ft többlet</b>
-       a ${v.price_year}-es árakon.` : ".");
+    main = `A ${esc(fc.crop)} idei termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül
+      várható, <b>${hu(a, 1)}%-kal a sokéves szokásos szint felett</b>` +
+      (v ? ` — a ${v.price_year}-es árakon számolva ez kb.
+       <b>${Math.round(v.trend_gap_bn_huf)} mrd Ft többletet jelent</b>.` : ".");
   } else {
-    main = `${cap}: a termés a szokásos szint közelében alakul
-      (<b>${hu(n.predicted_yield_t_ha)} t/ha</b>, ${a > 0 ? "+" : ""}${hu(a, 1)}%) —
+    main = `A ${esc(fc.crop)} idei termése a sokéves szokásos szint közelében,
+      <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül várható
+      (${a > 0 ? "+" : ""}${hu(a, 1)}%) —
       érdemi kiesés vagy többlet egyelőre nem látszik.`;
   }
 
   const clauses = [];
   // ellentmondó előjelek feloldása (pl. kukorica: rossz tavalyi év + gyenge trend)
   if (a < 0 && n.yoy_pct >= 3) {
-    clauses.push(`Jóval jobb, mint a tavalyi gyenge év
-      (${n.prev_year}-höz képest +${hu(n.yoy_pct, 1)}%), de a megszokott
-      szinttől elmarad.`);
+    clauses.push(`Tavalyhoz (${n.prev_year}) képest ez
+      +${hu(n.yoy_pct, 1)}%-os javulás, a megszokott szinttől azonban elmarad.`);
   } else if (a > 0 && n.yoy_pct <= -3) {
-    clauses.push(`A tavalyi kiugró évnél gyengébb
-      (${n.prev_year}-höz képest ${hu(n.yoy_pct, 1)}%), de a megszokott
-      szint felett.`);
+    clauses.push(`Tavalyhoz (${n.prev_year}) képest ${hu(n.yoy_pct, 1)}%
+      a visszaesés, a termés azonban így is a megszokott szint felett alakul.`);
   }
   if (n.rank_from_worst <= 5) {
     clauses.push(`Ha így marad, a ${n.rank_total} év
@@ -187,13 +187,15 @@ function renderHeadline(fc) {
   }
 
   const cert = sc
-    ? `<span class="badge open">MÉG VÁLTOZHAT</span> A szezonból
-       <b>${sc.remaining_days} nap</b> van hátra — az időjárástól függően
-       <b>${hu(sc.national.p10)}–${hu(sc.national.p90)} t/ha</b> között alakulhat.`
-    : `<span class="badge final">VÉGLEGES KÖZELI</span> A szezon időjárása teljes
-       egészében ismert — a becslés már érdemben nem változik.`;
+    ? `<span class="badge open">MÉG VÁLTOZHAT</span> A szezonból még
+       <b>${sc.remaining_days} nap</b> van hátra; a végeredmény az időjárástól
+       függően <b>${hu(sc.national.p10)}–${hu(sc.national.p90)} t/ha</b> között
+       alakulhat.`
+    : `<span class="badge final">VÉGLEGES KÖZELI</span> A szezon időjárása már
+       teljes egészében ismert, a becslés érdemben nem változik.`;
   const err = n.model_error_pct
-    ? ` A becslés tipikus tévedése a múltban ±${hu(n.model_error_pct, 1)}% volt. ${info("tevedes")}`
+    ? ` A becslés tipikus tévedése a múltbeli visszamérések alapján
+       ±${hu(n.model_error_pct, 1)}%. ${info("tevedes")}`
     : "";
 
   el.innerHTML = `
