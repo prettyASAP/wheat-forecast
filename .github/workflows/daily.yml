@@ -20,6 +20,12 @@ concurrency:
 jobs:
   forecast:
     runs-on: ubuntu-latest
+    # Minden `run:` blokk hibára álljon meg és a pipe-hibák se nyelődjenek el.
+    # (A GitHub Actions alapértelmezése is -eo pipefail, de itt explicit rögzítjük,
+    #  hogy egy jövőbeli shell-váltás se csendesítse el a hibákat.)
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
@@ -29,19 +35,25 @@ jobs:
           cache: pip
 
       - name: Függőségek
-        run: pip install -r requirements.txt
+        run: |
+          set -euo pipefail
+          pip install -r requirements.txt
 
       - name: Élő előrejelzés futtatása (mindhárom termény)
         run: |
+          set -euo pipefail
           python -m src.predict_live --crop wheat
           python -m src.predict_live --crop corn
           python -m src.predict_live --crop barley
 
       - name: Napi PDF-jelentés generálása
-        run: python -m src.report_pdf
+        run: |
+          set -euo pipefail
+          python -m src.report_pdf
 
       - name: Friss forecast commit
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add web/data/forecast_*.json web/data/history/ \
@@ -54,6 +66,29 @@ jobs:
             git pull --rebase origin main
             git push
           fi
+
+      # Hibánál látható, összefoglalt üzenet a job-summary lapon (nem nyelődik el).
+      # A `if: failure()` miatt csak akkor fut, ha valamelyik előző lépés elhasalt;
+      # a záró `exit 1` megtartja a job piros (bukott) státuszát.
+      - name: Hiba jelzése (job summary)
+        if: failure()
+        run: |
+          {
+            echo "## ❌ Napi előrejelzés HIBA ($(date -u +'%F %T UTC'))"
+            echo ""
+            echo "A(z) \`daily-forecast\` job egy lépése hibára futott — a forecast"
+            echo "NEM frissült. Nézd meg a fenti lépések logját."
+            echo ""
+            echo "Gyakori okok: adatforrás (KSH/Open-Meteo) kimaradás, fázis-záró"
+            echo "ellenőrzés (predict_live sys.exit), push-ütközés."
+          } >> "$GITHUB_STEP_SUMMARY"
+          # RIASZTÁS-INTEGRÁCIÓ HELYE (külső titok nélkül most nincs bekötve):
+          # Slack/e-mail webhookot ide tehetsz, pl.:
+          #   curl -fsS -X POST -H 'Content-type: application/json' \
+          #     --data '{"text":"daily-forecast bukott: '"$GITHUB_RUN_ID"'"}' \
+          #     "$SLACK_WEBHOOK_URL"
+          # a $SLACK_WEBHOOK_URL-t repo secretként kell felvenni (Settings > Secrets).
+          exit 1
 
       - name: Pages artifact feltöltése
         uses: actions/upload-pages-artifact@v3

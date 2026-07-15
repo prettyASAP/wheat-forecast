@@ -65,6 +65,18 @@ function esc(s) {
 // betöltési sorszám: a gyors termény-váltásnál a megkésett válasz eldobásához
 let loadSeq = 0;
 
+/* A térkép betöltési/hibaállapotának vezérlése — a szürke üres doboz helyett
+   látható visszajelzés. state: "loading" | "error" | "hidden". */
+function setMapStatus(state, message) {
+  const box = document.getElementById("map-status");
+  if (!box) return;
+  if (state === "hidden") { box.hidden = true; return; }
+  box.hidden = false;
+  box.dataset.state = state;
+  const txt = document.getElementById("map-status-text");
+  if (txt && message) txt.textContent = message;
+}
+
 function layerValues(fc) {
   /* Rétegenkénti érték vármegyénként. Az anomáliánál Budapest = null (nincs
      modell); az időjárási rétegeknél mind a 20 egységre van érték. */
@@ -117,6 +129,7 @@ function paintForLayer(layer, fc) {
 
 function applyForecast(fc) {
   currentForecast = fc;
+  setMapStatus("hidden");  // az első adat megjött — az overlay eltűnhet
   const vals = layerValues(fc);
   for (const f of geojson.features) {
     const id = f.properties.NUTS_ID;
@@ -481,7 +494,14 @@ async function loadCrop(newCrop) {
 }
 
 document.querySelectorAll("#crop-switch button").forEach(b =>
-  b.addEventListener("click", () => loadCrop(b.dataset.crop).catch(console.error)));
+  b.addEventListener("click", () => loadCrop(b.dataset.crop).catch(err => {
+    console.error(err);
+    // a meglévő térkép marad; ha nincs friss adat, látható hibajelzés
+    if (!currentForecast) {
+      setMapStatus("error", "Nem sikerült betölteni az adatot. Ellenőrizd a "
+        + "kapcsolatot, majd próbáld újra.");
+    }
+  })));
 
 document.getElementById("layer-select").addEventListener("change", e => {
   currentLayer = e.target.value;
@@ -549,8 +569,22 @@ async function init() {
     selectedId = null;
     document.getElementById("panel").classList.add("hidden");
   });
+
+  // a konténer méretének változásakor (mobil elforgatás, layout-váltás) a
+  // MapLibre-t újra kell méretezni, különben torzul/elcsúszik a térkép
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => map && map.resize(), 150);
+  });
 }
 
+// "Újrapróbálom" gomb a hibaállapotban — a legmegbízhatóbb újrapróba az
+// oldal újratöltése (az init/map felépítése tiszta állapotból induljon)
+document.getElementById("map-status-retry").addEventListener("click",
+  () => location.reload());
+
 init().catch(e => {
-  document.getElementById("meta").textContent = "Hiba az adatok betöltésekor: " + e.message;
+  console.error(e);
+  setMapStatus("error", "Nem sikerült betölteni a térképet: " + e.message);
 });

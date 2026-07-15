@@ -102,11 +102,11 @@ header h1 { font-size: 1.15rem; }
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #6e7f8b;
+  color: #566573;
   margin-bottom: 2px;
 }
 .kpi-value { font-size: 1.45rem; font-weight: 700; color: #2c3e50; line-height: 1.15; }
-.kpi-value small { font-size: 0.8rem; font-weight: 500; color: #6b7a86; }
+.kpi-value small { font-size: 0.8rem; font-weight: 500; color: #566573; }
 .kpi-sub { font-size: 0.74rem; color: #5a6a75; margin-top: 3px; }
 .kpi-viz { margin: 2px 0; }
 
@@ -120,7 +120,7 @@ header h1 { font-size: 1.15rem; }
 .chip.neg { background: #fdecea; color: #c0392b; }
 .chip.pos { background: #e8f6ee; color: #17693a; }
 
-.chart-title { font-size: 0.72rem; color: #6e7f8b; margin: 8px 0 2px; }
+.chart-title { font-size: 0.72rem; color: #566573; margin: 8px 0 2px; }
 
 .track-row {
   display: flex;
@@ -159,6 +159,49 @@ header h1 { font-size: 1.15rem; }
 main { flex: 1; position: relative; min-height: 0; }
 #map { position: absolute; inset: 0; }
 
+/* Térkép betöltési / hiba állapota — a szürke üres doboz helyett látható jelzés.
+   A #map fölött ül; az alkalmazás a data-state attribútummal vezérli. */
+#map-status {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  background: #eef1f3;
+  color: #4a5a66;
+}
+#map-status[hidden] { display: none; }
+#map-status .spinner {
+  width: 34px; height: 34px;
+  border: 3px solid #cfd8de;
+  border-top-color: #2874a6;
+  border-radius: 50%;
+  animation: map-spin 0.9s linear infinite;
+}
+#map-status-text { font-size: 0.9rem; max-width: 280px; }
+/* hiba állapot: a spinner elrejtve, a "Frissítés" gomb megjelenik */
+#map-status[data-state="error"] { background: #fdf6f4; color: #a2352a; }
+#map-status[data-state="error"] .spinner { display: none; }
+#map-status-retry { display: none; }
+#map-status[data-state="error"] #map-status-retry {
+  display: inline-block;
+  border: 1px solid #c0392b;
+  background: #fff;
+  color: #a2352a;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 6px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+@keyframes map-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  #map-status .spinner { animation-duration: 2.4s; }
+}
+
 #panel {
   position: absolute;
   top: 12px; right: 12px;
@@ -178,7 +221,7 @@ main { flex: 1; position: relative; min-height: 0; }
   width: 40px; height: 40px;
   display: grid; place-items: center;
   border: none; background: none; font-size: 1.3rem;
-  cursor: pointer; color: #6e7f8b;
+  cursor: pointer; color: #566573;
 }
 .big-number { font-size: 1.5rem; font-weight: 700; }
 .band { color: #5a6a75; font-size: 0.85rem; margin-bottom: 8px; }
@@ -188,7 +231,7 @@ main { flex: 1; position: relative; min-height: 0; }
 #panel table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
 #panel td { padding: 3px 0; border-top: 1px solid #f0f2f3; }
 #panel td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
-.note { font-size: 0.85rem; color: #6b7a86; font-style: italic; }
+.note { font-size: 0.85rem; color: #566573; font-style: italic; }
 
 #timeline {
   display: flex;
@@ -210,7 +253,7 @@ main { flex: 1; position: relative; min-height: 0; }
   padding: 6px 16px;
   background: #fff;
   font-size: 0.78rem;
-  color: #6b7a86;
+  color: #566573;
 }
 #legend-bar {
   width: 140px; height: 10px; border-radius: 5px;
@@ -223,13 +266,25 @@ footer {
   background: #fff;
   border-top: 1px solid #e3e6e8;
   font-size: 0.72rem;
-  color: #6e7f8b;
+  color: #566573;
 }
 footer a { color: #5d7a94; }
 
 @media (max-width: 640px) {
-  header h1 { font-size: 1rem; }
-  /* KPI-kártyák: vízszintes carousel, hogy a térkép kapja a helyet */
+  /* GYÖKÉROK-JAVÍTÁS: desktopon a body flex-oszlop egyetlen viewportba
+     préseli a fejlécet, headline-t, KPI-ket, térképet, idővonalat, footert —
+     mobilon így a térkép (a hős) egy vékony csíkra zsugorodott. Mobilon
+     természetes görgetésre váltunk, és a térkép fix, nagy magasságot kap. */
+  html, body { height: auto; display: block; }
+  body { min-height: 100%; }
+
+  header h1 { font-size: 1rem; width: 100%; }
+  header { padding: 8px 12px; gap: 8px 10px; row-gap: 6px; }
+  /* a másodlagos akció-linkek egy sorban, kompakt csippként */
+  #table-link, #glossary-link, #pdf-link { font-size: 0.8rem; padding: 6px 10px; }
+  #crop-switch button, #layer-select { padding: 7px 12px; }
+
+  /* KPI-kártyák: vízszintes carousel, hogy ne told le a térképet a hajtás alá */
   #national {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -237,16 +292,19 @@ footer a { color: #5d7a94; }
     scroll-snap-type: x mandatory;
   }
   .kpi { flex: 0 0 240px; scroll-snap-align: start; }
-  /* panel: valódi bottom-sheet a viewporthoz méretezve, nem a main-hez */
+
+  /* a térkép a hős: fix, tapintható magasság, nem a maradék hely */
+  main { flex: none; height: 64vh; min-height: 360px; }
+
+  /* panel: valódi bottom-sheet a viewporthoz rögzítve */
   #panel {
     position: fixed;
     top: auto; bottom: 0; left: 0; right: 0;
     width: auto;
-    max-height: 60dvh;
+    max-height: 62dvh;
     border-radius: 12px 12px 0 0;
     z-index: 20;
   }
-  #crop-switch button, #layer-select, #table-link, #glossary-link, #pdf-link { padding: 8px 14px; }
   #legend { flex-wrap: wrap; }
 }
 

@@ -197,7 +197,6 @@ CROPS = {
         "heat_window": "grain_filling",
         "heat_tmax_c": 30.0,
         "gdd_base_c": 0.0, "gdd_cap_c": 30.0,
-        "gdd_base_c": 0.0, "gdd_cap_c": 30.0,
         "use_frost": True,
         "wb_windows": ["tillering", "grain_filling"],
         "model_features": [
