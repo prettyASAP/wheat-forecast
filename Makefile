@@ -44,8 +44,8 @@ report:           ## as-of backtest + magyar riport mindkét terményre
 walkforward:      ## testületi mérési kapu (expanding-window backtest)
 	$(PY) -m src.walkforward
 
-pdf:              ## napi vezetői PDF-jelentés (web/data/jelentes/)
-	$(PY) -m src.report_pdf
+pdf:              ## napi vezetői PDF-jelentés — HTML→PDF (Claude Design szedés)
+	$(PY) -m src.report_html
 
 live:             ## élő előrejelzés mindkét terményre (forecast_*.json)
 	$(PY) -m src.predict_live --crop wheat
