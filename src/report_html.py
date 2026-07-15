@@ -220,12 +220,9 @@ figure{margin:0}
 .rep-stat-row > span:first-child{color:color-mix(in srgb,var(--color-text) 55%,transparent)}
 .rep-stat-row > span:last-child{font-variant-numeric:tabular-nums;font-weight:500}
 .blueprint{position:relative;border:1px solid var(--color-divider);border-radius:0}
-.blueprint > .corner{position:absolute;width:11px;height:11px;color:color-mix(in srgb,var(--color-text) 55%,transparent)}
-.blueprint > .corner::before,.blueprint > .corner::after{content:"";position:absolute;background:currentColor}
-.blueprint > .corner::before{left:5px;top:0;width:1px;height:100%}
-.blueprint > .corner::after{top:5px;left:0;width:100%;height:1px}
-.blueprint > .corner.tl{top:-6px;left:-6px}.blueprint > .corner.tr{top:-6px;right:-6px}
-.blueprint > .corner.bl{bottom:-6px;left:-6px}.blueprint > .corner.br{bottom:-6px;right:-6px}
+/* A sarok-regisztrációs jelek a Claude Design szerkesztőjében csak igazítási/
+   padding-segédek voltak — a kész jelentésen NEM látszanak. */
+.blueprint > .corner{display:none}
 .tag{display:inline-flex;align-items:center;font-size:11px;letter-spacing:0.02em;padding:3px 10px;border-radius:0}
 .tag-accent{background:var(--color-accent-100);color:var(--color-accent-800)}
 .tag-outline{border:1px solid var(--color-accent);color:var(--color-accent)}
@@ -432,7 +429,7 @@ def build_html(fcs: dict, today: str, stamp: str) -> str:
     <p class="rep-kicker">Napi vezetői jelentés</p>
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px">
       <h1 style="font-size:40px;margin:0;line-height:0.98">Terméshozam-előrejelzés</h1>
-      <div style="flex:none;font-family:var(--font-heading);font-weight:600;font-size:26px;line-height:1;white-space:nowrap">{y}<span style="color:var(--color-accent)">·</span>{m}<span style="color:var(--color-accent)">·</span>{d}</div>
+      <div style="flex:none;font-family:var(--font-heading);font-weight:600;font-size:26px;line-height:1;white-space:nowrap">{y}. {m}. {d}.</div>
     </div>
   </div>
   <div style="break-inside:avoid;background:var(--color-accent-900);color:#eef4fb;padding:18px 20px;margin:16px 0 22px;display:flex;gap:22px;align-items:center">
