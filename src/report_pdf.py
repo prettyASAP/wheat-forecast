@@ -708,36 +708,17 @@ def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
                       italic=True, line_h=0.0215)
         y -= 0.008
 
-    # trend-részlet
-    hs = history_series(crop, max_days=30)
-    if len(hs) >= 2:
-        ax2 = fig.add_axes([M + 0.045, y - 0.102, 1 - 2 * M - 0.065, 0.072])
-        xs = range(len(hs))
-        preds = [h["pred"] for h in hs]
-        if all(h["p10"] is not None for h in hs):
-            ax2.fill_between(xs, [h["p10"] for h in hs], [h["p90"] for h in hs],
-                             color=BAND, alpha=0.25, zorder=1)
-        ax2.plot(xs, preds, color=BLUE, lw=1.8, zorder=3)
-        ax2.scatter(xs, preds, s=28, color=BLUE, zorder=4)
-        ax2.annotate(hu(preds[-1]), (len(hs) - 1, preds[-1]), xytext=(0, 9),
-                     textcoords="offset points", ha="center", fontsize=FS,
-                     color=INK, fontweight="bold")
-        step = max(1, len(hs) // 6)
-        ax2.set_xticks(list(xs)[::step])
-        ax2.set_xticklabels([hs[i]["date"][5:] for i in list(xs)[::step]],
-                            fontsize=FS)
-        ax2.tick_params(axis="y", labelsize=FS, colors=MUTED)
-        ax2.set_yticklabels([hu(t, 1) for t in ax2.get_yticks()])
-        ax2.spines[["top", "right"]].set_visible(False)
-        ax2.set_title("A becslés alakulása a szezonban (P10–P90 sávval, t/ha)",
-                      fontsize=13, color=INK, loc="left", pad=6)
-        y -= 0.102 + 0.026
+    # (A 6 napos "becslés alakulása a szezonban" ábra tudatosan KIKERÜLT —
+    #  felhasználói + bírálói visszajelzés: pár nap alatt majdnem lapos vonal,
+    #  a "P10–P90" felirat zsargon; napi jelentésben zaj, nem információ. A még
+    #  várható tartományt a fejléc "időjárástól: X–Y" mondata hordozza.)
+    y -= 0.006
 
     # fókusz-vármegyék kilátása + időjárása
     page.text(M, y, "FÓKUSZ-VÁRMEGYÉK — kilátás és időjárás", fontsize=13,
               fontweight="bold", color=LIGHT, va="top")
     y -= 0.022
-    heads = ["", "Becslés", "P10–P90", "Hőstressz", "Vízmérleg", "Csapadék"]
+    heads = ["", "Becslés", "várható sáv", "Hőstressz", "Vízmérleg", "Csapadék"]
     hx = [M, M + 0.24, M + 0.42, M + 0.545, M + 0.655, M + 0.76]
     for cx_, htxt in zip(hx[1:], heads[1:]):
         page.text(cx_, y, htxt, fontsize=FS, color=LIGHT, va="top", ha="right")
