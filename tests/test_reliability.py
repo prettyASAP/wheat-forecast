@@ -207,8 +207,10 @@ def test_wb_median_comes_from_training_only():
     assert derived["wb_deficit"].iloc[0] == pytest.approx(0.0)
 
 
-def test_wb_deficit_is_convex_negative_side_only():
-    """wb_deficit = min(wb_total - medián, 0): hiánynál negatív, többletnél 0."""
+def test_wb_deficit_is_concave_negative_side_only():
+    """wb_deficit = min(wb_total - medián, 0): hiánynál negatív, többletnél 0.
+    (Affin tagok minimuma → KONKÁV a wb-ben; a szezonközi Jensen-korrekció
+    ezért felfelé-torzítás ellen véd — matematikai audit 3.1.)"""
     train = _panel_for_wb({2001: 10.0, 2002: 20.0, 2003: 30.0, 2004: 40.0})
     m = fit_panel_model(train, features=["wb_deficit"], trend_degree=1,
                         ridge_alpha=0.0)
@@ -264,6 +266,36 @@ def test_v2_features_mapping():
     assert all(not f.startswith("gdd_") for f in v2)  # csak gddc_ marad
     assert "warm_nights" not in v2
     assert "warm_nights" in v2_features("corn", warm=True)
+
+
+def test_v2_features_no_duplicate_warm_nights():
+    """Ha a config.model_features MÁR tartalmazza a warm_nights-t (barley),
+    a warm=True nem duplikálhatja — a duplikált (kollineáris) oszlop α=0-nál
+    szinguláris mátrixot okozna (walk-forward barley-crash gyökéroka)."""
+    for crop in config.CROPS:
+        feats = v2_features(crop, warm=True)
+        assert feats.count("warm_nights") <= 1, f"{crop}: duplikált warm_nights"
+
+
+def test_fit_panel_model_robust_to_degenerate_weather_column():
+    """A megoldó (lstsq) ne hasaljon el, ha egy időjárási oszlop egy foldban
+    ~degenerált (majdnem csupa nulla) és nincs ridge (α=0) — ez volt a barley
+    warm_nights walk-forward szingularitás oka."""
+    rng = np.random.default_rng(1)
+    rows = []
+    for i, year in enumerate(range(2001, 2013)):
+        for c in ("HU211", "HU212", "HU321"):
+            rows.append({"nuts_id": c, "crop_year": year,
+                         "yield_t_ha": 4.0 + 0.05 * i + rng.normal(0, 0.1),
+                         "wb_total": rng.normal(-200, 40),
+                         # majdnem csupa nulla oszlop: egyetlen nem-nulla érték
+                         "warm_nights": 3.0 if (year == 2003 and c == "HU211")
+                         else 0.0})
+    train = pd.DataFrame(rows)
+    # α=0 (nincs ridge) + degenerált oszlop: solve elhasalna, lstsq nem
+    m = fit_panel_model(train, features=["wb_total", "warm_nights"],
+                        trend_degree=1, ridge_alpha=0.0)
+    assert np.all(np.isfinite(m.beta))
 
 
 # --------------------------------------------------------------------------- #

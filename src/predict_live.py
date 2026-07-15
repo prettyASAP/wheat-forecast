@@ -217,9 +217,11 @@ def scenario_ensemble(season_daily: pd.DataFrame, known_until, crop: str,
         "national": pcts(nat_paths),
         "counties": {nid: pcts(ens.loc[nid]) for nid in ens.index},
     }
-    # Az együttes-átlag a korrekt középbecslés szezon közben: a modell nemlineáris
-    # (konvex wb_deficit), ezért E[f(időjárás)] != f(E[időjárás]) — a klimatológiai
-    # átlag-időjárásból számolt becslés felfelé torzítana (Jensen).
+    # Az együttes-átlag a korrekt középbecslés szezon közben: a modell nemlineáris.
+    # A wb_deficit = min(wb − medián, 0) affin tagok minimuma → KONKÁV a wb-ben,
+    # pozitív együtthatóval, ezért E[f(időjárás)] <= f(E[időjárás]) — a klimatológiai
+    # átlag-időjárásból számolt becslés FELFELÉ torzítana (Jensen-egyenlőtlenség
+    # konkáv függvényre). Az együttes tényleges átlaga ezt a torzítást elkerüli.
     # A szórás a hátralévő időjárás bizonytalansága (a sáv-kombinációhoz).
     return payload, ens.mean(axis=1), ens.std(axis=1, ddof=1)
 
@@ -281,10 +283,14 @@ def national_block(crop: str, crop_year: int, rows: list[dict],
         "weights": f"{last_year}. évi vármegyei betakarított területek, Budapest nélkül",
         # a bizalmi kérdésre ("mekkorát szokott tévedni?"): a WALK-FORWARD
         # (csak múltból jósolt) hiba a trend-szint százalékában — testületi
-        # döntés: ez az őszinte szám, nem a LOYO
+        # döntés: ez az őszinte szám, nem a LOYO. Az ORSZÁGOS fejléc mellé az
+        # ORSZÁGOS (terület-súlyozott) walk-forward RMSE tartozik, NEM a
+        # vármegyei pooled RMSE (az utóbbi túlbecsülné az országos szám hibáját,
+        # mert aggregáláskor a vármegyei tévedések részben kioltják egymást —
+        # matematikai audit 5.1).
         "model_error_pct": round(100 * json.loads(
             (config.DATA_PROCESSED / f"walkforward_summary_{crop}.json")
-            .read_text())["rmse_wf"] / trend_now, 1),
+            .read_text())["rmse_wf_national"] / trend_now, 1),
     }
 
     # Forintosítás (ha van árfájl): termelési érték és a trendtől való elmaradás
@@ -322,6 +328,19 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
     feats = feats[feats["crop_year"] == crop_year]
     if len(feats) != 20:
         sys.exit(f"HIBA: {len(feats)} vármegyére van feature, várt 20.")
+
+    # FRISSESSÉG-ŐR (programozói audit 1.): ha a szezon MÉG TART, a legfrissebb
+    # ismert időjárásnak közel kell lennie a mai naphoz. Ha az Open-Meteo forecast
+    # csendben degradálódik (érvényes JSON, de kevés/nulla jövőbeli nappal), a
+    # "mért" ablak észrevétlenül összezsugorodna, a klimatológiával pótolt rész
+    # megnőne — riasztás nélkül. Ezt inkább leállítjuk, mint hogy elavult
+    # alapon számolt becslést publikáljunk.
+    STALE_LIMIT_DAYS = 8
+    if today <= end and (today - known_until).days > STALE_LIMIT_DAYS:
+        sys.exit(f"HIBA: a szezon még tart (vége {end}), de a legfrissebb ismert "
+                 f"időjárás {known_until} ({(today - known_until).days} napja) — "
+                 f"az adatforrás valószínűleg degradálódott. Nem publikálunk "
+                 f"elavult alapon számolt becslést.")
 
     # A kijelzett "időjárás eddig" mutatók CSAK a ténylegesen ismert napokból
     # (audit-javítás: korábban a klimatológiával szezonvégig feltöltött sorból

@@ -46,7 +46,7 @@ def v2_features(crop: str, warm: bool = False) -> list[str]:
             out.append("edd")
         else:
             out.append(f)
-    if warm:
+    if warm and "warm_nights" not in out:
         out.append("warm_nights")
     return out
 
@@ -85,6 +85,27 @@ def walk_forward(df: pd.DataFrame, crop: str,
                          "naive": float(naive[i]), "variant": fname,
                          "trend_degree": deg, "alpha": alpha})
     return pd.DataFrame(rows)
+
+
+def national_wf_rmse(res: pd.DataFrame, df: pd.DataFrame) -> float:
+    """Országos (terület-súlyozott) walk-forward RMSE.
+
+    A vármegyei pooled RMSE-nél KISEBB: a vármegyei tévedések aggregáláskor
+    részben kioltják egymást, ezért ez az ORSZÁGOS becslés (a fejléc-szám)
+    tényleges tipikus hibája. Évente a vármegyei walk-forward becsléseket az
+    ADOTT ÉVI betakarított területtel súlyozzuk országos hozammá, ugyanígy a
+    tényt, majd az évek során RMSE-t számolunk (matematikai audit 5.1)."""
+    area = df.set_index(["crop_year", "nuts_id"])["area_ha"]
+    r = res.copy()
+    r["area"] = [area.get((cy, nid), np.nan)
+                 for cy, nid in zip(r["crop_year"], r["nuts_id"])]
+    r = r.dropna(subset=["area"])
+    nat = r.groupby("crop_year").apply(
+        lambda g: pd.Series({
+            "actual": np.average(g["actual"], weights=g["area"]),
+            "pred": np.average(g["pred"], weights=g["area"]),
+        }), include_groups=False)
+    return rmse(nat["actual"].to_numpy(), nat["pred"].to_numpy())
 
 
 def band_calibration(res: pd.DataFrame) -> dict:
@@ -178,10 +199,14 @@ def run_crop(crop: str) -> dict:
     # a LOYO-s (régi) szám a kettős kommunikációhoz
     loyo_old = json.loads(
         (config.DATA_PROCESSED / f"loyo_summary_{crop}.json").read_text())
+    rmse_nat = national_wf_rmse(res_best, df)
     summary = {
         "winner": winner,
         "rmse_wf": rmse_v1 if winner == "v1" else rmse_v2,
         "rmse_wf_v1": rmse_v1, "rmse_wf_v2": rmse_v2,
+        # az ORSZÁGOS fejléc-szám hibája (terület-súlyozva, aggregáláskor
+        # a vármegyei tévedések részben kioltják egymást → kisebb, de HELYES)
+        "rmse_wf_national": rmse_nat,
         "rmse_naive_wf": rmse_naive,
         "rmse_loyo_old": float(loyo_old["oos_std"]),
         "warm_nights_share": warm_share,
@@ -226,6 +251,27 @@ def write_report(summaries: dict[str, dict]) -> None:
         "",
         "*(t/ha; v2 = termény-bázisú/plafonozott GDD + EDD hőstressz-intenzitás; "
         "a warm_nights változót a belső kiválasztás ablakonként dönti el.)*",
+        "",
+        "## Vármegyei vs. országos hiba",
+        "",
+        "A fenti RMSE **vármegye-szintű** (ebből számoljuk a vármegyei sávot). Az "
+        "**országos** becslés tipikus hibája kisebb, mert a vármegyei tévedések "
+        "aggregáláskor részben kioltják egymást — a főoldali/PDF „a becslés tipikus "
+        "tévedése ±X%” EZT az országos számot közli:",
+        "",
+        "| Termény | Vármegyei WF-RMSE | Országos WF-RMSE | Országos hiba (%) |",
+        "|---|---|---|---|",
+    ]
+    for crop, s in summaries.items():
+        label = config.CROPS[crop]["label"]
+        trend = s.get("mean_yield", 0) or 1
+        lines.append(
+            f"| {label} | {s['rmse_wf']:.3f} | {s['rmse_wf_national']:.3f} | "
+            f"{100*s['rmse_wf_national']/trend:.1f}% |")
+    lines += [
+        "",
+        "*(Az országos hiba %-a itt a minta-átlaghozamhoz viszonyít; a főoldal a "
+        "mindenkori trend-szinthez, ezért ott pár tizeddel eltérhet.)*",
         "",
         "## Sáv-kalibráció (M2): empirikus kvantilisek, vármegyei zsugorított szórás",
         "",

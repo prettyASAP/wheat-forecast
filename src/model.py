@@ -101,7 +101,12 @@ def fit_panel_model(train: pd.DataFrame,
     k_unpen = len(counties) + trend_degree
     D = np.zeros(X.shape[1])
     D[k_unpen:] = ridge_alpha
-    beta = np.linalg.solve(X.T @ X + np.diag(D), X.T @ y)
+    # lstsq (minimum-normájú megoldás) a solve helyett: numerikusan robusztus,
+    # ha a normálmátrix ridge nélkül (α=0) egy majdnem-degenerált időjárási
+    # oszlop miatt szinguláris lenne (pl. barley warm_nights ~csupa nulla egy
+    # belső LOYO-foldban). Teljes rangú, jól kondicionált esetben bitre azonos
+    # a solve eredményével (matematikai audit ajánlása).
+    beta = np.linalg.lstsq(X.T @ X + np.diag(D), X.T @ y, rcond=None)[0]
 
     model.beta = beta
     model.resid_std = float(np.std(y - X @ beta, ddof=X.shape[1]))
