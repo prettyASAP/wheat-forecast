@@ -39,6 +39,14 @@ jobs:
           set -euo pipefail
           pip install -r requirements.txt
 
+      # Gyors védőháló (~1 mp): a dátum/ablak/kalibráció-magra írt tesztek.
+      # Ha ezek buknak, az élő előrejelzés el sem indul — nem publikálunk
+      # hibás logikával számolt forecastot.
+      - name: Tesztek (megbízhatósági öv)
+        run: |
+          set -euo pipefail
+          python -m pytest tests/ -q
+
       - name: Élő előrejelzés futtatása (mindhárom termény)
         run: |
           set -euo pipefail
