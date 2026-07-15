@@ -271,8 +271,17 @@ def national_block(crop: str, crop_year: int, rows: list[dict],
     n_total = len(hist_anoms) + 1
 
     last_official = nat["yields"][-1]
+    wf = json.loads((config.DATA_PROCESSED /
+                     f"walkforward_summary_{crop}.json").read_text())
+    sigma_nat = wf["rmse_wf_national"]  # az ORSZÁGOS becslés walk-forward szórása
+    # ORSZÁGOS 80%-os sáv: a becslés + a standardizált empirikus kvantilisek ×
+    # az országos szórás (a vármegyei sávval azonos módszertan, országos szinten).
+    # A szakértői panel (agrárprofesszor) fő kérése: a bizonytalanság a SZÁM
+    # MELLÉ kerüljön, ne csak a lábjegyzetbe.
     out = {
         "predicted_yield_t_ha": round(predicted, 2),
+        "pred_low_t_ha": round(predicted + wf["q10"] * sigma_nat, 2),
+        "pred_high_t_ha": round(predicted + wf["q90"] * sigma_nat, 2),
         "anomaly_pct": round(anomaly_pct, 1),
         "trend_t_ha": round(trend_now, 2),
         "yoy_pct": round(100 * (predicted - last_official) / last_official, 1),
@@ -288,9 +297,7 @@ def national_block(crop: str, crop_year: int, rows: list[dict],
         # vármegyei pooled RMSE (az utóbbi túlbecsülné az országos szám hibáját,
         # mert aggregáláskor a vármegyei tévedések részben kioltják egymást —
         # matematikai audit 5.1).
-        "model_error_pct": round(100 * json.loads(
-            (config.DATA_PROCESSED / f"walkforward_summary_{crop}.json")
-            .read_text())["rmse_wf_national"] / trend_now, 1),
+        "model_error_pct": round(100 * sigma_nat / trend_now, 1),
     }
 
     # Forintosítás (ha van árfájl): termelési érték és a trendtől való elmaradás

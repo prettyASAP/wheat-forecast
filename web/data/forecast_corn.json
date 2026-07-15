@@ -7,6 +7,8 @@
  "band": "80%",
  "national": {
   "predicted_yield_t_ha": 6.5,
+  "pred_low_t_ha": 4.83,
+  "pred_high_t_ha": 8.21,
   "anomaly_pct": -7.7,
   "trend_t_ha": 7.04,
   "yoy_pct": 23.4,
