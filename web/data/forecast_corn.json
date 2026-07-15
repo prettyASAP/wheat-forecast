@@ -6,12 +6,12 @@
  "unit": "t/ha",
  "band": "80%",
  "national": {
-  "predicted_yield_t_ha": 6.5,
-  "pred_low_t_ha": 4.83,
-  "pred_high_t_ha": 8.21,
-  "anomaly_pct": -7.7,
+  "predicted_yield_t_ha": 6.52,
+  "pred_low_t_ha": 4.84,
+  "pred_high_t_ha": 8.23,
+  "anomaly_pct": -7.4,
   "trend_t_ha": 7.04,
-  "yoy_pct": 23.4,
+  "yoy_pct": 23.7,
   "prev_year": 2025,
   "prev_year_yield_t_ha": 5.27,
   "rank_from_worst": 12,
@@ -22,8 +22,8 @@
    "price_huf_per_t": 69260,
    "price_year": 2024,
    "area_ha": 736918,
-   "production_value_bn_huf": 331.8,
-   "trend_gap_bn_huf": -27.5,
+   "production_value_bn_huf": 332.7,
+   "trend_gap_bn_huf": -26.6,
    "note": "a 2024. évi termelői átlagáron, a 2025. évi területtel számolva"
   }
  },
@@ -31,9 +31,9 @@
   "method": "26 analóg év tényleges időjárása a hátralévő 71 napra",
   "remaining_days": 71,
   "national": {
-   "p10": 5.88,
-   "p50": 6.47,
-   "p90": 7.14
+   "p10": 5.9,
+   "p50": 6.49,
+   "p90": 7.16
   },
   "counties": {
    "HU120": {
@@ -47,29 +47,29 @@
     "p90": 7.24
    },
    "HU212": {
-    "p10": 5.48,
-    "p50": 6.01,
-    "p90": 6.45
+    "p10": 5.57,
+    "p50": 6.1,
+    "p90": 6.54
    },
    "HU213": {
-    "p10": 4.63,
-    "p50": 5.27,
-    "p90": 5.71
+    "p10": 4.81,
+    "p50": 5.45,
+    "p90": 5.88
    },
    "HU221": {
-    "p10": 5.11,
-    "p50": 5.46,
-    "p90": 6.04
+    "p10": 5.23,
+    "p50": 5.58,
+    "p90": 6.15
    },
    "HU222": {
-    "p10": 6.37,
-    "p50": 6.85,
-    "p90": 7.54
+    "p10": 6.65,
+    "p50": 7.13,
+    "p90": 7.8
    },
    "HU223": {
-    "p10": 6.24,
-    "p50": 6.82,
-    "p90": 7.47
+    "p10": 6.27,
+    "p50": 6.85,
+    "p90": 7.5
    },
    "HU231": {
     "p10": 7.29,
@@ -77,9 +77,9 @@
     "p90": 8.39
    },
    "HU232": {
-    "p10": 7.1,
-    "p50": 7.75,
-    "p90": 8.3
+    "p10": 7.05,
+    "p50": 7.71,
+    "p90": 8.24
    },
    "HU233": {
     "p10": 7.15,
@@ -187,86 +187,86 @@
   {
    "nuts_id": "HU212",
    "county_name": "Komárom-Esztergom",
-   "predicted_yield_t_ha": 6.0,
-   "anomaly_pct": -18.7,
-   "low": 3.9,
-   "high": 8.14,
+   "predicted_yield_t_ha": 6.08,
+   "anomaly_pct": -17.6,
+   "low": 3.99,
+   "high": 8.22,
    "weather_todate": {
-    "prec_total_mm": 90.8,
-    "wb_total_mm": -433.4,
+    "prec_total_mm": 96.6,
+    "wb_total_mm": -427.0,
     "heat_days": 2,
     "frost_days_winter": null,
     "gdd_total": 1983.0
    },
-   "value_bn_huf": 10.1,
-   "trend_gap_bn_huf": -2.3
+   "value_bn_huf": 10.2,
+   "trend_gap_bn_huf": -2.2
   },
   {
    "nuts_id": "HU213",
    "county_name": "Veszprém",
-   "predicted_yield_t_ha": 5.22,
-   "anomaly_pct": -18.0,
-   "low": 3.4,
-   "high": 7.08,
+   "predicted_yield_t_ha": 5.4,
+   "anomaly_pct": -15.2,
+   "low": 3.58,
+   "high": 7.26,
    "weather_todate": {
-    "prec_total_mm": 127.3,
-    "wb_total_mm": -348.4,
-    "heat_days": 1,
+    "prec_total_mm": 133.0,
+    "wb_total_mm": -343.6,
+    "heat_days": 0,
     "frost_days_winter": null,
     "gdd_total": 1849.0
    },
-   "value_bn_huf": 5.1,
-   "trend_gap_bn_huf": -1.1
+   "value_bn_huf": 5.2,
+   "trend_gap_bn_huf": -0.9
   },
   {
    "nuts_id": "HU221",
    "county_name": "Győr-Moson-Sopron",
-   "predicted_yield_t_ha": 5.59,
-   "anomaly_pct": -23.9,
-   "low": 3.69,
-   "high": 7.53,
+   "predicted_yield_t_ha": 5.71,
+   "anomaly_pct": -22.4,
+   "low": 3.81,
+   "high": 7.65,
    "weather_todate": {
-    "prec_total_mm": 85.4,
-    "wb_total_mm": -473.7,
+    "prec_total_mm": 93.7,
+    "wb_total_mm": -465.0,
     "heat_days": 4,
     "frost_days_winter": null,
-    "gdd_total": 2129.0
+    "gdd_total": 2128.0
    },
-   "value_bn_huf": 14.0,
-   "trend_gap_bn_huf": -4.4
+   "value_bn_huf": 14.3,
+   "trend_gap_bn_huf": -4.1
   },
   {
    "nuts_id": "HU222",
    "county_name": "Vas",
-   "predicted_yield_t_ha": 6.91,
-   "anomaly_pct": -9.5,
-   "low": 5.13,
-   "high": 8.73,
+   "predicted_yield_t_ha": 7.19,
+   "anomaly_pct": -5.9,
+   "low": 5.41,
+   "high": 9.01,
    "weather_todate": {
-    "prec_total_mm": 156.0,
-    "wb_total_mm": -339.3,
-    "heat_days": 2,
+    "prec_total_mm": 168.6,
+    "wb_total_mm": -327.0,
+    "heat_days": 1,
     "frost_days_winter": null,
-    "gdd_total": 2023.0
+    "gdd_total": 2022.0
    },
-   "value_bn_huf": 10.5,
-   "trend_gap_bn_huf": -1.1
+   "value_bn_huf": 10.9,
+   "trend_gap_bn_huf": -0.7
   },
   {
    "nuts_id": "HU223",
    "county_name": "Zala",
-   "predicted_yield_t_ha": 6.85,
-   "anomaly_pct": -10.9,
-   "low": 5.0,
-   "high": 8.73,
+   "predicted_yield_t_ha": 6.88,
+   "anomaly_pct": -10.5,
+   "low": 5.04,
+   "high": 8.77,
    "weather_todate": {
-    "prec_total_mm": 150.4,
-    "wb_total_mm": -335.6,
+    "prec_total_mm": 156.6,
+    "wb_total_mm": -332.8,
     "heat_days": 2,
     "frost_days_winter": null,
-    "gdd_total": 2011.0
+    "gdd_total": 2014.0
    },
-   "value_bn_huf": 12.5,
+   "value_bn_huf": 12.6,
    "trend_gap_bn_huf": -1.5
   },
   {
@@ -289,19 +289,19 @@
   {
    "nuts_id": "HU232",
    "county_name": "Somogy",
-   "predicted_yield_t_ha": 7.78,
-   "anomaly_pct": -0.3,
-   "low": 5.57,
-   "high": 10.05,
+   "predicted_yield_t_ha": 7.73,
+   "anomaly_pct": -0.9,
+   "low": 5.52,
+   "high": 10.0,
    "weather_todate": {
-    "prec_total_mm": 190.9,
-    "wb_total_mm": -303.3,
+    "prec_total_mm": 191.4,
+    "wb_total_mm": -306.9,
     "heat_days": 3,
     "frost_days_winter": null,
-    "gdd_total": 2012.0
+    "gdd_total": 2017.0
    },
-   "value_bn_huf": 31.0,
-   "trend_gap_bn_huf": -0.1
+   "value_bn_huf": 30.8,
+   "trend_gap_bn_huf": -0.3
   },
   {
    "nuts_id": "HU233",
