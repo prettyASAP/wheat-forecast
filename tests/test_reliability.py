@@ -319,3 +319,22 @@ def test_wb_windows_reference_existing_phenology():
         for w in spec["wb_windows"]:
             assert w in spec["phenology"], f"{crop}: ismeretlen wb_window {w}"
         assert spec["heat_window"] in spec["phenology"]
+
+
+# --------------------------------------------------------------------------- #
+# 9) HTML-jelentés (Claude Design szedés) — szerkezeti füst-teszt
+# --------------------------------------------------------------------------- #
+def test_report_html_has_three_pages_and_all_crops():
+    """A HTML-generátor 3 A4-oldalt ad, mindhárom terménnyel; a Playwright
+    (PDF) importja lusta, így böngésző nélkül is fut. Az élő forecast-JSON-okból
+    dolgozik (a repóban jelen vannak)."""
+    from src import report_html
+    fcs = {c: report_html.load_fc(c) for c in config.CROPS}
+    html = report_html.build_html(fcs, "2026-07-15", "2026-07-15 12:00")
+    assert html.count('<section class="page">') == 3
+    for fc in fcs.values():
+        assert fc["crop"].capitalize() in html
+    # a bizonytalansági sáv a szám mellett (agrárprofesszori elv) és a
+    # forgatókönyv-tábla is jelen van
+    assert "80%-os sáv" in html
+    assert "Terményben és forintban" in html

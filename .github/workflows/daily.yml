@@ -38,6 +38,8 @@ jobs:
         run: |
           set -euo pipefail
           pip install -r requirements.txt
+          # headless Chromium a HTML→PDF rendereléshez (report_html.py)
+          python -m playwright install --with-deps chromium
 
       # Gyors védőháló (~1 mp): a dátum/ablak/kalibráció-magra írt tesztek.
       # Ha ezek buknak, az élő előrejelzés el sem indul — nem publikálunk
@@ -54,10 +56,10 @@ jobs:
           python -m src.predict_live --crop corn
           python -m src.predict_live --crop barley
 
-      - name: Napi PDF-jelentés generálása
+      - name: Napi PDF-jelentés generálása (HTML→PDF, Claude Design szedés)
         run: |
           set -euo pipefail
-          python -m src.report_pdf
+          python -m src.report_html
 
       - name: Friss forecast commit
         run: |

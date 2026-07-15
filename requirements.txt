@@ -9,6 +9,11 @@ pyarrow==25.0.0
 matplotlib==3.11.0
 openpyxl==3.1.5
 
+# A napi vezetői PDF HTML→PDF renderelése (Claude Design-alapú szedés):
+# headless Chromium. A CI-ben `playwright install --with-deps chromium` húzza le
+# a böngészőt (a report_html.py rendereli a jelentést).
+playwright==1.61.0
+
 # Fejlesztői (teszt) függőség
 pytest==9.1.1
 
