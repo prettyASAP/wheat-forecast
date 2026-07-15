@@ -373,7 +373,7 @@ def build_html(fcs: dict, today: str, stamp: str) -> str:
   <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-bottom:16px">
     <div><p class="rep-kicker">Szezonközi kilátás — {live_fc['crop']}</p>
       <h2 style="margin:0;font-size:30px;line-height:1">Még {rem} nap van hátra</h2></div>
-    <div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);text-align:right">a becslés még<br>változhat · 3 / 3</div>
+    <div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);text-align:right;white-space:nowrap">a becslés még változhat · 3 / 3</div>
   </div>
   <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start">
     <div>
@@ -426,7 +426,6 @@ def build_html(fcs: dict, today: str, stamp: str) -> str:
 <style>{CSS}</style></head><body>
 <section class="page">
   <div style="border-bottom:2px solid var(--color-text);padding-bottom:10px;margin-bottom:4px">
-    <p class="rep-kicker">Napi vezetői jelentés</p>
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px">
       <h1 style="font-size:40px;margin:0;line-height:0.98">Terméshozam-előrejelzés</h1>
       <div style="flex:none;font-family:var(--font-heading);font-weight:600;font-size:26px;line-height:1;white-space:nowrap">{y}. {m}. {d}.</div>
