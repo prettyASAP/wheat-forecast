@@ -349,12 +349,13 @@ def draw_trend(fig, rect, hs: list[dict], trend_val: float | None = None):
                 ha="right", va="top", fontweight="bold")
 
 
-def crop_column(fig, page, x, w, top, height, fc: dict):
-    """Egy termény-oszlop az 1. oldalon — a tartalomhoz zárt kártyával."""
+def crop_column(fig, page, x, w, top, fc: dict) -> float:
+    """Egy termény-oszlop az 1. oldalon. A kártya magassága a TARTALOMHOZ
+    igazodik (a futó szezonú termény — több információval — magasabb kártyát
+    kap, ami épp jó: kiemeli a figyelendő terményt). Visszaadja a kártya alját."""
     n = fc["national"]
     v = n.get("value")
     live = fc.get("scenarios") is not None
-    card(page, x, top - height, w, height)
     cx = x + CARD_PAD
     y = top - CARD_PAD
 
@@ -369,7 +370,14 @@ def crop_column(fig, page, x, w, top, height, fc: dict):
     y -= LINE + GAP_ELEM
     page.text(cx, y, f"{hu(n['predicted_yield_t_ha'])} t/ha", fontsize=FS_KPI,
               fontweight="bold", color=INK, va="top")
-    y -= 0.032
+    y -= 0.030
+    # 80%-os bizonytalansági sáv KÖZVETLENÜL a szám alatt (agrárprofesszor fő
+    # kérése: a bizonytalanság a becslés mellé kerüljön, ne lábjegyzetbe)
+    lo, hi = n.get("pred_low_t_ha"), n.get("pred_high_t_ha")
+    if lo is not None:
+        page.text(cx, y, f"80%-os sáv: {hu(lo)}–{hu(hi)}", fontsize=FS,
+                  color=MUTED, va="top")
+        y -= LINE
     page.text(cx, y, f"szokásos: {hu(n['trend_t_ha'])}", fontsize=FS,
               color=MUTED, va="top")
     y -= LINE
@@ -383,26 +391,34 @@ def crop_column(fig, page, x, w, top, height, fc: dict):
     y -= 0.030
     page.text(cx, y, "a szokásoshoz képest", fontsize=FS, color=MUTED, va="top")
     y -= LINE + GAP_ELEM
-    # tendencia-ábra: 30 napos becslés-alakulás a „szokásos" referenciavonallal
-    hs = history_series(fc_crop_key(fc), max_days=30)
-    if len(hs) >= 2:
-        draw_trend(fig, [x + CARD_PAD, y - 0.082, w - 2 * CARD_PAD, 0.072],
-                   hs, trend_val=n.get("trend_t_ha"))
-        y -= 0.098
-        page.text(cx, y, f"tendencia — {len(hs)} nap", fontsize=FS,
-                  color=LIGHT, va="top")
-        y -= LINE + 0.004
+    # A TENDENCIA-ÁBRA CSAK FUTÓ SZEZONNÁL (mezőgazdász: lezárt szezonnál a
+    # 30 napos görbe lapos zaj; a futó kukoricánál viszont valódi információ,
+    # mert ott a becslés még érdemben mozdulhat)
+    if live:
+        sn = fc["scenarios"]["national"]
+        page.text(cx, y, f"időjárástól még: {hu(sn['p10'])}–{hu(sn['p90'])} t/ha",
+                  fontsize=FS, color=MUTED, va="top")
+        y -= LINE + GAP_ELEM
+        hs = history_series(fc_crop_key(fc), max_days=30)
+        if len(hs) >= 2:
+            draw_trend(fig, [x + CARD_PAD, y - 0.078, w - 2 * CARD_PAD, 0.068],
+                       hs, trend_val=n.get("trend_t_ha"))
+            y -= 0.094
     if v:
         gap = v["trend_gap_bn_huf"]
-        page.text(cx, y, f"{v['production_value_bn_huf']:.0f} mrd Ft",
-                  fontsize=FS_MID, fontweight="bold", color=INK, va="top")
-        y -= 0.026
-        # AD: piros-redukció — a "vs szokásos" semleges sötétszürke
-        page.text(cx, y, f"a szokásostól: {signed(gap, 0)} mrd",
-                  fontsize=FS, color="#444444", va="top")
+        # forint MÁSODLAGOS súllyal (agrárprofesszor: ne verje le a bizonytalanságot)
+        page.text(cx, y, f"{v['production_value_bn_huf']:.0f} mrd Ft "
+                  f"({signed(gap, 0)})", fontsize=FS, fontweight="bold",
+                  color="#444444", va="top")
         y -= LINE
-        page.text(cx, y, f"{v['price_year']}-es áron, indikatív",
-                  fontsize=FS, color=LIGHT, va="top", style="italic")
+        page.text(cx, y, "termelési érték · eltérés", fontsize=FS,
+                  color=LIGHT, va="top")
+        y -= LINE
+    # a kártyát a tartalom UTÁN rajzoljuk, a tényleges magasságra méretezve
+    # (zorder=1 miatt a szöveg mögé kerül); a trend-tengely külön axes, felül marad
+    bottom = y - CARD_PAD + LINE
+    card(page, x, bottom, w, top - bottom)
+    return bottom
 
 
 def fc_crop_key(fc: dict) -> str:
@@ -447,14 +463,14 @@ def draw_summary_page(pdf: PdfPages, fcs: dict[str, dict],
         f"{any_fc['crop_year']}-es termésév · búza, kukorica, őszi árpa · "
         "vármegyei statisztikai modell", any_fc["updated_at"])
 
-    # három termény-oszlop — a lényeg + a tendencia; napi delta tudatosan nincs
-    # (hatékonysági felülvizsgálat: a tegnaphoz mért mozgás zaj, nem információ)
+    # három termény-oszlop — a lényeg + (futó szezonnál) a tendencia; napi delta
+    # tudatosan nincs. A kártyák magassága a tartalomhoz igazodik.
     y -= 0.010
-    col_h = 0.47
     col_w = (1 - 2 * M - 2 * 0.018) / 3
+    bottoms = []
     for i, (crop, fc) in enumerate(fcs.items()):
-        crop_column(fig, page, M + i * (col_w + 0.018), col_w, y, col_h, fc)
-    y -= col_h + 0.036
+        bottoms.append(crop_column(fig, page, M + i * (col_w + 0.018), col_w, y, fc))
+    y = min(bottoms) - 0.036
 
     # MA A LÉNYEG — a három termény együtt (AD #4: a felszabadult sáv tartalma)
     vals = [fc["national"].get("value") for fc in fcs.values()]
@@ -774,35 +790,168 @@ def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
     plt.close(fig)
 
 
-def main() -> None:
-    today = date.today().isoformat()
-    JELENTES_DIR.mkdir(parents=True, exist_ok=True)
+# ---------------------------------------------------------------------------- #
+# Egyoldalas koncepció — minden lényeg egy A4-en (a vezető 20 másodperce)
+# ---------------------------------------------------------------------------- #
+def compact_column(page, x, w, top, height, fc: dict) -> None:
+    """Tömör pillanatkép-oszlop az egyoldalas koncepcióhoz: csak a döntéshez
+    kellő számok, tendencia-ábra nélkül (az a többoldalas koncepciók jegye)."""
+    n = fc["national"]
+    v = n.get("value")
+    live = fc.get("scenarios") is not None
+    card(page, x, top - height, w, height)
+    cx = x + CARD_PAD
+    y = top - CARD_PAD
+    page.text(cx, y, fc["crop"].capitalize(), fontsize=16, fontweight="bold",
+              color=INK, va="top")
+    y -= 0.030
+    pill(page, cx, y, "MÉG VÁLTOZHAT" if live else "VÉGLEGES KÖZELI", live)
+    y -= 0.030
+    page.text(cx, y, f"{fc['scenarios']['remaining_days']} nap van hátra"
+              if live else "a szezon lezárult", fontsize=FS, color=MUTED, va="top")
+    y -= LINE + GAP_ELEM
+    page.text(cx, y, f"{hu(n['predicted_yield_t_ha'])} t/ha", fontsize=FS_KPI,
+              fontweight="bold", color=INK, va="top")
+    y -= 0.030
+    lo, hi = n.get("pred_low_t_ha"), n.get("pred_high_t_ha")
+    if lo is not None:
+        page.text(cx, y, f"80%-os sáv: {hu(lo)}–{hu(hi)}", fontsize=FS,
+                  color=MUTED, va="top")
+        y -= LINE + 0.004
+    a = n["anomaly_pct"]
+    a_col = RED if a < -0.05 else GREEN if a > 0.05 else INK
+    page.text(cx, y, f"{signed(a, 1)}% ", fontsize=FS_BIG, fontweight="bold",
+              color=a_col, va="top")
+    y -= 0.028
+    page.text(cx, y, "a szokásoshoz képest", fontsize=FS, color=MUTED, va="top")
+    y -= LINE
+    page.text(cx, y, f"(szokásos {hu(n['trend_t_ha'])} t/ha)", fontsize=FS,
+              color=LIGHT, va="top")
+    y -= LINE + GAP_ELEM
+    if live:
+        sn = fc["scenarios"]["national"]
+        page.text(cx, y, f"időjárástól: {hu(sn['p10'])}–{hu(sn['p90'])}",
+                  fontsize=FS, color=MUTED, va="top")
+        y -= LINE + GAP_ELEM
+    if v:
+        page.text(cx, y, f"{v['production_value_bn_huf']:.0f} mrd Ft",
+                  fontsize=FS_MID, fontweight="bold", color=INK, va="top")
+        y -= 0.024
+        page.text(cx, y, "termelési érték", fontsize=FS, color=LIGHT, va="top")
 
-    fcs = {crop: load_fc(crop) for crop in config.CROPS}
-    gdf = gpd.read_file(config.WEB_DATA / "nuts3_hu.geojson")
-    live_crops = [c for c, fc in fcs.items() if fc.get("scenarios")]
-    total_pages = 2 + len(live_crops)
+
+def draw_single_page(pdf: PdfPages, fcs: dict[str, dict], gdf,
+                     err_range: str) -> None:
+    fig = plt.figure(figsize=(8.27, 11.69))
+    any_fc = next(iter(fcs.values()))
+    page, y = page_frame(
+        fig, "Napi vezetői jelentés",
+        f"{any_fc['crop_year']}-es termésév · búza, kukorica, őszi árpa · "
+        "vármegyei statisztikai modell", any_fc["updated_at"])
+
+    # három tömör termény-oszlop (pillanatkép, tendencia-ábra nélkül)
+    y -= 0.006
+    col_h = 0.315
+    col_w = (1 - 2 * M - 2 * 0.018) / 3
+    for i, (crop, fc) in enumerate(fcs.items()):
+        compact_column(page, M + i * (col_w + 0.018), col_w, y, col_h, fc)
+    y -= col_h + 0.034
+
+    # egy sor kis térkép a három terményre — a területi kép sűrítve
+    page.text(M, y, "TERÜLETI KÉP — eltérés a szokásostól", fontsize=FS,
+              fontweight="bold", color=LIGHT, va="top")
+    y -= 0.020
+    map_w, map_h = 0.24, 0.145
+    for i, (crop, fc) in enumerate(fcs.items()):
+        mx = M + i * (map_w + 0.02)
+        draw_anom_map(fig, [mx, y - map_h, map_w, map_h], fc, gdf)
+        a = fc["national"]["anomaly_pct"]
+        page.text(mx + map_w / 2, y - map_h + 0.006,
+                  f"{fc['crop']} {signed(a, 1)}%", fontsize=FS,
+                  fontweight="bold", color=INK, va="top", ha="center")
+    y -= map_h + 0.030
+
+    # MA A LÉNYEG — tördelt, hogy ne csússzon ki
+    vals = [fc["national"].get("value") for fc in fcs.values()]
+    if all(vals):
+        total_val = sum(v["production_value_bn_huf"] for v in vals)
+        total_gap = sum(v["trend_gap_bn_huf"] for v in vals)
+        page.plot([M, 1 - M], [y, y], color=BORDER, lw=0.9,
+                  transform=page.transAxes)
+        y -= 0.020
+        y = draw_para(page, M, y, 1 - 2 * M,
+                      f"A három termény együtt ~{total_val:.0f} mrd Ft termelési "
+                      f"értéket ígér, {signed(total_gap, 0)} mrd Ft a szokásoshoz "
+                      "képest.", fontsize=FS_MID, bold=True, color=INK,
+                      line_h=0.028)
+        y -= 0.008
+    draw_para(page, M, y, 1 - 2 * M,
+              f"A becslés tipikus tévedése országosan {err_range}. Piros: "
+              "elmaradás a szokásostól, kék: többlet. A forintérték a legutolsó "
+              "(2024-es) termelői áron — indikatív. Nem hivatalos adat.",
+              fontsize=FS, color=LIGHT, line_h=0.021, justify=False)
+
+    page_footer(page, 1, 1)
+    pdf.savefig(fig)
+    plt.close(fig)
+
+
+def _err_range(fcs: dict[str, dict]) -> str:
     errs = [fc["national"]["model_error_pct"] for fc in fcs.values()
             if fc.get("national", {}).get("model_error_pct")]
-    err_range = (f"±{hu(min(errs), 0)}–{hu(max(errs), 0)}%"
-                 if errs else "±9–22%")
+    return f"±{hu(min(errs), 0)}–{hu(max(errs), 0)}%" if errs else "±9–22%"
 
-    out = JELENTES_DIR / f"jelentes_{today}.pdf"
+
+def build_pdf(fcs: dict[str, dict], gdf, out, concept: str = "harom") -> int:
+    """A választott koncepció szerint felépíti a PDF-et. Visszaadja az oldalszámot."""
+    err_range = _err_range(fcs)
+    live_crops = [c for c, fc in fcs.items() if fc.get("scenarios")]
+    if concept == "egylap":
+        total = 1
+    elif concept == "ketlap":
+        total = 2
+    else:  # "harom"
+        total = 2 + len(live_crops)
     with PdfPages(out) as pdf:
-        draw_summary_page(pdf, fcs, total_pages)
-        draw_map_page(pdf, fcs, gdf, 2, total_pages)
-        for i, crop in enumerate(live_crops):
-            draw_live_page(pdf, fcs[crop], 3 + i, total_pages,
-                           is_last=(i == len(live_crops) - 1),
-                           err_range=err_range)
+        if concept == "egylap":
+            draw_single_page(pdf, fcs, gdf, err_range)
+        else:
+            draw_summary_page(pdf, fcs, total)
+            draw_map_page(pdf, fcs, gdf, 2, total)
+            if concept == "harom":
+                for i, crop in enumerate(live_crops):
+                    draw_live_page(pdf, fcs[crop], 3 + i, total,
+                                   is_last=(i == len(live_crops) - 1),
+                                   err_range=err_range)
         info = pdf.infodict()
-        info["Title"] = f"Napi vezetői jelentés — {today}"
+        info["Title"] = f"Napi vezetői jelentés — {date.today().isoformat()}"
         info["Author"] = "Terméshozam-előrejelző (statisztikai modell)"
-    latest = config.WEB_DATA / "jelentes_latest.pdf"
-    latest.write_bytes(out.read_bytes())
-    print(f"[ok] {out} ({out.stat().st_size // 1024} KB, {total_pages} oldal) "
-          f"+ jelentes_latest.pdf")
+    return total
+
+
+def main(concept: str = "harom", out_path=None) -> None:
+    today = date.today().isoformat()
+    JELENTES_DIR.mkdir(parents=True, exist_ok=True)
+    fcs = {crop: load_fc(crop) for crop in config.CROPS}
+    gdf = gpd.read_file(config.WEB_DATA / "nuts3_hu.geojson")
+
+    from pathlib import Path
+    out = Path(out_path) if out_path else (JELENTES_DIR / f"jelentes_{today}.pdf")
+    total = build_pdf(fcs, gdf, out, concept=concept)
+    if out_path is None:  # csak az éles futás írja a latest-et a webre
+        (config.WEB_DATA / "jelentes_latest.pdf").write_bytes(out.read_bytes())
+        print(f"[ok] {out} ({out.stat().st_size // 1024} KB, {total} oldal) "
+              f"+ jelentes_latest.pdf")
+    else:
+        print(f"[ok] {out} ({out.stat().st_size // 1024} KB, {total} oldal, "
+              f"koncepció: {concept})")
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--concept", default="harom",
+                    choices=["egylap", "ketlap", "harom"])
+    ap.add_argument("--out", default=None)
+    a = ap.parse_args()
+    main(concept=a.concept, out_path=a.out)
