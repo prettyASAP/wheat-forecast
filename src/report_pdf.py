@@ -230,7 +230,8 @@ def draw_para(page, x: float, y_top: float, width: float, text: str,
     """Bekezdés szedése: mért tördelés + sorkizárás (az utolsó sor balra zárt).
     Visszaadja a bekezdés alatti y-t."""
     if line_h is None:
-        line_h = fontsize / 12 * 0.0235 * 1.02
+        # 1,5-szörös sorköz: a betűméret / 72 / lapmagasság (11.69") × 1.5
+        line_h = fontsize / 72 / 11.69 * 1.5
     words = _bind_units(text).split()
     space_w = _measure(" ", fontsize, bold, italic)
     # mért sortörés
@@ -482,16 +483,15 @@ def draw_summary_page(pdf: PdfPages, fcs: dict[str, dict],
         y -= 0.018
         page.text(M, y, "MA A LÉNYEG", fontsize=FS, fontweight="bold",
                   color=LIGHT, va="top")
-        y -= 0.025
-        page.text(M, y, f"A három termény együtt ~{total_val:.0f} mrd Ft "
-                  "termelési értéket ígér,", fontsize=FS_MID, fontweight="bold",
-                  color=INK, va="top")
-        y -= 0.025
-        page.text(M, y, f"ami {signed(total_gap, 0)} mrd Ft a szokásoshoz képest",
-                  fontsize=FS_MID, fontweight="bold", color=INK, va="top")
-        y -= 0.025
-        page.text(M, y, "a legutolsó hivatalos (2024-es) termelői árakon — indikatív",
-                  fontsize=FS, color=LIGHT, va="top", style="italic")
+        y -= 0.026
+        y = draw_para(page, M, y, 1 - 2 * M,
+                      f"A három termény együtt ~{total_val:.0f} mrd Ft termelési "
+                      f"értéket ígér, ami {signed(total_gap, 0)} mrd Ft a "
+                      "szokásoshoz képest.", fontsize=FS, bold=True, color=INK)
+        y -= 0.006
+        draw_para(page, M, y, 1 - 2 * M,
+                  "A legutolsó hivatalos (2024-es) termelői árakon — indikatív.",
+                  fontsize=FS, color=LIGHT, italic=True)
 
     page_footer(page, 1, total_pages, "Módszertan: utolsó oldal.")
     pdf.savefig(fig)
@@ -596,8 +596,7 @@ def draw_map_page(pdf: PdfPages, fcs: dict[str, dict], gdf,
     draw_anom_colorbar(fig, [lx, ly, map_w - 0.08, 0.010])
     draw_para(page, lx, ly - 0.030, map_w - 0.08,
               "piros: elmaradás a szokásostól · kék: többlet · szürke: nincs "
-              "becslés (Budapest)", fontsize=FS, color=MUTED, line_h=0.0245,
-              justify=False)
+              "becslés (Budapest)", fontsize=FS, color=MUTED)
 
     # fókusz-vármegyék táblája az alsó harmadban
     draw_focus_table(page, y - 2 * map_h - 0.042 - 0.026, fcs)
@@ -636,12 +635,10 @@ def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
         fc["updated_at"])
     # teljes headline — sorkizárt szedéssel (a MÉG VÁLTOZHAT jelzést az alcím
     # hordozza, külön pill már nem kell — nem takarhat szöveget)
-    y = draw_para(page, M, y, 1 - 2 * M, main, fontsize=13, color=INK,
-                  bold=True, line_h=0.0235)
+    y = draw_para(page, M, y, 1 - 2 * M, main, fontsize=FS, color=INK, bold=True)
     y -= GAP_ELEM
-    y = draw_para(page, M, y, 1 - 2 * M, cert, fontsize=FS, color=MUTED,
-                  line_h=0.0205)
-    y -= 0.012
+    y = draw_para(page, M, y, 1 - 2 * M, cert, fontsize=FS, color=MUTED)
+    y -= 0.010
 
     # forgatókönyv-blokk: sáv balra, tonna/forint tábla jobbra
     fsn = sc["national"]
@@ -697,15 +694,14 @@ def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
         risk = (p90 - p10) * area * price / 1e9
         y = draw_para(page, M, y, 1 - 2 * M,
                       f"A két szélső kimenet között kb. {risk:.0f} mrd Ft "
-                      "a különbség.", fontsize=FS_MID, bold=True, color=INK,
-                      line_h=0.028)
-        y -= 0.002
+                      "a különbség.", fontsize=FS, bold=True, color=INK)
+        y -= 0.004
         note = (f"*{v['price_year']}-es termelői átlagáron "
                 f"({price:,.0f} Ft/t".replace(",", " ") +
                 f") és a legutóbbi lezárt évi vetésterülettel "
                 f"({area / 1e3:.0f} ezer ha) számolva — indikatív.")
         y = draw_para(page, M, y, 1 - 2 * M, note, fontsize=FS, color=LIGHT,
-                      italic=True, line_h=0.0215)
+                      italic=True)
         y -= 0.008
 
     # (A 6 napos "becslés alakulása a szezonban" ábra tudatosan KIKERÜLT —
@@ -752,7 +748,7 @@ def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
     y = draw_para(page, M, y - 0.002, 1 - 2 * M,
                   "Vízmérleg: a csapadék és a párolgás egyenlege a szezon eddigi "
                   "részében — minél negatívabb, annál erősebb az aszálynyomás.",
-                  fontsize=FS, color=MUTED, line_h=0.0215, justify=False)
+                  fontsize=FS, color=MUTED)
 
     # módszertani lábléc — csak a legutolsó oldalon, az értelmező sor ALÁ folyatva
     if is_last:
@@ -765,7 +761,7 @@ def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
             "prettyasap.github.io/wheat-forecast · KSH, Open-Meteo/ERA5, Eurostat."
         )
         draw_para(page, M, div_y - 0.012, 1 - 2 * M, foot, fontsize=FS,
-                  color=LIGHT, line_h=0.0205, justify=False)
+                  color=LIGHT)
     page_footer(page, page_no, total_pages)
     pdf.savefig(fig)
     plt.close(fig)
@@ -816,8 +812,8 @@ def compact_column(page, x, w, top, height, fc: dict) -> None:
         y -= LINE + GAP_ELEM
     if v:
         page.text(cx, y, f"{v['production_value_bn_huf']:.0f} mrd Ft",
-                  fontsize=FS_MID, fontweight="bold", color=INK, va="top")
-        y -= 0.024
+                  fontsize=FS, fontweight="bold", color=INK, va="top")
+        y -= LINE
         page.text(cx, y, "termelési érték", fontsize=FS, color=LIGHT, va="top")
 
 
@@ -863,14 +859,13 @@ def draw_single_page(pdf: PdfPages, fcs: dict[str, dict], gdf,
         y = draw_para(page, M, y, 1 - 2 * M,
                       f"A három termény együtt ~{total_val:.0f} mrd Ft termelési "
                       f"értéket ígér, {signed(total_gap, 0)} mrd Ft a szokásoshoz "
-                      "képest.", fontsize=FS_MID, bold=True, color=INK,
-                      line_h=0.028)
+                      "képest.", fontsize=FS, bold=True, color=INK)
         y -= 0.008
     draw_para(page, M, y, 1 - 2 * M,
               f"A becslés tipikus tévedése országosan {err_range}. Piros: "
               "elmaradás a szokásostól, kék: többlet. A forintérték a legutolsó "
               "(2024-es) termelői áron — indikatív. Nem hivatalos adat.",
-              fontsize=FS, color=LIGHT, line_h=0.021, justify=False)
+              fontsize=FS, color=LIGHT)
 
     page_footer(page, 1, 1)
     pdf.savefig(fig)
