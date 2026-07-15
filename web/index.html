@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Terméshozam-előrejelző — Magyarország</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="style.css?v=10">
+  <link rel="stylesheet" href="style.css?v=11">
   <link rel="stylesheet" href="magyarazat.css?v=2">
 </head>
 <body>
@@ -34,6 +34,11 @@
 
   <main>
     <div id="map"></div>
+    <div id="map-status" role="status" aria-live="polite" data-state="loading">
+      <div class="spinner" aria-hidden="true"></div>
+      <p id="map-status-text">Térkép betöltése…</p>
+      <button id="map-status-retry" type="button">Újrapróbálom</button>
+    </div>
 
     <aside id="panel" class="hidden">
       <button id="panel-close" aria-label="Bezárás">×</button>
@@ -66,6 +71,6 @@
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="magyarazat.js?v=3"></script>
-  <script src="app.js?v=13"></script>
+  <script src="app.js?v=14"></script>
 </body>
 </html>

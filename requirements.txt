@@ -1,10 +1,20 @@
-requests>=2.31
-pandas>=2.0
-numpy>=1.24
-geopandas>=0.14
-shapely>=2.0
-statsmodels>=0.14
-scikit-learn>=1.3
-pyarrow>=14.0
-matplotlib>=3.7
-openpyxl>=3.1
+# Rögzített (==) verziók a ténylegesen telepített .venv alapján (pip freeze, 2026-07).
+# A reprodukálhatóság kedvéért pinnelve; frissítéskor futtasd újra a mérési kaput.
+requests==2.34.2
+pandas==3.0.3
+numpy==2.5.1
+geopandas==1.1.4
+shapely==2.1.2
+pyarrow==25.0.0
+matplotlib==3.11.0
+openpyxl==3.1.5
+
+# Fejlesztői (teszt) függőség
+pytest==9.1.1
+
+# NEM használt (fact-check 2026-07: nincs `import statsmodels` / `import sklearn`
+# a src/-ben — a model.py szándékosan zárt alakú numpy-megoldás, lásd a
+# "Nem sklearn-pipeline" megjegyzést). Kiszedve a felesleges telepítés/CI-idő
+# és a támadási felület csökkentésére. Ha később kellene, tedd vissza pinnelve:
+# statsmodels==0.14.6
+# scikit-learn==1.9.0
