@@ -386,8 +386,11 @@ def build_html(fcs: dict, today: str, stamp: str) -> str:
             f"{hu(me.get('barley',0),1)}%), a sáv ennél mintegy 1,3-szer szélesebb. "
             "A termelési érték a hozam, a terület és a 2024-es ár szorzata, volumen "
             "alapú indikátor, nem bevételi előrejelzés. Nem hivatalos adat. Részletes "
-            "leírás és visszamérés: prettyasap.github.io/wheat-forecast/magyarazat."
-            "html. Források: KSH, Open-Meteo (ERA5), Eurostat."
+            "leírás és visszamérés: <a href=\"https://prettyasap.github.io/"
+            "wheat-forecast/magyarazat.html\" style=\"color:var(--color-accent);"
+            "text-decoration:underline;text-underline-offset:2px\">prettyasap."
+            "github.io/wheat-forecast/magyarazat.html</a>. Források: KSH, "
+            "Open-Meteo (ERA5), Eurostat."
         )
         page3 = f"""<section class="page">
   <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-bottom:16px">
