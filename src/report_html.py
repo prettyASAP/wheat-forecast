@@ -135,8 +135,8 @@ def anom_bar_svg(a: float) -> str:
 
 
 def fan_chart_svg(hs: list[dict]) -> str:
-    """A becslés szezonközi alakulása P10–P90 sávval — adatból számolt koordináták."""
-    xs0, xs1, y_top, y_bot = 34, 580, 16, 150
+    """A becslés szezonközi alakulása a várható sávval, adatból számolt koordinátákkal."""
+    xs0, xs1, y_top, y_bot = 34, 580, 10, 104
     preds = [h["pred"] for h in hs]
     has_band = all(h["p10"] is not None and h["p90"] is not None for h in hs)
     lows = [h["p10"] for h in hs] if has_band else preds
@@ -173,9 +173,9 @@ def fan_chart_svg(hs: list[dict]) -> str:
     dots = "".join(f'<circle cx="{X(i):.1f}" cy="{Y(preds[i]):.1f}" r="{4.2 if i==n-1 else 3.4}"></circle>'
                    for i in range(n))
     labels = "".join(
-        f'<text x="{X(i):.1f}" y="168">{hs[i]["date"][5:]}</text>'
+        f'<text x="{X(i):.1f}" y="120">{hs[i]["date"][5:]}</text>'
         for i in range(0, n, max(1, n // 6)))
-    return f"""<svg width="100%" viewBox="0 0 620 185" style="display:block">
+    return f"""<svg width="100%" viewBox="0 0 620 132" style="display:block">
   {grid}
   {band}
   <polyline points="{line}" fill="none" stroke="var(--color-accent)" stroke-width="2.2"></polyline>
@@ -369,6 +369,26 @@ def build_html(fcs: dict, today: str, stamp: str) -> str:
         errs = [f["national"].get("model_error_pct") for f in fcs.values()
                 if f["national"].get("model_error_pct")]
         err_range = f"±{hu(min(errs),0)}–{hu(max(errs),0)}%" if errs else "±7–19%"
+        me = {crop_key(f): f["national"].get("model_error_pct") for f in fcs.values()}
+        # Tömör, sorkizárt (10 px) módszertan a lap alján: definiálja a sávot, a
+        # modellt és a validációt, a ± és a sáv viszonyát, a feltevéseket, és
+        # kimondja, hogy a forint volumen-indikátor, nem bevétel. Kötőjel/
+        # gondolatjel a prózában szándékosan nincs.
+        methodology = (
+            "<strong>Módszertan.</strong> Vármegyei panel lineáris regresszió a KSH "
+            "2000 óta mért hozamaira és az ERA5 időjárásra: a fajta és technológiai "
+            "fejlődést közös trend, a vármegyei adottságokat rögzített hatás kezeli, "
+            "öntözést, talajtípust és fajtaszerkezetet nem. A 80%-os sáv a becslés "
+            "predikciós intervalluma, a modell múltból jósló, tesztéven kívüli "
+            "tévedéseinek eloszlásából (visszamérés 2011 és 2025 között); a tipikus "
+            "tévedés ennek szokásos nagysága a trendszinthez mérve (búza "
+            f"{hu(me.get('wheat',0),1)}%, kukorica {hu(me.get('corn',0),1)}%, árpa "
+            f"{hu(me.get('barley',0),1)}%), a sáv ennél mintegy 1,3-szer szélesebb. "
+            "A termelési érték a hozam, a terület és a 2024-es ár szorzata, volumen "
+            "alapú indikátor, nem bevételi előrejelzés. Nem hivatalos adat. Részletes "
+            "leírás és visszamérés: prettyasap.github.io/wheat-forecast/magyarazat."
+            "html. Források: KSH, Open-Meteo (ERA5), Eurostat."
+        )
         page3 = f"""<section class="page">
   <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-bottom:16px">
     <div><p class="rep-kicker">Szezonközi kilátás — {live_fc['crop']}</p>
@@ -405,7 +425,7 @@ def build_html(fcs: dict, today: str, stamp: str) -> str:
   </div>
   <figure class="blueprint" style="padding:12px 14px 8px;margin:14px 0 0;break-inside:avoid">
     <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
-    <div style="font-family:var(--font-heading);font-weight:600;font-size:14px;margin-bottom:8px">A becslés alakulása a szezonban <span style="font-weight:400;color:color-mix(in srgb,var(--color-text) 55%,transparent);font-size:12px">(P10–P90 sávval, t/ha)</span></div>
+    <div style="font-family:var(--font-heading);font-weight:600;font-size:14px;margin-bottom:8px">A becslés alakulása a szezonban <span style="font-weight:400;color:color-mix(in srgb,var(--color-text) 55%,transparent);font-size:12px">(várható sávval, t/ha)</span></div>
     {fan}
   </figure>
   <div style="margin-top:14px;break-inside:avoid">
@@ -416,7 +436,7 @@ def build_html(fcs: dict, today: str, stamp: str) -> str:
     </table>
     <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:8px 0 0"><strong>Vízmérleg:</strong> a csapadék és a párolgás egyenlege a szezon eddigi részében — minél negatívabb, annál erősebb az aszálynyomás.</p>
   </div>
-  <p style="font-size:10.5px;color:color-mix(in srgb,var(--color-text) 45%,transparent);margin:10px 0 0;border-top:1px solid var(--color-divider);padding-top:8px"><strong>Módszertan:</strong> statisztikai modell (KSH hozamok 2000-től + ERA5 időjárás); tipikus tévedés {err_range}. Nem hivatalos adat.<br>Források: KSH, Open-Meteo/ERA5, Eurostat.</p>
+  <p style="font-size:10px;line-height:1.5;text-align:justify;color:color-mix(in srgb,var(--color-text) 52%,transparent);margin:10px 0 0;border-top:1px solid var(--color-divider);padding-top:8px">{methodology}</p>
   {footer(3, 3)}
 </section>"""
 
