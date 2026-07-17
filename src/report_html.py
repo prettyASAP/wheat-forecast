@@ -511,7 +511,10 @@ def render_pdf(html_path: Path, pdf_path: Path) -> None:
         browser.close()
 
 
-def main(make_pdf: bool = True) -> None:
+def main(make_pdf: bool = True, out_path: str | Path | None = None) -> Path | None:
+    """A napi jelentés legenerálása. Visszaadja a kész PDF útvonalát (vagy None,
+    ha --no-pdf). Külső PDF-pipeline-hoz: add meg az `out_path`-t (tetszőleges
+    cél .pdf), és a kész PDF oda is odamásolódik — lásd INTEGRACIO.md."""
     today = date.today().isoformat()
     stamp = datetime.now().strftime("%Y-%m-%d %H:%M")
     JELENTES_DIR.mkdir(parents=True, exist_ok=True)
@@ -528,15 +531,24 @@ def main(make_pdf: bool = True) -> None:
     (JELENTES_DIR / "jelentes_latest.html").write_text(html, encoding="utf-8")
     print(f"[ok] {html_out.name} + jelentes_latest.html")
 
-    if make_pdf:
-        pdf_out = JELENTES_DIR / f"jelentes_{today}.pdf"
-        render_pdf(html_out, pdf_out)
-        (config.WEB_DATA / "jelentes_latest.pdf").write_bytes(pdf_out.read_bytes())
-        print(f"[ok] {pdf_out.name} ({pdf_out.stat().st_size // 1024} KB) + jelentes_latest.pdf")
+    if not make_pdf:
+        return None
+    pdf_out = JELENTES_DIR / f"jelentes_{today}.pdf"
+    render_pdf(html_out, pdf_out)
+    (config.WEB_DATA / "jelentes_latest.pdf").write_bytes(pdf_out.read_bytes())
+    print(f"[ok] {pdf_out.name} ({pdf_out.stat().st_size // 1024} KB) + jelentes_latest.pdf")
+    if out_path:
+        out_path = Path(out_path)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_bytes(pdf_out.read_bytes())
+        print(f"[ok] külső cél: {out_path}")
+    return pdf_out
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-pdf", action="store_true", help="csak HTML, Playwright nélkül")
+    ap.add_argument("--out", default=None,
+                    help="a kész PDF-et erre a (tetszőleges) útvonalra is kiírja")
     a = ap.parse_args()
-    main(make_pdf=not a.no_pdf)
+    main(make_pdf=not a.no_pdf, out_path=a.out)
