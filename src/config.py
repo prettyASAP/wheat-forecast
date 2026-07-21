@@ -215,6 +215,10 @@ CROPS = {
         # (napraforgómag termelése vármegye szerint), egész-táblás, generikus
         # szekciófejlécekkel. A mérési kapu (walk-forward) dönt a publikálásról.
         "label": "napraforgó",
+        # A mérési kapu (walk-forward) elutasította az időjárás-modellt: a naiv
+        # trend jobb (0,41 vs 0,44 t/ha). Ezért TREND-alapon publikáljuk — őszintén
+        # felcímkézve; a becslés a sokéves trend, a sáv a trend tényleges hibájából.
+        "method": "trend",
         "ksh_page": "https://www.ksh.hu/stadat_files/mez/hu/mez0078.html",
         "ksh_slug": "mez0078",
         "season": (4, 9),
@@ -243,6 +247,11 @@ CROPS = {
         # KSH mez0079 (repcemag termelése vármegye szerint). Hőmérsékletre/fagyra
         # érzékeny hűvös kultúra. A mérési kapu dönt a publikálásról.
         "label": "repce",
+        # A mérési kapu elutasította az időjárás-modellt: a naiv trend jobb
+        # (0,53 vs 0,64 t/ha) — a repce ingadozását kifagyás, kártevők, terület-
+        # váltás mozgatja, amit a hőmérséklet/csapadék nem lát. TREND-alapon,
+        # őszintén felcímkézve publikáljuk.
+        "method": "trend",
         "ksh_page": "https://www.ksh.hu/stadat_files/mez/hu/mez0079.html",
         "ksh_slug": "mez0079",
         "season": (9, 6),
@@ -268,6 +277,12 @@ CROPS = {
     },
 }
 DEFAULT_CROP = "wheat"
+
+# A napi vezetői PDF (report_html) az időjárás-informált terményeket szedi
+# hármas kártyaráccsal. A trend-alapú termények (napraforgó, repce) a webes
+# Terméshozam-előrejelzés részben szerepelnek; a PDF-be külön bővítéssel
+# kerülhetnek (jelenleg tudatosan a három fő terményre fókuszál a napi jelentés).
+REPORT_CROPS = ["wheat", "corn", "barley"]
 
 # --------------------------------------------------------------------------- #
 # Crosswalk: KSH vármegyenév -> NUTS3 kód (2. fázis tölti ki, kézzel ellenőrizve)

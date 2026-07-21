@@ -51,6 +51,17 @@ const GLOSSARY = {
       "ez nagyságrendi, „körülbelül” szám. A „kiesés/többlet a szokásoshoz” ugyanez " +
       "a számítás a szokásos szinttel vetve össze.",
   },
+  trendalapu: {
+    title: "Trend-alapú becslés (napraforgó, repce)",
+    text: "Ezeknél a terményeknél visszaméréssel kimutattuk, hogy az idei " +
+      "időjárás statisztikailag NEM javítja a becslést: a napraforgó időjárás-" +
+      "tűrő, a repce ingadozását pedig kifagyás, kártevők és a vetésterület " +
+      "változása mozgatja, amit a hőmérséklet és a csapadék nem lát. Ezért nem " +
+      "„időjárás-modellt”, hanem a sokéves TRENDET közöljük (a vármegyék eltérő " +
+      "szintje + az évről évre emelkedő pálya). Ez validált, számszerű " +
+      "bizonytalansággal járó becslés — csak nem használ idei időjárás-jelet, " +
+      "ezért nincs nála „a szokásostól való eltérés” és szezonközi forgatókönyv.",
+  },
   tevedes: {
     title: "A becslés tipikus tévedése",
     text: "Visszamértük a modellt 2011-től évről évre úgy, hogy mindig CSAK a " +

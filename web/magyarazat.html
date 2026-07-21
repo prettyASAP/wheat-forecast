@@ -25,12 +25,12 @@
 
       <h3>1. Bemeneti adatok</h3>
       <ul>
-        <li><b>Hozamadatok:</b> KSH STADAT 19.1.2.4–19.1.2.6 táblák (búza, kukorica,
-          árpa termelése vármegye szerint): betakarított terület (ha), betakarított
-          összes termés (t), termésátlag (kg/ha), 2000–2025, 19 vármegye + Budapest.
-          Az árpánál kizárólag az őszi árpa szekciót használjuk. A beolvasott
-          vármegyei összegeket a program minden futáskor egyezteti a KSH saját
-          „Ország összesen” soraival.</li>
+        <li><b>Hozamadatok:</b> KSH STADAT táblák vármegye szerint (búza, kukorica,
+          árpa, napraforgó, repce): betakarított terület (ha), összes termés (t),
+          termésátlag (kg/ha), 2000–2025, 19 vármegye + Budapest. Az árpánál
+          kizárólag az őszi árpa szekciót használjuk. A beolvasott vármegyei
+          összegeket a program minden futáskor egyezteti a KSH saját „Ország
+          összesen” soraival.</li>
         <li><b>Időjárás:</b> ERA5 reanalízis (ECMWF; Hersbach et al. 2020), az
           Open-Meteo archív API-n keresztül, vármegye-centroidokra, napi felbontásban:
           T<sub>max</sub>, T<sub>min</sub>, T<sub>közép</sub>, csapadékösszeg és
@@ -109,6 +109,17 @@
         jelezte. A teljes visszamérési riportok a nyílt forráskódú tárolóban:
         <a href="https://github.com/prettyASAP/wheat-forecast/tree/main/reports">
         github.com/prettyASAP/wheat-forecast/reports</a>.</p>
+      <p><b>Trend-alapú termények (napraforgó, repce):</b> ugyanez a walk-forward
+        visszamérés azt mutatta, hogy náluk az időjárás-modell NEM veri a naiv
+        trendet (napraforgó 0,44 vs 0,41; repce 0,64 vs 0,53 t/ha vármegyei RMSE):
+        a napraforgó időjárás-tűrő, a repce ingadozását pedig kifagyás, kártevők és
+        a vetésterület változása mozgatja, amit a mért hőmérséklet és csapadék nem
+        ragad meg. Ezért ezeknél nem az időjárás-modellt közöljük, hanem a sokéves
+        trendet (vármegye-fixhatás + közös évtrend), őszintén felcímkézve. A sáv és
+        a tipikus tévedés itt is a naiv trend tényleges, csak-múltból-jósolt
+        hibájából jön, ugyanazzal a protokollal: országos walk-forward tévedés
+        napraforgó ±12,6%, repce ±13,0% (2011–2025). Ezeknél nincs „a szokásostól
+        való eltérés” és szezonközi forgatókönyv, mert az nem lenne igazolható.</p>
 
       <h3>5. Napi élő becslés</h3>
       <p>A szezon eltelt részére mért adat kerül a mutatókba (plusz legfeljebb 7 nap
@@ -152,7 +163,7 @@
         github.com/prettyASAP/wheat-forecast</a>.</p>
     </details>
   </div>
-  <script src="magyarazat.js?v=3"></script>
+  <script src="magyarazat.js?v=4"></script>
   <script>
     (function () {
       var order = ["modszertan", "becsles", "szokasos", "tartomany", "tevedes",

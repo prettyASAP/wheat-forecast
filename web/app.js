@@ -168,6 +168,24 @@ function renderHeadline(fc) {
   const a = n.anomaly_pct, v = n.value, sc = fc.scenarios;
   const cap = fc.crop.charAt(0).toUpperCase() + fc.crop.slice(1);
 
+  // TREND-alapú termények (napraforgó, repce): a mérési kapu elutasította az
+  // időjárás-modellt, ezért a sokéves trendet közöljük — őszintén felcímkézve.
+  if (fc.method === "trend") {
+    const mainT = `A ${esc(fc.crop)} idei termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b>
+      körül várható, a sokéves szokásos szint közelében`
+      + (v ? ` — a ${v.price_year}-es árakon ez kb.
+         <b>${Math.round(v.production_value_bn_huf)} mrd Ft</b> termelési érték.` : ".");
+    const certT = `<span class="badge trend">TREND-ALAPÚ</span> Ennél a terménynél az
+      idei időjárás statisztikailag nem javítja a becslést, ezért a sokéves trendet
+      közöljük (validált, de nem időjárás-informált). ${info("trendalapu")}`;
+    const errT = n.model_error_pct
+      ? ` A becslés tipikus tévedése a múltbeli visszamérések alapján
+         ±${hu(n.model_error_pct, 1)}%. ${info("tevedes")}` : "";
+    el.innerHTML = `<div class="headline-main">${mainT}</div>
+      <div class="headline-sub">${certT}${errT}</div>`;
+    return;
+  }
+
   let main;
   if (a <= -3) {
     main = `A ${esc(fc.crop)} idei termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül

@@ -520,7 +520,9 @@ def main(make_pdf: bool = True, out_path: str | Path | None = None) -> Path | No
     JELENTES_DIR.mkdir(parents=True, exist_ok=True)
     ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 
-    fcs = {crop: load_fc(crop) for crop in config.CROPS}
+    # A napi PDF az időjárás-informált fő terményeket szedi (a trend-alapú
+    # napraforgó/repce a webes előrejelzésben szerepel) — lásd config.REPORT_CROPS.
+    fcs = {crop: load_fc(crop) for crop in config.REPORT_CROPS}
     gdf = gpd.read_file(config.WEB_DATA / "nuts3_hu.geojson")
     for crop, fc in fcs.items():
         save_crop_map(fc, gdf, ASSETS_DIR / f"map_{crop}.png")
