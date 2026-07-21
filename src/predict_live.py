@@ -324,6 +324,11 @@ def national_block(crop: str, crop_year: int, rows: list[dict],
 
 def main(crop: str = config.DEFAULT_CROP) -> None:
     spec = config.CROPS[crop]
+    # TREND-alapú termények (napraforgó, repce): a mérési kapu elutasította az
+    # időjárás-modellt, ezért a becslés a sokéves trend, a sáv a trend tényleges
+    # walk-forward hibájából. Nincs időjárás-vezérelt anomália és szcenárió —
+    # így a kimenet hiteles (nincs igazolatlan időjárás-állítás).
+    is_trend = spec.get("method") == "trend"
     today = date.today()
     crop_year = current_crop_year(today, crop)
     start, end = season_window(crop_year, crop)
@@ -343,7 +348,7 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
     # megnőne — riasztás nélkül. Ezt inkább leállítjuk, mint hogy elavult
     # alapon számolt becslést publikáljunk.
     STALE_LIMIT_DAYS = 8
-    if today <= end and (today - known_until).days > STALE_LIMIT_DAYS:
+    if not is_trend and today <= end and (today - known_until).days > STALE_LIMIT_DAYS:
         sys.exit(f"HIBA: a szezon még tart (vége {end}), de a legfrissebb ismert "
                  f"időjárás {known_until} ({(today - known_until).days} napja) — "
                  f"az adatforrás valószínűleg degradálódott. Nem publikálunk "
@@ -376,12 +381,18 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
     preds = m.predict(model_feats)
     baseline = predict_naive_trend(df, model_feats)
 
-    # Szezon közben a fő becslés az analóg-együttes átlaga (Jensen-korrekció,
-    # lásd scenario_ensemble); lezárt szezonnál marad a valós időjárásos becslés.
-    sc, ens_mean, ens_std = scenario_ensemble(season_daily, known_until, crop,
-                                              crop_year, m, df)
-    if ens_mean is not None:
-        preds = ens_mean.reindex(model_feats["nuts_id"].values).to_numpy()
+    if is_trend:
+        # trend-alapú: a becslés MAGA a trend (anomália = 0, „a szokásos szint
+        # körül"); nincs időjárás-szcenárió. A sáv a trend-summary-ből (lásd wf).
+        preds = baseline
+        sc, ens_mean, ens_std = None, None, None
+    else:
+        # Szezon közben a fő becslés az analóg-együttes átlaga (Jensen-korrekció,
+        # lásd scenario_ensemble); lezárt szezonnál a valós időjárásos becslés.
+        sc, ens_mean, ens_std = scenario_ensemble(season_daily, known_until, crop,
+                                                  crop_year, m, df)
+        if ens_mean is not None:
+            preds = ens_mean.reindex(model_feats["nuts_id"].values).to_numpy()
 
     # vármegyénkénti sáv: modell-hiba + (szezon közben) a hátralévő időjárás
     # bizonytalansága, függetlenként kombinálva: sigma_tot = sqrt(m^2 + w^2)
@@ -442,6 +453,7 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
         "weather_known_until": str(known_until),
         "unit": "t/ha",
         "band": "80%",
+        "method": spec.get("method", "weather"),
         "national": national_block(crop, crop_year, rows, df),
         "scenarios": sc,
         "counties": rows,
