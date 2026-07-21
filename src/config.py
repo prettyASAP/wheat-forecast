@@ -210,6 +210,62 @@ CROPS = {
         "asof": (6, 15),
         "backtest_years": [2022, 2007, 2003],
     },
+    "sunflower": {
+        # Napraforgó: tavaszi vetésű nyári kultúra (mint a kukorica). KSH mez0078
+        # (napraforgómag termelése vármegye szerint), egész-táblás, generikus
+        # szekciófejlécekkel. A mérési kapu (walk-forward) dönt a publikálásról.
+        "label": "napraforgó",
+        "ksh_page": "https://www.ksh.hu/stadat_files/mez/hu/mez0078.html",
+        "ksh_slug": "mez0078",
+        "season": (4, 9),
+        "phenology": {
+            "sowing_emergence": (4, 1, 5, 15, 0),     # vetés/kelés (Y)
+            "vegetative": (5, 16, 6, 30, 0),          # vegetatív fejlődés/bimbózás
+            "flowering": (7, 1, 7, 31, 0),            # virágzás KRIT (Y)
+            "grain_filling": (8, 1, 9, 15, 0),        # kaszattelítődés (Y)
+        },
+        "heat_window": "flowering",
+        "heat_tmax_c": 30.0,               # virágzáskori hőstressz küszöb
+        "gdd_base_c": 6.0, "gdd_cap_c": 30.0,   # napraforgó bázishőmérséklet ~6 °C
+        "use_frost": False,               # tavaszi vetés, nincs téli kitettség
+        "wb_windows": ["flowering", "grain_filling"],
+        "model_features": [
+            "gdd_sowing_emergence", "gdd_vegetative", "gdd_flowering",
+            "gdd_grain_filling", "prec_sowing_emergence", "prec_vegetative",
+            "heat_days", "wb_flowering", "wb_grain_filling", "wb_deficit",
+        ],
+        "asof": (8, 1),                   # as-of backtest: aug 1 (virágzás után)
+        "backtest_years": [2022, 2012, 2007],
+    },
+    "rapeseed": {
+        # Repce (őszi káposztarepce): őszi vetésű, áttelelő kultúra, a kalászosokhoz
+        # hasonló, de KORÁBBI (aug vége/szept) vetéssel és korábbi (jún) betakarítással.
+        # KSH mez0079 (repcemag termelése vármegye szerint). Hőmérsékletre/fagyra
+        # érzékeny hűvös kultúra. A mérési kapu dönt a publikálásról.
+        "label": "repce",
+        "ksh_page": "https://www.ksh.hu/stadat_files/mez/hu/mez0079.html",
+        "ksh_slug": "mez0079",
+        "season": (9, 6),
+        "phenology": {
+            "sowing_emergence": (9, 1, 10, 31, -1),   # vetés/kelés/őszi fejlődés (Y-1)
+            "winter_dormancy": (12, 1, 2, 28, -1),    # téli nyugalom (Y-1/Y)
+            "stem_flowering": (3, 15, 4, 30, 0),      # szárba indulás/virágzás KRIT (Y)
+            "pod_filling": (5, 1, 6, 15, 0),          # becőtelítődés (Y)
+        },
+        "heat_window": "stem_flowering",
+        "heat_tmax_c": 27.0,              # a repce hűvös kultúra: alacsonyabb hőküszöb
+        "gdd_base_c": 5.0, "gdd_cap_c": 30.0,   # repce bázishőmérséklet ~5 °C
+        "use_frost": True,                # kifagyás-kockázat (kevésbé télálló)
+        "wb_windows": ["stem_flowering", "pod_filling"],
+        "model_features": [
+            "gdd_sowing_emergence", "gdd_winter_dormancy", "gdd_stem_flowering",
+            "gdd_pod_filling", "prec_sowing_emergence", "prec_winter_dormancy",
+            "heat_days", "frost_days_winter", "wb_stem_flowering", "wb_pod_filling",
+            "wb_deficit",
+        ],
+        "asof": (5, 1),                   # as-of backtest: máj 1 (virágzás után)
+        "backtest_years": [2012, 2022, 2003],
+    },
 }
 DEFAULT_CROP = "wheat"
 
