@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Terméshozam-előrejelző — Magyarország</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="style.css?v=11">
+  <link rel="stylesheet" href="style.css?v=12">
   <link rel="stylesheet" href="magyarazat.css?v=2">
 </head>
 <body>
@@ -15,6 +15,8 @@
       <button data-crop="wheat" class="active" role="tab">Búza</button>
       <button data-crop="corn" role="tab">Kukorica</button>
       <button data-crop="barley" role="tab">Őszi árpa</button>
+      <button data-crop="sunflower" role="tab">Napraforgó</button>
+      <button data-crop="rapeseed" role="tab">Repce</button>
     </div>
     <select id="layer-select" aria-label="Térképréteg">
       <option value="anomaly" selected>Eltérés a szokásostól (%)</option>
@@ -63,14 +65,14 @@
 
   <footer>
     Adatok: <a href="https://open-meteo.com/">Open-Meteo</a> (ERA5, CC BY 4.0) ·
-    <a href="https://www.ksh.hu/stadat_files/mez/hu/mez0071.html">KSH</a> (vármegyei termésátlagok: búza, kukorica, őszi árpa) ·
+    <a href="https://www.ksh.hu/stadat_files/mez/hu/mez0071.html">KSH</a> (vármegyei termésátlagok: búza, kukorica, őszi árpa, napraforgó, repce) ·
     <a href="https://ec.europa.eu/eurostat/web/gisco">Eurostat GISCO</a> (NUTS3 határok, © EuroGeographics) ·
     <a href="https://ec.europa.eu/eurostat/databrowser/view/apri_ap_crpouta/">Eurostat</a> (termelői árak).
     A becslés statisztikai modell, nem hivatalos adat. · <a href="magyarazat.html">Mi mit jelent? — minden magyarázat</a>
   </footer>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-  <script src="magyarazat.js?v=3"></script>
+  <script src="magyarazat.js?v=4"></script>
   <script src="app.js?v=14"></script>
 </body>
 </html>

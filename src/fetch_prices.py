@@ -27,9 +27,11 @@ EUROSTAT_URL = (
 )
 # Eurostat termékkód -> a mi termény-kulcsunk
 PROD_CODES = {
-    "01110000": "wheat",   # soft wheat
-    "01500000": "corn",    # grain maize
-    "01300000": "barley",  # barley (az Eurostat nem bont őszi/tavaszi szerint)
+    "01110000": "wheat",     # soft wheat
+    "01500000": "corn",      # grain maize
+    "01300000": "barley",    # barley (az Eurostat nem bont őszi/tavaszi szerint)
+    "02120000": "sunflower", # napraforgó (Sunflowers)
+    "02110000": "rapeseed",  # repce (Rape)
 }
 RAW_PATH = config.DATA_RAW / "prices" / "eurostat_apri_ap_crpouta_hu.json"
 PRICES_JSON = config.WEB_DATA / "prices.json"

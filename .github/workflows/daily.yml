@@ -49,12 +49,16 @@ jobs:
           set -euo pipefail
           python -m pytest tests/ -q
 
-      - name: Élő előrejelzés futtatása (mindhárom termény)
+      - name: Élő előrejelzés futtatása (mind az öt termény)
         run: |
           set -euo pipefail
           python -m src.predict_live --crop wheat
           python -m src.predict_live --crop corn
           python -m src.predict_live --crop barley
+          # trend-alapú termények (a mérési kapu elutasította az időjárás-modellt);
+          # a sokéves trendet közlik, őszintén felcímkézve — csak a weben szerepelnek
+          python -m src.predict_live --crop sunflower
+          python -m src.predict_live --crop rapeseed
 
       - name: Napi PDF-jelentés generálása (HTML→PDF, Claude Design szedés)
         run: |
