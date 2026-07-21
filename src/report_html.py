@@ -306,7 +306,43 @@ def focus_bar_rows(fcs: dict) -> str:
     return "\n".join(rows)
 
 
-def build_html(fcs: dict, today: str, stamp: str) -> str:
+def trend_strip(trend_fcs: list) -> str:
+    """Kompakt, ALÁRENDELT csík a trend-alapú terményekhez (napraforgó, repce).
+    Tudatosan a konfidencia-hierarchia legalján, kis súllyal: 15 px-es értékek a
+    fő kártyák 38 px-éhez képest, halvány szín, a lap alján — a gyengébb
+    bizonyosságnak arányos vizuális dominancia, a 3-kártyás design felborítása
+    nélkül. Nincs időjárás-anomália-állítás, csak becslés + tipikus tévedés."""
+    if not trend_fcs:
+        return ""
+    items = []
+    for fc in trend_fcs:
+        n = fc["national"]
+        v = n.get("value")
+        val = (f'<span style="color:color-mix(in srgb,var(--color-text) 52%,transparent);'
+               f'margin-left:auto;font-variant-numeric:tabular-nums">'
+               f'~{v["production_value_bn_huf"]:.0f} mrd Ft</span>' if v else "")
+        items.append(
+            f'<div style="display:flex;align-items:baseline;gap:8px;font-size:12px">'
+            f'<span style="font-family:var(--font-heading);font-weight:600;font-size:15px">'
+            f'{fc["crop"].capitalize()}</span>'
+            f'<span style="font-family:var(--font-heading);font-weight:600;font-size:15px;'
+            f'font-variant-numeric:tabular-nums">{hu(n["predicted_yield_t_ha"])} t/ha</span>'
+            f'<span style="color:color-mix(in srgb,var(--color-text) 50%,transparent)">'
+            f'±{hu(n["model_error_pct"], 1)}%</span>{val}</div>')
+    return (
+        '<div style="margin-top:14px;border-top:1px solid var(--color-divider);'
+        'padding-top:10px;break-inside:avoid">'
+        '<p style="font-family:var(--font-heading);font-weight:600;font-size:11px;'
+        'letter-spacing:0.14em;text-transform:uppercase;color:color-mix(in srgb,'
+        'var(--color-text) 45%,transparent);margin:0 0 7px">Trend-alapú termények '
+        '<span style="font-weight:400;letter-spacing:0;text-transform:none;font-size:10px'
+        ';color:color-mix(in srgb,var(--color-text) 42%,transparent)">— a sokéves trend, '
+        'nem időjárás-informált</span></p>'
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 18px">'
+        + "".join(items) + '</div></div>')
+
+
+def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None) -> str:
     vals = [fc["national"].get("value") for fc in fcs.values()]
     total_val = sum(v["production_value_bn_huf"] for v in vals if v)
     total_gap = sum(v["trend_gap_bn_huf"] for v in vals if v)
@@ -467,6 +503,7 @@ def build_html(fcs: dict, today: str, stamp: str) -> str:
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">{cards}</div>
   <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:14px 0 0">A hozamok vármegyei statisztikai modellből (KSH 2000-től + ERA5 időjárás) származnak. A búza és őszi árpa szezonja gyakorlatilag lezárult; a kukorica becslése a hátralévő napokban még változhat.</p>
+  {trend_strip(trend_fcs or [])}
   {footer(1, 3)}
 </section>
 <section class="page">
@@ -527,7 +564,15 @@ def main(make_pdf: bool = True, out_path: str | Path | None = None) -> Path | No
     for crop, fc in fcs.items():
         save_crop_map(fc, gdf, ASSETS_DIR / f"map_{crop}.png")
 
-    html = build_html(fcs, today, stamp)
+    # trend-alapú termények (napraforgó, repce) — a page 1 alján, alárendelt
+    # csíkban (a konfidencia-hierarchia legalja). Csak akkor, ha van forecastjuk.
+    trend_fcs = []
+    for crop, spec in config.CROPS.items():
+        if spec.get("method") == "trend" and \
+                (config.WEB_DATA / f"forecast_{crop}.json").exists():
+            trend_fcs.append(load_fc(crop))
+
+    html = build_html(fcs, today, stamp, trend_fcs=trend_fcs)
     html_out = JELENTES_DIR / f"jelentes_{today}.html"
     html_out.write_text(html, encoding="utf-8")
     (JELENTES_DIR / "jelentes_latest.html").write_text(html, encoding="utf-8")
