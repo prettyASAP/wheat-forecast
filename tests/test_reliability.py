@@ -329,7 +329,7 @@ def test_report_html_has_three_pages_and_all_crops():
     (PDF) importja lusta, így böngésző nélkül is fut. Az élő forecast-JSON-okból
     dolgozik (a repóban jelen vannak)."""
     from src import report_html
-    fcs = {c: report_html.load_fc(c) for c in config.CROPS}
+    fcs = {c: report_html.load_fc(c) for c in config.REPORT_CROPS}
     html = report_html.build_html(fcs, "2026-07-15", "2026-07-15 12:00")
     assert html.count('<section class="page">') == 3
     for fc in fcs.values():
