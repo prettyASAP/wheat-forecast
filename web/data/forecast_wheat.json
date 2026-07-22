@@ -1,10 +1,11 @@
 {
  "crop": "búza",
  "crop_year": 2026,
- "updated_at": "2026-07-21",
+ "updated_at": "2026-07-22",
  "weather_known_until": "2026-06-30",
  "unit": "t/ha",
  "band": "80%",
+ "method": "weather",
  "national": {
   "predicted_yield_t_ha": 5.21,
   "pred_low_t_ha": 4.65,
