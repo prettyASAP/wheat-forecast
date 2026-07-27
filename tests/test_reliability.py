@@ -338,3 +338,40 @@ def test_report_html_has_three_pages_and_all_crops():
     # forgatókönyv-tábla is jelen van
     assert "80%-os sáv" in html
     assert "Terményben és forintban" in html
+
+
+# --------------------------------------------------------------------------- #
+# 10) Piaci árjegyzések — ár-parszolás, dátumformázás, szanity-kapu
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize("raw,expected", [
+    ("€209,13", 209.13),      # EU-vesszős
+    ("€224.29", 224.29),      # pontos
+    ("630", 630.0),           # csupasz
+    ("€1.234,56", 1234.56),   # ezres pont + tizedes vessző
+    ("€1,234.56", 1234.56),   # ezres vessző + tizedes pont
+])
+def test_market_price_num_parsing(raw, expected):
+    from src.fetch_market_prices import _num
+    assert _num(raw) == pytest.approx(expected)
+
+
+def test_market_period_hu_formatting():
+    from src.report_html import _period_hu
+    assert _period_hu("2026-07-13 – 2026-07-19") == "júl. 13–19."
+    assert _period_hu("2026-06-29 – 2026-07-05") == "jún. 29. – júl. 5."
+    assert _period_hu("2026. 05. hó") == "2026. máj."
+
+
+def test_market_sanity_gate_rejects_out_of_range():
+    """A plauzibilis sávon kívüli vagy elavult jegyzés NEM kerülhet a kimenetbe."""
+    from datetime import date as _date
+    from src.fetch_market_prices import _weekly_item
+    rows = [{"price": "€5000", "beginDate": "13/07/2026", "endDate": "19/07/2026"}]
+    assert _weekly_item(rows, "teszt", "HU", 80, 600, "EUR/t",
+                        _date(2026, 7, 27)) is None  # ár kilóg
+    rows = [{"price": "€200", "beginDate": "01/03/2026", "endDate": "07/03/2026"}]
+    assert _weekly_item(rows, "teszt", "HU", 80, 600, "EUR/t",
+                        _date(2026, 7, 27)) is None  # elavult
+    rows = [{"price": "€200", "beginDate": "13/07/2026", "endDate": "19/07/2026"}]
+    it = _weekly_item(rows, "teszt", "HU", 80, 600, "EUR/t", _date(2026, 7, 27))
+    assert it and it["price"] == 200.0  # friss + plauzibilis: átmegy
