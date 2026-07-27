@@ -60,6 +60,13 @@ jobs:
           python -m src.predict_live --crop sunflower
           python -m src.predict_live --crop rapeseed
 
+      - name: Piaci árjegyzések letöltése (EU agrifood API / AKI PÁIR-eredetű)
+        run: |
+          set -euo pipefail
+          # ha az API elérhetetlen, a meglévő (7 napnál frissebb) árak maradnak,
+          # elavulás esetén a 4. oldal magától kimarad — a job nem bukik el ezen
+          python -m src.fetch_market_prices || echo "::warning::piaci árak frissítése nem sikerült — a meglévő/kimaradó árakkal megy tovább"
+
       - name: Napi PDF-jelentés generálása (HTML→PDF, Claude Design szedés)
         run: |
           set -euo pipefail
@@ -71,6 +78,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add web/data/forecast_*.json web/data/history/ \
+                  web/data/market_prices.json \
                   web/data/jelentes/ web/data/jelentes_latest.pdf
           if git diff --cached --quiet; then
             echo "Nincs változás, nincs commit."

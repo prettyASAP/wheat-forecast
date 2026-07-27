@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from datetime import date, datetime
 from pathlib import Path
 
@@ -231,6 +232,7 @@ figure{margin:0}
   color:color-mix(in srgb,var(--color-text) 60%,transparent);padding:6.8px;
   border-bottom:1px solid var(--color-divider)}
 .table td{padding:6.8px;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)}
+.price-table td{padding:4.6px 6.8px;white-space:nowrap}
 """
 
 
@@ -342,7 +344,66 @@ def trend_strip(trend_fcs: list) -> str:
         + "".join(items) + '</div></div>')
 
 
-def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None) -> str:
+_HU_MONTHS = ["", "jan.", "febr.", "márc.", "ápr.", "máj.", "jún.", "júl.",
+              "aug.", "szept.", "okt.", "nov.", "dec."]
+
+
+def _period_hu(period: str) -> str:
+    """'2026-07-13 – 2026-07-19' -> 'júl. 13–19.'; hónap-átnyúlásnál
+    'jún. 29. – júl. 5.'; a havi '2026. 05. hó' -> '2026. máj.'"""
+    m = re.match(r"(\d{4})-(\d{2})-(\d{2}) – (\d{4})-(\d{2})-(\d{2})", period)
+    if m:
+        y1, mo1, d1, y2, mo2, d2 = m.groups()
+        if mo1 == mo2:
+            return f"{_HU_MONTHS[int(mo1)]} {int(d1)}–{int(d2)}."
+        return f"{_HU_MONTHS[int(mo1)]} {int(d1)}. – {_HU_MONTHS[int(mo2)]} {int(d2)}."
+    m = re.match(r"(\d{4})\. (\d{2})\. hó", period)
+    if m:
+        return f"{m.group(1)}. {_HU_MONTHS[int(m.group(2))]}"
+    return period
+
+
+def market_price_page(market: dict, page_no: int, total: int, footer) -> str:
+    """4. oldal: hivatalos piaci árjegyzések (EU agrifood API ← AKI PÁIR).
+    Csak validált, friss tételek; a referencia-időszak tételenként jelölve.
+    Napi hivatalos ár nem létezik — ezt a lap őszintén kimondja."""
+    groups: dict[str, list] = {}
+    for it in market["items"]:
+        groups.setdefault(it["group"], []).append(it)
+    rows = []
+    for gname in ("Gabona és takarmány", "Olajos termékek", "Sertés", "Baromfi",
+                  "Feldolgozóipari termékek"):
+        if gname not in groups:
+            continue
+        rows.append(f'<tr><td colspan="5" style="font-family:var(--font-heading);'
+                    f'font-weight:600;font-size:15px;background:color-mix(in srgb,'
+                    f'var(--color-text) 4%,transparent);padding-top:7px;'
+                    f'padding-bottom:7px">{gname}</td></tr>')
+        for it in groups[gname]:
+            price = f"{it['price']:,.2f}".replace(",", " ").replace(".", ",")
+            rows.append(
+                f'<tr><td>{it["label"]}</td>'
+                f'<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">{price}</td>'
+                f'<td style="color:color-mix(in srgb,var(--color-text) 55%,transparent)">{it["unit"]}</td>'
+                f'<td style="color:color-mix(in srgb,var(--color-text) 55%,transparent);font-variant-numeric:tabular-nums">{_period_hu(it["period"])}</td>'
+                f'<td style="color:color-mix(in srgb,var(--color-text) 55%,transparent);white-space:normal">{it["scope"]}</td></tr>')
+    return f"""<section class="page">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-bottom:16px">
+    <div><p class="rep-kicker">Piaci árjegyzések</p>
+      <h2 style="margin:0;font-size:30px;line-height:1">Hivatalos heti jegyzések</h2></div>
+    <div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);text-align:right;white-space:nowrap">a cukor havi · {page_no} / {total}</div>
+  </div>
+  <table class="table price-table" style="font-size:12.5px">
+    <thead><tr><th style="width:31%">Termék</th><th style="width:13%;text-align:right">Jegyzés</th><th style="width:14%">Egység</th><th style="width:17%">Időszak</th><th style="width:25%">Kör</th></tr></thead>
+    <tbody>{''.join(rows)}</tbody>
+  </table>
+  <p style="font-size:10px;line-height:1.5;text-align:justify;color:color-mix(in srgb,var(--color-text) 52%,transparent);margin:12px 0 0;border-top:1px solid var(--color-divider);padding-top:8px"><strong>A jegyzésekről.</strong> Forrás: Európai Bizottság (DG AGRI) agrifood adatszolgáltatás; a magyar adatokat a tagállami jelentés (AKI PÁIR) adja. Hivatalos napi árjegyzés nem létezik, a jegyzések heti (a cukor havi) rendszerűek; a jelentés naponta frissül, és mindig a legutolsó lezárt időszakot közli, tételenként jelölve. Az árak euróban értendők, a hasított sertés és a baromfitermékek 100 kg-ra, a többi tétel tonnára vetítve. A nyilvános hivatalos forrásból nem elérhető kért termékek (bioetanol, izocukor, keményítő, takarmánykeverék, malac, pulyka, tenyészállat, víz) megbízható jegyzés hiányában nem szerepelnek; az átmenetileg nem frissülő jegyzéseket a lap kihagyja, elavult árat nem közöl.</p>
+  {footer(page_no, total)}
+</section>"""
+
+
+def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
+               market: dict | None = None) -> str:
     vals = [fc["national"].get("value") for fc in fcs.values()]
     total_val = sum(v["production_value_bn_huf"] for v in vals if v)
     total_gap = sum(v["trend_gap_bn_huf"] for v in vals if v)
@@ -366,8 +427,10 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None)
 
     focus_rows = focus_bar_rows(fcs)
 
-    # 3. oldal — futó szezonú termény (kukorica)
+    # 3. oldal — futó szezonú termény (kukorica); 4. oldal — piaci árjegyzések
     live_fc = next((fc for fc in fcs.values() if fc.get("scenarios")), None)
+    has_market = bool(market and market.get("items"))
+    total = 2 + (1 if live_fc else 0) + (1 if has_market else 0)
     page3 = ""
     if live_fc:
         n = live_fc["national"]
@@ -432,7 +495,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None)
   <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-bottom:16px">
     <div><p class="rep-kicker">Szezonközi kilátás — {live_fc['crop']}</p>
       <h2 style="margin:0;font-size:30px;line-height:1">Még {rem} nap van hátra</h2></div>
-    <div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);text-align:right;white-space:nowrap">a becslés még változhat · 3 / 3</div>
+    <div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);text-align:right;white-space:nowrap">a becslés még változhat · 3 / {total}</div>
   </div>
   <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start">
     <div>
@@ -476,8 +539,10 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None)
     <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:8px 0 0"><strong>Vízmérleg:</strong> a csapadék és a párolgás egyenlege a szezon eddigi részében — minél negatívabb, annál erősebb az aszálynyomás.</p>
   </div>
   <p style="font-size:10px;line-height:1.5;text-align:justify;color:color-mix(in srgb,var(--color-text) 52%,transparent);margin:10px 0 0;border-top:1px solid var(--color-divider);padding-top:8px">{methodology}</p>
-  {footer(3, 3)}
+  {footer(3, total)}
 </section>"""
+
+    page4 = market_price_page(market, total, total, footer) if has_market else ""
 
     return f"""<!DOCTYPE html>
 <html lang="hu"><head><meta charset="utf-8">
@@ -504,12 +569,12 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None)
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">{cards}</div>
   <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:14px 0 0">A hozamok vármegyei statisztikai modellből (KSH 2000-től + ERA5 időjárás) származnak. A búza és őszi árpa szezonja gyakorlatilag lezárult; a kukorica becslése a hátralévő napokban még változhat.</p>
   {trend_strip(trend_fcs or [])}
-  {footer(1, 3)}
+  {footer(1, total)}
 </section>
 <section class="page">
   <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-bottom:16px">
     <div><p class="rep-kicker">Területi kép</p><h2 style="margin:0;font-size:30px;line-height:1">Eltérés a szokásos hozamtól</h2></div>
-    <div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);text-align:right">vármegyénként · vastag keret:<br>fókusz-vármegye · 2 / 3</div>
+    <div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);text-align:right">vármegyénként · vastag keret:<br>fókusz-vármegye · 2 / {total}</div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;align-items:start">
     {map_figs}
@@ -529,9 +594,10 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None)
     <tbody>{focus_rows}</tbody></table>
     <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:8px 0 0">A bar a szokásos hozamtól való eltérést mutatja (skála ±20%); a függőleges vonás a 0%. „vs. országos" oszlop: t/ha eltérés az országos becsléshez képest.</p>
   </div>
-  {footer(2, 3)}
+  {footer(2, total)}
 </section>
 {page3}
+{page4}
 </body></html>"""
 
 
@@ -572,7 +638,19 @@ def main(make_pdf: bool = True, out_path: str | Path | None = None) -> Path | No
                 (config.WEB_DATA / f"forecast_{crop}.json").exists():
             trend_fcs.append(load_fc(crop))
 
-    html = build_html(fcs, today, stamp, trend_fcs=trend_fcs)
+    # piaci árjegyzések (4. oldal) — csak ha a fájl létezik és 7 napnál frissebb
+    # (elavult árakat nem közlünk; a blokk ilyenkor egyszerűen kimarad)
+    market = None
+    mp = config.WEB_DATA / "market_prices.json"
+    if mp.exists():
+        m = json.loads(mp.read_text(encoding="utf-8"))
+        age = (date.today() - date.fromisoformat(m.get("updated_at", "2000-01-01"))).days
+        if age <= 7 and m.get("items"):
+            market = m
+        else:
+            print(f"  [info] market_prices.json elavult ({age} nap) — a 4. oldal kimarad")
+
+    html = build_html(fcs, today, stamp, trend_fcs=trend_fcs, market=market)
     html_out = JELENTES_DIR / f"jelentes_{today}.html"
     html_out.write_text(html, encoding="utf-8")
     (JELENTES_DIR / "jelentes_latest.html").write_text(html, encoding="utf-8")
