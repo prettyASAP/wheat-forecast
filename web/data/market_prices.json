@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-07-31",
+ "updated_at": "2026-08-01",
  "source": "Európai Bizottság (DG AGRI) agrifood API; a magyar adatok a tagállami jelentésből (AKI PÁIR) származnak",
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
@@ -78,9 +78,9 @@
   {
    "label": "Szójadara",
    "group": "Olajos termékek",
-   "scope": "EU-átlag (5 tagállam; HU-jegyzés nincs)",
+   "scope": "EU-átlag (6 tagállam; HU-jegyzés nincs)",
    "freq": "heti",
-   "price": 383.92,
+   "price": 402.1,
    "unit": "EUR/t",
    "period": "2026-07-20 – 2026-07-26"
   },
