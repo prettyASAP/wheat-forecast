@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-08-02",
+ "updated_at": "2026-08-04",
  "source": "Európai Bizottság (DG AGRI) agrifood API; a magyar adatok a tagállami jelentésből (AKI PÁIR) származnak",
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
@@ -19,15 +19,6 @@
    "price": 175.43,
    "unit": "EUR/t",
    "period": "2026-07-13 – 2026-07-19",
-   "group": "Gabona és takarmány"
-  },
-  {
-   "label": "Takarmánykukorica",
-   "scope": "HU, országos átlag",
-   "freq": "heti",
-   "price": 209.13,
-   "unit": "EUR/t",
-   "period": "2026-06-29 – 2026-07-05",
    "group": "Gabona és takarmány"
   },
   {
@@ -78,11 +69,11 @@
   {
    "label": "Szójadara",
    "group": "Olajos termékek",
-   "scope": "EU-átlag (6 tagállam; HU-jegyzés nincs)",
+   "scope": "EU-átlag (3 tagállam; HU-jegyzés nincs)",
    "freq": "heti",
-   "price": 401.77,
+   "price": 402.17,
    "unit": "EUR/t",
-   "period": "2026-07-20 – 2026-07-26"
+   "period": "2026-07-27 – 2026-08-02"
   },
   {
    "label": "Vágósertés (hasított, S oszt.)",
@@ -140,6 +131,7 @@
   }
  ],
  "skipped_today": [
+  "Takarmánykukorica",
   "Napraforgóolaj (nyers)"
  ],
  "not_available": [
