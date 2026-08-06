@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-08-05",
+ "updated_at": "2026-08-06",
  "source": "Európai Bizottság (DG AGRI) agrifood API; a magyar adatok a tagállami jelentésből (AKI PÁIR) származnak",
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
@@ -7,71 +7,71 @@
    "label": "Étkezési búza",
    "scope": "HU, országos átlag",
    "freq": "heti",
-   "price": 185.92,
+   "price": 184.0,
    "unit": "EUR/t",
-   "period": "2026-07-20 – 2026-07-26",
+   "period": "2026-07-27 – 2026-08-02",
    "group": "Gabona és takarmány"
   },
   {
    "label": "Takarmánybúza",
    "scope": "HU, országos átlag",
    "freq": "heti",
-   "price": 175.43,
+   "price": 174.37,
    "unit": "EUR/t",
-   "period": "2026-07-13 – 2026-07-19",
+   "period": "2026-07-27 – 2026-08-02",
    "group": "Gabona és takarmány"
   },
   {
    "label": "Takarmányárpa",
    "scope": "HU, országos átlag",
    "freq": "heti",
-   "price": 165.25,
+   "price": 163.86,
    "unit": "EUR/t",
-   "period": "2026-07-20 – 2026-07-26",
+   "period": "2026-07-27 – 2026-08-02",
    "group": "Gabona és takarmány"
   },
   {
    "label": "Napraforgómag",
    "scope": "HU",
    "freq": "heti",
-   "price": 562.1,
+   "price": 590.79,
    "unit": "EUR/t",
-   "period": "2026-07-20 – 2026-07-26",
+   "period": "2026-07-27 – 2026-08-02",
    "group": "Olajos termékek"
   },
   {
    "label": "Repcemag",
    "scope": "HU",
    "freq": "heti",
-   "price": 534.47,
+   "price": 541.04,
    "unit": "EUR/t",
-   "period": "2026-07-20 – 2026-07-26",
+   "period": "2026-07-27 – 2026-08-02",
    "group": "Olajos termékek"
   },
   {
    "label": "Napraforgódara",
    "scope": "HU",
    "freq": "heti",
-   "price": 219.89,
+   "price": 241.96,
    "unit": "EUR/t",
-   "period": "2026-07-20 – 2026-07-26",
+   "period": "2026-07-27 – 2026-08-02",
    "group": "Olajos termékek"
   },
   {
    "label": "Repcedara",
    "scope": "HU",
    "freq": "heti",
-   "price": 250.96,
+   "price": 241.39,
    "unit": "EUR/t",
-   "period": "2026-07-13 – 2026-07-19",
+   "period": "2026-07-27 – 2026-08-02",
    "group": "Olajos termékek"
   },
   {
    "label": "Szójadara",
    "group": "Olajos termékek",
-   "scope": "EU-átlag (3 tagállam; HU-jegyzés nincs)",
+   "scope": "EU-átlag (4 tagállam; HU-jegyzés nincs)",
    "freq": "heti",
-   "price": 402.17,
+   "price": 403.39,
    "unit": "EUR/t",
    "period": "2026-07-27 – 2026-08-02"
   },
@@ -79,46 +79,19 @@
    "label": "Vágósertés (hasított, S oszt.)",
    "scope": "HU",
    "freq": "heti",
-   "price": 146.72,
+   "price": 149.87,
    "unit": "EUR/100 kg",
-   "period": "2026-07-20 – 2026-07-26",
+   "period": "2026-07-27 – 2026-08-02",
    "group": "Sertés"
   },
   {
    "label": "Vágósertés (hasított, E oszt.)",
    "scope": "HU",
    "freq": "heti",
-   "price": 144.98,
+   "price": 148.89,
    "unit": "EUR/100 kg",
-   "period": "2026-07-20 – 2026-07-26",
+   "period": "2026-07-27 – 2026-08-02",
    "group": "Sertés"
-  },
-  {
-   "label": "Egész csirke (65%-os)",
-   "scope": "HU",
-   "freq": "heti",
-   "price": 242.35,
-   "unit": "EUR/100 kg",
-   "period": "2026-07-20 – 2026-07-26",
-   "group": "Baromfi"
-  },
-  {
-   "label": "Csirkemell-filé",
-   "scope": "HU",
-   "freq": "heti",
-   "price": 509.87,
-   "unit": "EUR/100 kg",
-   "period": "2026-07-20 – 2026-07-26",
-   "group": "Baromfi"
-  },
-  {
-   "label": "Csirkecomb",
-   "scope": "HU",
-   "freq": "heti",
-   "price": 238.97,
-   "unit": "EUR/100 kg",
-   "period": "2026-07-20 – 2026-07-26",
-   "group": "Baromfi"
   },
   {
    "label": "Kristálycukor",
@@ -132,7 +105,10 @@
  ],
  "skipped_today": [
   "Takarmánykukorica",
-  "Napraforgóolaj (nyers)"
+  "Napraforgóolaj (nyers)",
+  "Egész csirke (65%-os)",
+  "Csirkemell-filé",
+  "Csirkecomb"
  ],
  "not_available": [
   "Bioetanol (nincs nyilvános hivatalos jegyzés)",
