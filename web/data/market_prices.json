@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-08-13",
+ "updated_at": "2026-08-14",
  "source": "Európai Bizottság (DG AGRI) agrifood API; a magyar adatok a tagállami jelentésből (AKI PÁIR) származnak",
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
@@ -71,7 +71,7 @@
    "group": "Olajos termékek",
    "scope": "EU-átlag (4 tagállam; HU-jegyzés nincs)",
    "freq": "heti",
-   "price": 388.2,
+   "price": 385.08,
    "unit": "EUR/t",
    "period": "2026-08-03 – 2026-08-09"
   },
@@ -97,7 +97,7 @@
    "label": "Egész csirke (65%-os)",
    "scope": "HU",
    "freq": "heti",
-   "price": 247.08,
+   "price": 246.83,
    "unit": "EUR/100 kg",
    "period": "2026-08-03 – 2026-08-09",
    "group": "Baromfi"
@@ -106,7 +106,7 @@
    "label": "Csirkemell-filé",
    "scope": "HU",
    "freq": "heti",
-   "price": 523.91,
+   "price": 520.03,
    "unit": "EUR/100 kg",
    "period": "2026-08-03 – 2026-08-09",
    "group": "Baromfi"
@@ -115,7 +115,7 @@
    "label": "Csirkecomb",
    "scope": "HU",
    "freq": "heti",
-   "price": 235.66,
+   "price": 236.2,
    "unit": "EUR/100 kg",
    "period": "2026-08-03 – 2026-08-09",
    "group": "Baromfi"
