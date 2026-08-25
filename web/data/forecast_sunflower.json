@@ -1,8 +1,8 @@
 {
  "crop": "napraforgó",
  "crop_year": 2026,
- "updated_at": "2026-08-24",
- "weather_known_until": "2026-08-30",
+ "updated_at": "2026-08-25",
+ "weather_known_until": "2026-08-31",
  "unit": "t/ha",
  "band": "80%",
  "method": "trend",
@@ -38,11 +38,11 @@
    "low": null,
    "high": null,
    "weather_todate": {
-    "prec_total_mm": 105.4,
-    "wb_total_mm": -662.6,
+    "prec_total_mm": 105.3,
+    "wb_total_mm": -665.6,
     "heat_days": 13,
     "frost_days_winter": null,
-    "gdd_total": 3134.0
+    "gdd_total": 3161.0
    },
    "note": "nincs becslés — elhanyagolható termőterület"
   },
@@ -54,11 +54,11 @@
    "low": 2.06,
    "high": 3.09,
    "weather_todate": {
-    "prec_total_mm": 118.2,
-    "wb_total_mm": -647.4,
+    "prec_total_mm": 110.0,
+    "wb_total_mm": -657.9,
     "heat_days": 13,
     "frost_days_winter": null,
-    "gdd_total": 3054.0
+    "gdd_total": 3080.0
    },
    "value_bn_huf": 17.3,
    "trend_gap_bn_huf": 0.0
@@ -71,11 +71,11 @@
    "low": 2.43,
    "high": 3.48,
    "weather_todate": {
-    "prec_total_mm": 119.3,
-    "wb_total_mm": -652.8,
+    "prec_total_mm": 114.8,
+    "wb_total_mm": -661.0,
     "heat_days": 14,
     "frost_days_winter": null,
-    "gdd_total": 3106.0
+    "gdd_total": 3134.0
    },
    "value_bn_huf": 24.0,
    "trend_gap_bn_huf": 0.0
@@ -88,11 +88,11 @@
    "low": 2.36,
    "high": 3.28,
    "weather_todate": {
-    "prec_total_mm": 113.4,
-    "wb_total_mm": -635.1,
+    "prec_total_mm": 116.0,
+    "wb_total_mm": -631.4,
     "heat_days": 11,
     "frost_days_winter": null,
-    "gdd_total": 2964.0
+    "gdd_total": 2980.0
    },
    "value_bn_huf": 6.2,
    "trend_gap_bn_huf": 0.0
@@ -105,11 +105,11 @@
    "low": 2.14,
    "high": 2.9,
    "weather_todate": {
-    "prec_total_mm": 157.5,
-    "wb_total_mm": -516.0,
+    "prec_total_mm": 150.3,
+    "wb_total_mm": -525.8,
     "heat_days": 5,
     "frost_days_winter": null,
-    "gdd_total": 2759.0
+    "gdd_total": 2782.0
    },
    "value_bn_huf": 4.5,
    "trend_gap_bn_huf": 0.0
@@ -122,11 +122,11 @@
    "low": 2.49,
    "high": 3.19,
    "weather_todate": {
-    "prec_total_mm": 120.7,
-    "wb_total_mm": -674.2,
+    "prec_total_mm": 127.5,
+    "wb_total_mm": -666.5,
     "heat_days": 14,
     "frost_days_winter": null,
-    "gdd_total": 3148.0
+    "gdd_total": 3167.0
    },
    "value_bn_huf": 9.6,
    "trend_gap_bn_huf": 0.0
@@ -139,11 +139,11 @@
    "low": 2.53,
    "high": 3.23,
    "weather_todate": {
-    "prec_total_mm": 195.2,
-    "wb_total_mm": -503.1,
+    "prec_total_mm": 196.6,
+    "wb_total_mm": -503.6,
     "heat_days": 10,
     "frost_days_winter": null,
-    "gdd_total": 2979.0
+    "gdd_total": 3001.0
    },
    "value_bn_huf": 4.8,
    "trend_gap_bn_huf": 0.0
@@ -156,11 +156,11 @@
    "low": 2.57,
    "high": 3.27,
    "weather_todate": {
-    "prec_total_mm": 201.1,
-    "wb_total_mm": -493.0,
+    "prec_total_mm": 192.3,
+    "wb_total_mm": -505.5,
     "heat_days": 9,
     "frost_days_winter": null,
-    "gdd_total": 2977.0
+    "gdd_total": 3004.0
    },
    "value_bn_huf": 3.4,
    "trend_gap_bn_huf": 0.0
@@ -173,11 +173,11 @@
    "low": 2.71,
    "high": 3.38,
    "weather_todate": {
-    "prec_total_mm": 202.2,
-    "wb_total_mm": -508.3,
+    "prec_total_mm": 201.0,
+    "wb_total_mm": -512.7,
     "heat_days": 10,
     "frost_days_winter": null,
-    "gdd_total": 2998.0
+    "gdd_total": 3026.0
    },
    "value_bn_huf": 13.6,
    "trend_gap_bn_huf": 0.0
@@ -190,11 +190,11 @@
    "low": 2.56,
    "high": 3.33,
    "weather_todate": {
-    "prec_total_mm": 184.3,
-    "wb_total_mm": -521.1,
+    "prec_total_mm": 167.9,
+    "wb_total_mm": -543.1,
     "heat_days": 9,
     "frost_days_winter": null,
-    "gdd_total": 2967.0
+    "gdd_total": 3000.0
    },
    "value_bn_huf": 19.9,
    "trend_gap_bn_huf": 0.0
@@ -207,11 +207,11 @@
    "low": 2.76,
    "high": 3.58,
    "weather_todate": {
-    "prec_total_mm": 192.9,
-    "wb_total_mm": -536.8,
+    "prec_total_mm": 189.0,
+    "wb_total_mm": -545.0,
     "heat_days": 9,
     "frost_days_winter": null,
-    "gdd_total": 2968.0
+    "gdd_total": 2996.0
    },
    "value_bn_huf": 23.8,
    "trend_gap_bn_huf": 0.0
@@ -224,11 +224,11 @@
    "low": 2.29,
    "high": 3.24,
    "weather_todate": {
-    "prec_total_mm": 119.4,
-    "wb_total_mm": -604.8,
+    "prec_total_mm": 117.8,
+    "wb_total_mm": -610.0,
     "heat_days": 11,
     "frost_days_winter": null,
-    "gdd_total": 3002.0
+    "gdd_total": 3025.0
    },
    "value_bn_huf": 15.8,
    "trend_gap_bn_huf": 0.0
@@ -241,11 +241,11 @@
    "low": 2.01,
    "high": 3.04,
    "weather_todate": {
-    "prec_total_mm": 180.1,
-    "wb_total_mm": -537.6,
+    "prec_total_mm": 173.7,
+    "wb_total_mm": -548.1,
     "heat_days": 9,
     "frost_days_winter": null,
-    "gdd_total": 2990.0
+    "gdd_total": 3015.0
    },
    "value_bn_huf": 12.2,
    "trend_gap_bn_huf": 0.0
@@ -258,11 +258,11 @@
    "low": 1.89,
    "high": 2.98,
    "weather_todate": {
-    "prec_total_mm": 146.9,
-    "wb_total_mm": -563.1,
+    "prec_total_mm": 144.2,
+    "wb_total_mm": -568.0,
     "heat_days": 9,
     "frost_days_winter": null,
-    "gdd_total": 2860.0
+    "gdd_total": 2882.0
    },
    "value_bn_huf": 2.8,
    "trend_gap_bn_huf": 0.0
@@ -275,11 +275,11 @@
    "low": 2.48,
    "high": 3.46,
    "weather_todate": {
-    "prec_total_mm": 149.4,
-    "wb_total_mm": -570.2,
+    "prec_total_mm": 127.6,
+    "wb_total_mm": -597.2,
     "heat_days": 11,
     "frost_days_winter": null,
-    "gdd_total": 2993.0
+    "gdd_total": 3020.0
    },
    "value_bn_huf": 32.8,
    "trend_gap_bn_huf": 0.0
@@ -292,11 +292,11 @@
    "low": 2.06,
    "high": 3.01,
    "weather_todate": {
-    "prec_total_mm": 162.6,
-    "wb_total_mm": -621.3,
+    "prec_total_mm": 161.2,
+    "wb_total_mm": -626.4,
     "heat_days": 16,
     "frost_days_winter": null,
-    "gdd_total": 3146.0
+    "gdd_total": 3172.0
    },
    "value_bn_huf": 43.7,
    "trend_gap_bn_huf": 0.0
@@ -309,11 +309,11 @@
    "low": 2.17,
    "high": 3.13,
    "weather_todate": {
-    "prec_total_mm": 151.0,
-    "wb_total_mm": -574.3,
+    "prec_total_mm": 137.7,
+    "wb_total_mm": -590.5,
     "heat_days": 9,
     "frost_days_winter": null,
-    "gdd_total": 2939.0
+    "gdd_total": 2961.0
    },
    "value_bn_huf": 22.1,
    "trend_gap_bn_huf": 0.0
@@ -326,11 +326,11 @@
    "low": 2.3,
    "high": 3.15,
    "weather_todate": {
-    "prec_total_mm": 156.9,
-    "wb_total_mm": -642.0,
+    "prec_total_mm": 142.2,
+    "wb_total_mm": -660.4,
     "heat_days": 17,
     "frost_days_winter": null,
-    "gdd_total": 3187.0
+    "gdd_total": 3218.0
    },
    "value_bn_huf": 18.7,
    "trend_gap_bn_huf": 0.0
@@ -343,11 +343,11 @@
    "low": 2.26,
    "high": 3.2,
    "weather_todate": {
-    "prec_total_mm": 143.2,
-    "wb_total_mm": -640.6,
+    "prec_total_mm": 140.0,
+    "wb_total_mm": -649.6,
     "heat_days": 18,
     "frost_days_winter": null,
-    "gdd_total": 3185.0
+    "gdd_total": 3216.0
    },
    "value_bn_huf": 47.5,
    "trend_gap_bn_huf": 0.0
@@ -360,11 +360,11 @@
    "low": 2.21,
    "high": 3.09,
    "weather_todate": {
-    "prec_total_mm": 154.9,
-    "wb_total_mm": -596.9,
+    "prec_total_mm": 149.2,
+    "wb_total_mm": -607.2,
     "heat_days": 16,
     "frost_days_winter": null,
-    "gdd_total": 3090.0
+    "gdd_total": 3121.0
    },
    "value_bn_huf": 16.4,
    "trend_gap_bn_huf": 0.0
