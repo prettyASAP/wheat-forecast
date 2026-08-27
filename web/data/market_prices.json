@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-08-26",
+ "updated_at": "2026-08-27",
  "source": "Európai Bizottság (DG AGRI) agrifood API; a magyar adatok a tagállami jelentésből (AKI PÁIR) származnak",
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
@@ -31,39 +31,84 @@
    "group": "Gabona és takarmány"
   },
   {
+   "label": "Napraforgómag",
+   "scope": "HU",
+   "freq": "heti",
+   "price": 503.65,
+   "unit": "EUR/t",
+   "period": "2026-08-17 – 2026-08-23",
+   "group": "Olajos termékek"
+  },
+  {
+   "label": "Repcemag",
+   "scope": "HU",
+   "freq": "heti",
+   "price": 533.43,
+   "unit": "EUR/t",
+   "period": "2026-08-17 – 2026-08-23",
+   "group": "Olajos termékek"
+  },
+  {
+   "label": "Napraforgódara",
+   "scope": "HU",
+   "freq": "heti",
+   "price": 213.18,
+   "unit": "EUR/t",
+   "period": "2026-08-17 – 2026-08-23",
+   "group": "Olajos termékek"
+  },
+  {
+   "label": "Repcedara",
+   "scope": "HU",
+   "freq": "heti",
+   "price": 269.46,
+   "unit": "EUR/t",
+   "period": "2026-08-17 – 2026-08-23",
+   "group": "Olajos termékek"
+  },
+  {
+   "label": "Szójadara",
+   "group": "Olajos termékek",
+   "scope": "EU-átlag (4 tagállam; HU-jegyzés nincs)",
+   "freq": "heti",
+   "price": 420.72,
+   "unit": "EUR/t",
+   "period": "2026-08-17 – 2026-08-23"
+  },
+  {
    "label": "Vágósertés (hasított, S oszt.)",
    "scope": "HU",
    "freq": "heti",
-   "price": 163.58,
+   "price": 172.51,
    "unit": "EUR/100 kg",
-   "period": "2026-08-10 – 2026-08-16",
+   "period": "2026-08-17 – 2026-08-23",
    "group": "Sertés"
   },
   {
    "label": "Vágósertés (hasított, E oszt.)",
    "scope": "HU",
    "freq": "heti",
-   "price": 163.81,
+   "price": 172.1,
    "unit": "EUR/100 kg",
-   "period": "2026-08-10 – 2026-08-16",
+   "period": "2026-08-17 – 2026-08-23",
    "group": "Sertés"
   },
   {
    "label": "Csirkemell-filé",
    "scope": "HU",
    "freq": "heti",
-   "price": 510.29,
+   "price": 489.07,
    "unit": "EUR/100 kg",
-   "period": "2026-08-10 – 2026-08-16",
+   "period": "2026-08-17 – 2026-08-23",
    "group": "Baromfi"
   },
   {
    "label": "Csirkecomb",
    "scope": "HU",
    "freq": "heti",
-   "price": 228.51,
+   "price": 235.22,
    "unit": "EUR/100 kg",
-   "period": "2026-08-10 – 2026-08-16",
+   "period": "2026-08-17 – 2026-08-23",
    "group": "Baromfi"
   },
   {
@@ -78,12 +123,7 @@
  ],
  "skipped_today": [
   "Takarmánykukorica",
-  "Napraforgómag",
-  "Repcemag",
-  "Napraforgódara",
-  "Repcedara",
   "Napraforgóolaj (nyers)",
-  "Szójadara",
   "Egész csirke (65%-os)"
  ],
  "not_available": [
