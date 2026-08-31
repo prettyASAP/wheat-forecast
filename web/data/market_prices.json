@@ -1,35 +1,8 @@
 {
- "updated_at": "2026-08-30",
+ "updated_at": "2026-08-31",
  "source": "Európai Bizottság (DG AGRI) agrifood API; a magyar adatok a tagállami jelentésből (AKI PÁIR) származnak",
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
-  {
-   "label": "Étkezési búza",
-   "scope": "HU, országos átlag",
-   "freq": "heti",
-   "price": 184.0,
-   "unit": "EUR/t",
-   "period": "2026-07-27 – 2026-08-02",
-   "group": "Gabona és takarmány"
-  },
-  {
-   "label": "Takarmánybúza",
-   "scope": "HU, országos átlag",
-   "freq": "heti",
-   "price": 174.37,
-   "unit": "EUR/t",
-   "period": "2026-07-27 – 2026-08-02",
-   "group": "Gabona és takarmány"
-  },
-  {
-   "label": "Takarmányárpa",
-   "scope": "HU, országos átlag",
-   "freq": "heti",
-   "price": 163.86,
-   "unit": "EUR/t",
-   "period": "2026-07-27 – 2026-08-02",
-   "group": "Gabona és takarmány"
-  },
   {
    "label": "Napraforgómag",
    "scope": "HU",
@@ -122,7 +95,10 @@
   }
  ],
  "skipped_today": [
+  "Étkezési búza",
+  "Takarmánybúza",
   "Takarmánykukorica",
+  "Takarmányárpa",
   "Napraforgóolaj (nyers)",
   "Egész csirke (65%-os)"
  ],
