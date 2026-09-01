@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-08-31",
+ "updated_at": "2026-09-01",
  "source": "Európai Bizottság (DG AGRI) agrifood API; a magyar adatok a tagállami jelentésből (AKI PÁIR) származnak",
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
@@ -44,7 +44,7 @@
    "group": "Olajos termékek",
    "scope": "EU-átlag (4 tagállam; HU-jegyzés nincs)",
    "freq": "heti",
-   "price": 420.72,
+   "price": 418.72,
    "unit": "EUR/t",
    "period": "2026-08-17 – 2026-08-23"
   },
