@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-09-03",
+ "updated_at": "2026-09-04",
  "source": "Európai Bizottság (DG AGRI) agrifood API; a magyar adatok a tagállami jelentésből (AKI PÁIR) származnak",
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
@@ -7,7 +7,7 @@
    "label": "Napraforgómag",
    "scope": "HU",
    "freq": "heti",
-   "price": 579.71,
+   "price": 529.16,
    "unit": "EUR/t",
    "period": "2026-08-24 – 2026-08-30",
    "group": "Olajos termékek"
@@ -25,9 +25,9 @@
    "label": "Napraforgódara",
    "scope": "HU",
    "freq": "heti",
-   "price": 213.18,
+   "price": 215.02,
    "unit": "EUR/t",
-   "period": "2026-08-17 – 2026-08-23",
+   "period": "2026-08-24 – 2026-08-30",
    "group": "Olajos termékek"
   },
   {
@@ -37,6 +37,15 @@
    "price": 269.46,
    "unit": "EUR/t",
    "period": "2026-08-17 – 2026-08-23",
+   "group": "Olajos termékek"
+  },
+  {
+   "label": "Napraforgóolaj (nyers)",
+   "scope": "HU",
+   "freq": "heti",
+   "price": 1211.66,
+   "unit": "EUR/t",
+   "period": "2026-08-24 – 2026-08-30",
    "group": "Olajos termékek"
   },
   {
@@ -52,7 +61,7 @@
    "label": "Vágósertés (hasított, S oszt.)",
    "scope": "HU",
    "freq": "heti",
-   "price": 173.11,
+   "price": 174.77,
    "unit": "EUR/100 kg",
    "period": "2026-08-24 – 2026-08-30",
    "group": "Sertés"
@@ -61,7 +70,7 @@
    "label": "Vágósertés (hasított, E oszt.)",
    "scope": "HU",
    "freq": "heti",
-   "price": 173.25,
+   "price": 173.29,
    "unit": "EUR/100 kg",
    "period": "2026-08-24 – 2026-08-30",
    "group": "Sertés"
@@ -70,7 +79,7 @@
    "label": "Csirkemell-filé",
    "scope": "HU",
    "freq": "heti",
-   "price": 522.22,
+   "price": 516.81,
    "unit": "EUR/100 kg",
    "period": "2026-08-24 – 2026-08-30",
    "group": "Baromfi"
@@ -79,7 +88,7 @@
    "label": "Csirkecomb",
    "scope": "HU",
    "freq": "heti",
-   "price": 216.68,
+   "price": 219.36,
    "unit": "EUR/100 kg",
    "period": "2026-08-24 – 2026-08-30",
    "group": "Baromfi"
@@ -99,7 +108,6 @@
   "Takarmánybúza",
   "Takarmánykukorica",
   "Takarmányárpa",
-  "Napraforgóolaj (nyers)",
   "Egész csirke (65%-os)"
  ],
  "not_available": [
