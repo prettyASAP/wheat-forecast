@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-09-09",
+ "updated_at": "2026-09-10",
  "source": "Európai Bizottság (DG AGRI) agrifood API; a magyar adatok a tagállami jelentésből (AKI PÁIR) származnak",
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
@@ -7,36 +7,36 @@
    "label": "Napraforgómag",
    "scope": "HU",
    "freq": "heti",
-   "price": 529.16,
+   "price": 520.78,
    "unit": "EUR/t",
-   "period": "2026-08-24 – 2026-08-30",
+   "period": "2026-08-31 – 2026-09-06",
    "group": "Olajos termékek"
   },
   {
    "label": "Repcemag",
    "scope": "HU",
    "freq": "heti",
-   "price": 542.06,
+   "price": 528.6,
    "unit": "EUR/t",
-   "period": "2026-08-24 – 2026-08-30",
+   "period": "2026-08-31 – 2026-09-06",
    "group": "Olajos termékek"
   },
   {
    "label": "Napraforgódara",
    "scope": "HU",
    "freq": "heti",
-   "price": 215.02,
+   "price": 229.38,
    "unit": "EUR/t",
-   "period": "2026-08-24 – 2026-08-30",
+   "period": "2026-08-31 – 2026-09-06",
    "group": "Olajos termékek"
   },
   {
    "label": "Repcedara",
    "scope": "HU",
    "freq": "heti",
-   "price": 269.46,
+   "price": 243.51,
    "unit": "EUR/t",
-   "period": "2026-08-17 – 2026-08-23",
+   "period": "2026-08-31 – 2026-09-06",
    "group": "Olajos termékek"
   },
   {
@@ -51,9 +51,9 @@
   {
    "label": "Szójadara",
    "group": "Olajos termékek",
-   "scope": "EU-átlag (4 tagállam; HU-jegyzés nincs)",
+   "scope": "EU-átlag (6 tagállam; HU-jegyzés nincs)",
    "freq": "heti",
-   "price": 448.5,
+   "price": 432.74,
    "unit": "EUR/t",
    "period": "2026-08-31 – 2026-09-06"
   },
@@ -61,36 +61,36 @@
    "label": "Vágósertés (hasított, S oszt.)",
    "scope": "HU",
    "freq": "heti",
-   "price": 174.77,
+   "price": 174.65,
    "unit": "EUR/100 kg",
-   "period": "2026-08-24 – 2026-08-30",
+   "period": "2026-08-31 – 2026-09-06",
    "group": "Sertés"
   },
   {
    "label": "Vágósertés (hasított, E oszt.)",
    "scope": "HU",
    "freq": "heti",
-   "price": 173.29,
+   "price": 175.67,
    "unit": "EUR/100 kg",
-   "period": "2026-08-24 – 2026-08-30",
+   "period": "2026-08-31 – 2026-09-06",
    "group": "Sertés"
   },
   {
    "label": "Csirkemell-filé",
    "scope": "HU",
    "freq": "heti",
-   "price": 516.81,
+   "price": 508.91,
    "unit": "EUR/100 kg",
-   "period": "2026-08-24 – 2026-08-30",
+   "period": "2026-08-31 – 2026-09-06",
    "group": "Baromfi"
   },
   {
    "label": "Csirkecomb",
    "scope": "HU",
    "freq": "heti",
-   "price": 219.36,
+   "price": 220.2,
    "unit": "EUR/100 kg",
-   "period": "2026-08-24 – 2026-08-30",
+   "period": "2026-08-31 – 2026-09-06",
    "group": "Baromfi"
   },
   {
