@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-09-10",
+ "updated_at": "2026-09-11",
  "source": "Európai Bizottság (DG AGRI) agrifood API; a magyar adatok a tagállami jelentésből (AKI PÁIR) származnak",
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
@@ -53,7 +53,7 @@
    "group": "Olajos termékek",
    "scope": "EU-átlag (6 tagállam; HU-jegyzés nincs)",
    "freq": "heti",
-   "price": 432.74,
+   "price": 423.91,
    "unit": "EUR/t",
    "period": "2026-08-31 – 2026-09-06"
   },
@@ -61,7 +61,7 @@
    "label": "Vágósertés (hasított, S oszt.)",
    "scope": "HU",
    "freq": "heti",
-   "price": 174.65,
+   "price": 173.95,
    "unit": "EUR/100 kg",
    "period": "2026-08-31 – 2026-09-06",
    "group": "Sertés"
@@ -70,16 +70,25 @@
    "label": "Vágósertés (hasított, E oszt.)",
    "scope": "HU",
    "freq": "heti",
-   "price": 175.67,
+   "price": 173.52,
    "unit": "EUR/100 kg",
    "period": "2026-08-31 – 2026-09-06",
    "group": "Sertés"
   },
   {
+   "label": "Egész csirke (65%-os)",
+   "scope": "HU",
+   "freq": "heti",
+   "price": 245.92,
+   "unit": "EUR/100 kg",
+   "period": "2026-08-31 – 2026-09-06",
+   "group": "Baromfi"
+  },
+  {
    "label": "Csirkemell-filé",
    "scope": "HU",
    "freq": "heti",
-   "price": 508.91,
+   "price": 502.92,
    "unit": "EUR/100 kg",
    "period": "2026-08-31 – 2026-09-06",
    "group": "Baromfi"
@@ -88,7 +97,7 @@
    "label": "Csirkecomb",
    "scope": "HU",
    "freq": "heti",
-   "price": 220.2,
+   "price": 222.93,
    "unit": "EUR/100 kg",
    "period": "2026-08-31 – 2026-09-06",
    "group": "Baromfi"
@@ -107,8 +116,7 @@
   "Étkezési búza",
   "Takarmánybúza",
   "Takarmánykukorica",
-  "Takarmányárpa",
-  "Egész csirke (65%-os)"
+  "Takarmányárpa"
  ],
  "not_available": [
   "Bioetanol (nincs nyilvános hivatalos jegyzés)",
