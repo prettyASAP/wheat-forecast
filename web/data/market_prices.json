@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-09-14",
+ "updated_at": "2026-09-15",
  "source": "Európai Bizottság (DG AGRI) agrifood API; a magyar adatok a tagállami jelentésből (AKI PÁIR) származnak",
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
@@ -7,7 +7,7 @@
    "label": "Napraforgómag",
    "scope": "HU",
    "freq": "heti",
-   "price": 577.5,
+   "price": 520.78,
    "unit": "EUR/t",
    "period": "2026-08-31 – 2026-09-06",
    "group": "Olajos termékek"
@@ -51,11 +51,11 @@
   {
    "label": "Szójadara",
    "group": "Olajos termékek",
-   "scope": "EU-átlag (6 tagállam; HU-jegyzés nincs)",
+   "scope": "EU-átlag (1 tagállam; HU-jegyzés nincs)",
    "freq": "heti",
-   "price": 432.74,
+   "price": 432.5,
    "unit": "EUR/t",
-   "period": "2026-08-31 – 2026-09-06"
+   "period": "2026-09-07 – 2026-09-13"
   },
   {
    "label": "Vágósertés (hasított, S oszt.)",
