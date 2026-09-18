@@ -4,6 +4,42 @@
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
   {
+   "label": "Étkezési búza",
+   "scope": "HU, 3 régió átlaga",
+   "freq": "heti",
+   "price": 195.44,
+   "unit": "EUR/t",
+   "period": "2026-09-07 – 2026-09-13",
+   "group": "Gabona és takarmány"
+  },
+  {
+   "label": "Takarmánybúza",
+   "scope": "HU, 2 régió átlaga",
+   "freq": "heti",
+   "price": 200.21,
+   "unit": "EUR/t",
+   "period": "2026-09-07 – 2026-09-13",
+   "group": "Gabona és takarmány"
+  },
+  {
+   "label": "Takarmánykukorica",
+   "scope": "HU, csak Dunántúl",
+   "freq": "heti",
+   "price": 245.34,
+   "unit": "EUR/t",
+   "period": "2026-09-07 – 2026-09-13",
+   "group": "Gabona és takarmány"
+  },
+  {
+   "label": "Takarmányárpa",
+   "scope": "HU, 2 régió átlaga",
+   "freq": "heti",
+   "price": 181.62,
+   "unit": "EUR/t",
+   "period": "2026-09-07 – 2026-09-13",
+   "group": "Gabona és takarmány"
+  },
+  {
    "label": "Napraforgómag",
    "scope": "HU",
    "freq": "heti",
@@ -112,12 +148,7 @@
    "period": "2026. 06. hó"
   }
  ],
- "skipped_today": [
-  "Étkezési búza",
-  "Takarmánybúza",
-  "Takarmánykukorica",
-  "Takarmányárpa"
- ],
+ "skipped_today": [],
  "not_available": [
   "Bioetanol (nincs nyilvános hivatalos jegyzés)",
   "Izocukor (nincs nyilvános jegyzés)",
