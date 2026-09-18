@@ -232,7 +232,7 @@ figure{margin:0}
   color:color-mix(in srgb,var(--color-text) 60%,transparent);padding:6.8px;
   border-bottom:1px solid var(--color-divider)}
 .table td{padding:6.8px;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)}
-.price-table td{padding:4.6px 6.8px;white-space:nowrap}
+.price-table td{padding:3.8px 6.8px;white-space:nowrap}
 """
 
 
@@ -421,41 +421,109 @@ def _period_hu(period: str) -> str:
     return period
 
 
+def _range52_svg(it: dict) -> str:
+    """Az ár helye az utolsó 52 hét min–max sávjában (bal = mélypont, jobb = csúcs)."""
+    if it.get("pos52") is None:
+        return ""
+    x = 3 + it["pos52"] * 70
+    return (f'<svg width="76" height="10" viewBox="0 0 76 10" style="display:block">'
+            f'<line x1="3" y1="5" x2="73" y2="5" stroke="var(--color-accent-200)" stroke-width="3"></line>'
+            f'<circle cx="{x:.1f}" cy="5" r="3.2" fill="var(--color-accent-800)"></circle></svg>')
+
+
+_PARITY_SHORT = {"termelői ár": "termelői", "termelőtől elszállítva": "termelőtől",
+                 "silóból kitárolva": "silóból", "vevőhöz szállítva": "szállítva",
+                 "FOB kikötő": "FOB", "országos átlag": "orsz. átlag"}
+
+
+def _regional_block(regional: list) -> str:
+    """Regionális árkörkép: tagállamonként ár + PARITÁS. Különbözetet szándékosan
+    nem számolunk, mert a paritások eltérnek."""
+    if not regional:
+        return ""
+    names = []
+    for r in regional:
+        for c in r["cells"]:
+            if c["name"] not in names:
+                names.append(c["name"])
+    muted = "color:color-mix(in srgb,var(--color-text) 52%,transparent)"
+    head = "".join(f'<th style="text-align:right">{n}</th>' for n in names)
+    body = ""
+    for r in regional:
+        by = {c["name"]: c for c in r["cells"]}
+        tds = ""
+        for n in names:
+            c = by.get(n)
+            tds += ('<td style="text-align:right;white-space:normal">'
+                    + (f'<span style="font-weight:600;font-variant-numeric:tabular-nums">{hu(c["price"], 0)}</span>'
+                       f'<br><span style="font-size:9.5px;{muted};white-space:nowrap">{_PARITY_SHORT.get(c["parity"], c["parity"])}</span>' if c
+                       else f'<span style="{muted}">n. a.</span>') + '</td>')
+        body += f'<tr><td>{r["label"]}</td>{tds}</tr>'
+    return (f'<p class="rep-kicker" style="margin:14px 0 4px">Regionális árkörkép '
+            f'<span style="font-weight:400;letter-spacing:0;text-transform:none;font-size:10px;{muted}">'
+            f'EUR/t, a legutolsó jegyzett hét</span></p>'
+            f'<table class="table price-table" style="font-size:12px"><thead><tr>'
+            f'<th style="width:22%">Termék</th>{head}</tr></thead><tbody>{body}</tbody></table>')
+
+
 def market_price_page(market: dict, page_no: int, total: int, footer) -> str:
     """4. oldal: hivatalos piaci árjegyzések (EU agrifood API ← AKI PÁIR).
     Csak validált, friss tételek; a referencia-időszak tételenként jelölve.
-    Napi hivatalos ár nem létezik — ezt a lap őszintén kimondja."""
+    Napi hivatalos ár nem létezik — ezt a lap őszintén kimondja. Az árkontextus
+    (forint, éves változás, 52 hetes sáv) heti trend-mutató, nem napi zaj."""
     groups: dict[str, list] = {}
     for it in market["items"]:
         groups.setdefault(it["group"], []).append(it)
+    muted = "color:color-mix(in srgb,var(--color-text) 55%,transparent)"
+    # a leggyakoribb jegyzett hét a fejlécbe kerül; soronként csak az ELTÉRŐ időszak
+    periods = [it["period"] for it in market["items"] if it["freq"] == "heti"]
+    common = max(set(periods), key=periods.count) if periods else None
+
+    def scope_cell(it: dict) -> str:
+        sc = (it["scope"].replace("; HU-jegyzés nincs", "").replace(" (HU-bontás nincs)", "")
+              .replace(" (", ", ").replace(")", ""))
+        return sc if it["period"] == common else f'{_period_hu(it["period"])} · {sc}'
+
     rows = []
     for gname in ("Gabona és takarmány", "Olajos termékek", "Sertés", "Baromfi",
                   "Feldolgozóipari termékek"):
         if gname not in groups:
             continue
-        rows.append(f'<tr><td colspan="5" style="font-family:var(--font-heading);'
+        rows.append(f'<tr><td colspan="6" style="font-family:var(--font-heading);'
                     f'font-weight:600;font-size:15px;background:color-mix(in srgb,'
-                    f'var(--color-text) 4%,transparent);padding-top:7px;'
-                    f'padding-bottom:7px">{gname}</td></tr>')
+                    f'var(--color-text) 4%,transparent);padding-top:6px;'
+                    f'padding-bottom:6px">{gname}</td></tr>')
         for it in groups[gname]:
             price = f"{it['price']:,.2f}".replace(",", " ").replace(".", ",")
+            if it.get("huf") is not None:
+                huf = (f"{it['huf']:,.0f}".replace(",", " ") if it["huf_unit"] == "Ft/t"
+                       else hu(it["huf"], 0)) + f' <span style="{muted}">{it["huf_unit"]}</span>'
+            else:
+                huf = ""
+            yoy = (signed(it["yoy_pct"], 1) + "%") if it.get("yoy_pct") is not None else ""
             rows.append(
                 f'<tr><td>{it["label"]}</td>'
-                f'<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">{price}</td>'
-                f'<td style="color:color-mix(in srgb,var(--color-text) 55%,transparent)">{it["unit"]}</td>'
-                f'<td style="color:color-mix(in srgb,var(--color-text) 55%,transparent);font-variant-numeric:tabular-nums">{_period_hu(it["period"])}</td>'
-                f'<td style="color:color-mix(in srgb,var(--color-text) 55%,transparent);white-space:normal">{it["scope"]}</td></tr>')
+                f'<td style="text-align:right;font-variant-numeric:tabular-nums"><strong>{price}</strong> '
+                f'<span style="{muted}">{it["unit"]}</span></td>'
+                f'<td style="text-align:right;font-variant-numeric:tabular-nums">{huf}</td>'
+                f'<td style="text-align:right;font-variant-numeric:tabular-nums">{yoy}</td>'
+                f'<td>{_range52_svg(it)}</td>'
+                f'<td style="{muted};font-size:11px">{scope_cell(it)}</td></tr>')
+    fx = (market.get("valuation") or {}).get("fx")
+    fx_note = (f" A forintérték a jegyzés és a hivatalos árfolyam szorzata "
+               f"({hu(fx['rate'], 2)} Ft/EUR, {fx['source']}, {fx['date']})." if fx else "")
     return f"""<section class="page">
-  <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-bottom:16px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-bottom:12px">
     <div><p class="rep-kicker">Piaci árjegyzések</p>
       <h2 style="margin:0;font-size:30px;line-height:1">Hivatalos heti jegyzések</h2></div>
-    <div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);text-align:right;white-space:nowrap">a cukor havi · {page_no} / {total}</div>
+    <div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);text-align:right;white-space:nowrap">jegyzett hét: {_period_hu(common) if common else "n. a."} · {page_no} / {total}</div>
   </div>
-  <table class="table price-table" style="font-size:12.5px">
-    <thead><tr><th style="width:31%">Termék</th><th style="width:13%;text-align:right">Jegyzés</th><th style="width:14%">Egység</th><th style="width:17%">Időszak</th><th style="width:25%">Kör</th></tr></thead>
+  <table class="table price-table" style="font-size:12px">
+    <thead><tr><th style="width:25%">Termék</th><th style="width:19%;text-align:right">Jegyzés</th><th style="width:13%;text-align:right">Forintban</th><th style="width:9%;text-align:right;white-space:nowrap">Egy év</th><th style="width:12%;white-space:nowrap">52 hetes sáv</th><th style="width:22%">Kör</th></tr></thead>
     <tbody>{''.join(rows)}</tbody>
   </table>
-  <p style="font-size:10px;line-height:1.5;text-align:justify;color:color-mix(in srgb,var(--color-text) 52%,transparent);margin:12px 0 0;border-top:1px solid var(--color-divider);padding-top:8px"><strong>A jegyzésekről.</strong> Forrás: Európai Bizottság (DG AGRI) agrifood adatszolgáltatás; a magyar adatokat a tagállami jelentés (AKI PÁIR) adja. Hivatalos napi árjegyzés nem létezik, a jegyzések heti (a cukor havi) rendszerűek; a jelentés naponta frissül, és mindig a legutolsó lezárt időszakot közli, tételenként jelölve. A gabonáknál, ha a forrás országos átlagot nem közöl, a régiós termelői árak egyszerű átlaga szerepel, a kör oszlopban jelölve. Az árak euróban értendők, a hasított sertés és a baromfitermékek 100 kg-ra, a többi tétel tonnára vetítve. A nyilvános hivatalos forrásból nem elérhető kért termékek (bioetanol, izocukor, keményítő, takarmánykeverék, malac, pulyka, tenyészállat, víz) megbízható jegyzés hiányában nem szerepelnek; az átmenetileg nem frissülő jegyzéseket a lap kihagyja, elavult árat nem közöl.</p>
+  {_regional_block(market.get("regional") or [])}
+  <p style="font-size:10px;line-height:1.5;text-align:justify;color:color-mix(in srgb,var(--color-text) 52%,transparent);margin:10px 0 0;border-top:1px solid var(--color-divider);padding-top:7px"><strong>A jegyzésekről.</strong> Forrás: Európai Bizottság (DG AGRI) agrifood adatszolgáltatás; a magyar adatokat a tagállami jelentés (AKI PÁIR) adja. Hivatalos napi árjegyzés nem létezik, a jegyzések heti (a cukor havi) rendszerűek, a lap a legutolsó lezárt időszakot közli. A gabonáknál országos átlag híján a régiós termelői árak egyszerű átlaga szerepel.{fx_note} Az 52 hetes sávban a pont helye mutatja, hol áll az ár az elmúlt év mélypontja (bal) és csúcsa (jobb) között. A regionális körkép árai eltérő paritásúak (termelői, silóból kitárolt, szállított), ezért egymásból közvetlenül nem vonhatók ki. A nyilvános hivatalos forrásból nem elérhető kért termékek (bioetanol, izocukor, keményítő, takarmánykeverék, malac, pulyka, tenyészállat, víz) nem szerepelnek; elavult árat a lap nem közöl.</p>
   {footer(page_no, total)}
 </section>"""
 

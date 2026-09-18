@@ -134,6 +134,92 @@ def _cereal_item(rows: list, prods: tuple, label: str, lo: float, hi: float,
     }
 
 
+def _mean_by_week(rows: list) -> dict:
+    """hét kezdőnapja -> a heti sorok egyszerű átlaga (tagállamok / piacok)."""
+    by_week: dict = {}
+    for r in rows:
+        if r.get("beginDate"):
+            by_week.setdefault(_d(r["beginDate"]), []).append(_num(r["price"]))
+    return {wk: sum(v) / len(v) for wk, v in by_week.items()}
+
+
+def _attach_context(items: list, fx: dict | None) -> None:
+    """Árkontextus tételenként a SAJÁT idősorából (nincs új forrás): forint-
+    egyenérték, éves változás, és az ár helye az utolsó 52 hét sávjában.
+    Heti TREND-mutatók, nem napi zaj. Kevés adatnál a kontextus kimarad."""
+    for it in items:
+        series = it.pop("_series", None) or {}
+        newest = it.pop("_newest", None)
+        if newest is None and it["freq"] == "heti":
+            newest = date.fromisoformat(it["period"][:10])
+        if fx:
+            if it["unit"] == "EUR/100 kg":
+                it["huf"], it["huf_unit"] = round(it["price"] * fx["rate"] / 100, 1), "Ft/kg"
+            else:
+                it["huf"], it["huf_unit"] = int(round(it["price"] * fx["rate"], -1)), "Ft/t"
+        if not series or newest is None:
+            continue
+        monthly = it["freq"] == "havi"
+        window = {k: v for k, v in series.items() if 0 <= (newest - k).days <= 365}
+        if len(window) < (6 if monthly else 20):
+            continue
+        lo, hi = min(window.values()), max(window.values())
+        cur = it["price"]
+        it["lo52"], it["hi52"] = round(lo, 2), round(hi, 2)
+        it["pos52"] = round(min(max((cur - lo) / (hi - lo), 0.0), 1.0), 3) if hi > lo else 0.5
+        target = newest - timedelta(days=364)
+        tol = 31 if monthly else 21
+        cands = [(abs((k - target).days), k) for k in series if abs((k - target).days) <= tol]
+        if cands:
+            it["yoy_pct"] = round(100 * (cur / series[min(cands)[1]] - 1), 1)
+
+
+_PARITY_HU = [("farm gate", "termelői ár"), ("departure from farm", "termelőtől elszállítva"),
+              ("departure from silo", "silóból kitárolva"),
+              ("deliver to first customer", "vevőhöz szállítva"),
+              ("free on board", "FOB kikötő"), ("national average", "országos átlag")]
+_MS_HU = {"HU": "Magyarország", "AT": "Ausztria", "SK": "Szlovákia", "RO": "Románia",
+          "PL": "Lengyelország", "DE": "Németország"}
+
+
+def collect_regional(today: date) -> list:
+    """Regionális árkörkép (takarmánykukorica, takarmánybúza): tagállamonként a
+    legfrissebb hét piacainak átlaga, a PARITÁS feltüntetésével. A paritások
+    eltérnek (termelői, silóból kitárolt, szállított), ezért különbözetet
+    ('bázist') szándékosan NEM számolunk — az almát körtével vetne össze."""
+    my = f"{today.year - 1}/{today.year}" if today.month < 7 else f"{today.year}/{today.year + 1}"
+    try:
+        rows = _get("cereal/prices", {"memberStateCodes": ",".join(_MS_HU),
+                                      "marketingYears": my})
+    except Exception as e:
+        print(f"  [info] regionális árkörkép nem elérhető: {e}")
+        return []
+    out = []
+    for prod, label in (("Feed maize", "Takarmánykukorica"), ("Feed wheat", "Takarmánybúza")):
+        cells = []
+        for ms, name in _MS_HU.items():
+            rs = [r for r in rows if r.get("memberStateCode") == ms
+                  and r.get("productName") == prod and r.get("beginDate")]
+            if not rs:
+                continue
+            newest = max(_d(r["beginDate"]) for r in rs)
+            if (today - (newest + timedelta(days=6))).days > STALE_DAYS_WEEKLY:
+                continue
+            wk = [r for r in rs if _d(r["beginDate"]) == newest]
+            nat = [r for r in wk if r.get("marketName") == "National Average"]
+            use = nat or wk
+            prices = [_num(r["price"]) for r in use]
+            if not all(80 <= v <= 600 for v in prices):
+                continue
+            stage = (use[0].get("stageName") or "").lower()
+            parity = next((hu_ for key, hu_ in _PARITY_HU if key in stage), "egyéb paritás")
+            cells.append({"ms": ms, "name": name, "price": round(sum(prices) / len(prices), 2),
+                          "parity": parity, "week": newest.isoformat()})
+        if len(cells) >= 3 and any(c["ms"] == "HU" for c in cells):
+            out.append({"label": label, "cells": cells})
+    return out
+
+
 def collect(today: date) -> tuple[list, list]:
     """(tételek csoportosítva, kihagyások listája)"""
     items, skipped = [], []
@@ -153,6 +239,7 @@ def collect(today: date) -> tuple[list, list]:
                              (("Feed barley",), "Takarmányárpa")]:
             it = _cereal_item(rows, prods, label, 80, 600, today)
             if it:
+                it["_series"] = _weekly_series(rows, "productName", prods)
                 it["group"] = "Gabona és takarmány"
                 items.append(it)
             else:
@@ -175,6 +262,7 @@ def collect(today: date) -> tuple[list, list]:
                                     ("Crude sunflower oil", "Napraforgóolaj (nyers)", 500, 2500)]:
             it = _weekly_item(by_prod.get(prod, []), label, "HU", lo, hi, "EUR/t", today)
             if it:
+                it["_series"] = _weekly_series(rows, "product", (prod,))
                 it["group"] = "Olajos termékek"
                 items.append(it)
             else:
@@ -186,7 +274,7 @@ def collect(today: date) -> tuple[list, list]:
 
     try:
         rows = _get("oilseeds/prices", {"products": "soya meal",
-                                        "marketingYears": my})
+                                        "marketingYears": f"{my_prev},{my}"})
         # nincs HU-jegyzés: a jelentő tagállamok legfrissebb hetének átlaga
         latest_by_ms = {}
         for r in rows:
@@ -208,6 +296,7 @@ def collect(today: date) -> tuple[list, list]:
                     "scope": f"EU-átlag ({len(week)} tagállam; HU-jegyzés nincs)",
                     "freq": "heti", "price": round(avg, 2), "unit": "EUR/t",
                     "period": f"{newest.isoformat()} – {end.isoformat()}",
+                    "_series": _mean_by_week(rows),
                 })
             else:
                 skipped.append("Szójadara")
@@ -226,6 +315,7 @@ def collect(today: date) -> tuple[list, list]:
             sub = [r for r in rows if r.get("pigClass") == cls]
             it = _weekly_item(sub, label, "HU", 80, 400, "EUR/100 kg", today)
             if it:
+                it["_series"] = _mean_by_week(sub)
                 it["group"] = "Sertés"
                 items.append(it)
             else:
@@ -247,6 +337,7 @@ def collect(today: date) -> tuple[list, list]:
             it = _weekly_item(by_prod.get(prod, []), label, "HU", lo, hi,
                               "EUR/100 kg", today)
             if it:
+                it["_series"] = _mean_by_week(by_prod.get(prod, []))
                 it["group"] = "Baromfi"
                 items.append(it)
             else:
@@ -288,6 +379,8 @@ def collect(today: date) -> tuple[list, list]:
                     "scope": "EU-átlag (HU-bontás nincs)", "freq": "havi",
                     "price": round(price, 2), "unit": "EUR/t",
                     "period": f"{y}. {m:02d}. hó",
+                    "_series": {date(*ym_key(r), 1): _num(r["price"]) for r in eu},
+                    "_newest": ref,
                 })
             else:
                 skipped.append("Kristálycukor")
@@ -381,11 +474,10 @@ def _fx_rate() -> dict | None:
     return None
 
 
-def collect_valuation(today: date) -> dict | None:
+def collect_valuation(today: date, fx: dict | None) -> dict | None:
     """Terményenkénti friss forintosítási ár. Ha az árfolyam vagy egy termény
     ára nem megbízható, az a termény kimarad (a predict_live ilyenkor az éves
     Eurostat-átlagárra esik vissza) — elavult vagy kilógó árral nem forintosítunk."""
-    fx = _fx_rate()
     if fx is None:
         return None
     my = f"{today.year - 1}/{today.year}" if today.month < 7 else f"{today.year}/{today.year + 1}"
@@ -442,6 +534,8 @@ def main() -> None:
     today = date.today()
     print(f"Piaci árjegyzések letöltése (EU agrifood API), ma: {today}")
     items, skipped = collect(today)
+    fx = _fx_rate()
+    _attach_context(items, fx)
     if len(items) < 8:
         # a blokk értelmét veszti, ha a tételek zöme hiányzik — inkább nem frissítünk
         sys.exit(f"HIBA: csak {len(items)} tétel jött össze (várt >= 8) — nem írjuk felül "
@@ -454,7 +548,8 @@ def main() -> None:
                  "árjegyzés nem létezik; a jelentés naponta frissül, a "
                  "referencia-időszak tételenként jelölve."),
         "items": items,
-        "valuation": collect_valuation(today),
+        "valuation": collect_valuation(today, fx),
+        "regional": collect_regional(today),
         "skipped_today": skipped,
         "not_available": NOT_AVAILABLE,
     }
