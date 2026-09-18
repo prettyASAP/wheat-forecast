@@ -220,6 +220,15 @@ def scenario_ensemble(season_daily: pd.DataFrame, known_until, crop: str,
         "remaining_days": len(remaining_days),
         "national": pcts(nat_paths),
         "counties": {nid: pcts(ens.loc[nid]) for nid in ens.index},
+        # nevesített forgatókönyvek: melyik múltbeli év időjárásával folytatva
+        # lenne a leggyengébb / legerősebb az országos kimenet (kézzelfoghatóbb,
+        # mint a percentilis)
+        "analogs": {
+            "worst": [{"year": int(y), "t_ha": round(float(v), 2)}
+                      for y, v in nat_paths.sort_values().head(3).items()],
+            "best": [{"year": int(y), "t_ha": round(float(v), 2)}
+                     for y, v in nat_paths.sort_values(ascending=False).head(3).items()],
+        },
     }
     # Az együttes-átlag a korrekt középbecslés szezon közben: a modell nemlineáris.
     # A wb_deficit = min(wb − medián, 0) affin tagok minimuma → KONKÁV a wb-ben,

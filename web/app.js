@@ -342,6 +342,9 @@ function renderNational(fc) {
         <div class="kpi-viz">${scenarioBandSVG(sc.national.p10, sc.national.p50,
                                                sc.national.p90, n.predicted_yield_t_ha)}</div>
         <div class="kpi-sub">▲ mostani becslés · vonal: legvalószínűbb kimenet · a sáv széle: kedvezőtlen/kedvező időjárás</div>
+        ${sc.analogs ? `<div class="kpi-sub">Ha a hátralévő ${sc.remaining_days} nap időjárása olyan lesz, mint
+          <b>${sc.analogs.worst[0].year}</b> azonos időszakában: ${hu(sc.analogs.worst[0].t_ha)} t/ha ·
+          mint <b>${sc.analogs.best[0].year}</b> azonos időszakában: ${hu(sc.analogs.best[0].t_ha)} t/ha</div>` : ""}
       </div>`);
   }
   if (v) {
