@@ -2,7 +2,7 @@
 
 Ez a dokumentum mindent tartalmaz ahhoz, hogy ez a projekt egy **másik szoftver**
 PDF-generáló folyamatába illeszkedjen: a másik program lefuttatja ezt, megkapja a
-kész **3 oldalas A4 PDF-et**, és beolvasztja a saját kimenetébe.
+kész **2–4 oldalas A4 PDF-et**, és beolvasztja a saját kimenetébe.
 
 A jelentés HTML→PDF technológiával készül (headless Chromium / Playwright), a
 Claude Designban tervezett szedéssel, **élő adatból**.
@@ -20,8 +20,10 @@ python -m src.report_html --out /tetszoleges/utvonal/termeshozam.pdf
 Ez legenerálja a PDF-et, és **a megadott útvonalra írja** (emellett a projekt
 saját `web/data/jelentes_latest.pdf` helyére is). Kilépési kód 0 = siker.
 
-- Kimenet: **3 oldalas A4 PDF** (szezonon kívül, ha egyik termény sincs futó
-  szezonban, 2 oldal — jelenleg a kukorica fut, tehát 3 oldal).
+- Kimenet: **2–4 oldalas A4 PDF**: két alapoldal (összefoglaló, területi kép),
+  plusz egy „Szezonközi kilátás" oldal, ha van futó szezonú termény, plusz egy
+  „Piaci árjegyzések" oldal, ha a `web/data/market_prices.json` létezik és 7
+  napnál frissebb (elavult árat a jelentés nem közöl, az oldal ilyenkor kimarad).
 - A parancs **hálózatot NEM igényel az adatokhoz** (a becslések a repóban
   verziózott JSON-fájlokból jönnek). Egyetlen külső kérés a Google Fonts
   (Barlow) betöltése rendereléskor; ha nincs net, rendszerfontra esik vissza,
@@ -122,7 +124,7 @@ from pypdf import PdfWriter
 
 writer = PdfWriter()
 writer.append("/a/masik/szoftver/sajat_resze.pdf")   # a többi oldal
-writer.append("/kimenet/termeshozam.pdf")            # ez a 3 oldal a végére
+writer.append("/kimenet/termeshozam.pdf")            # ez a 2–4 oldal a végére
 with open("/kimenet/vegleges_egyesitett.pdf", "wb") as f:
     writer.write(f)
 ```
@@ -165,9 +167,15 @@ Ha csak „a jelentést, ahogy van" akarod beilleszteni, a 7. pont kihagyható �
   használj.
 - **Determinisztikus.** Ugyanazon adatból ugyanaz a PDF (a fejlécben a generálás
   időbélyege az egyetlen, ami változik).
-- **Oldalszám:** futó szezonban 3 oldal, szezonon kívül (nincs „még változhat"
-  termény) 2 oldal — a beolvasztó logika kezelje mindkettőt (ne feltételezz fix
-  oldalszámot).
+- **Oldalszám:** 2 és 4 között változik (lásd fent: a szezonközi és a piaci
+  ár-oldal feltételes) — a beolvasztó logika **ne feltételezzen fix oldalszámot**.
+- **Friss árak:** a piaci ár-oldal és a forintosítás a `market_prices.json`-ból
+  dolgozik; ezt a `python -m src.fetch_market_prices` frissíti (hálózat kell hozzá:
+  EU agrárpiaci adatszolgáltatás + MNB-árfolyam). A napi automatikus futás ezt
+  elvégzi; ha a PDF-et magad generálod régi fájlból, az ár-oldal kimaradhat.
+- **Túlcsordulás-őr:** a generáló minden futáskor kiírja az oldalankénti
+  lábléc-hézagot (px); negatív értéknél `::warning::` sort ad — ezt érdemes
+  figyelni, ha a sablonon változtatsz.
 
 ---
 
@@ -179,7 +187,9 @@ akarod, ezek kellenek:
 ```
 src/report_html.py        # a generátor
 src/config.py             # útvonalak, terménydefiníciók
-web/data/forecast_*.json  # a becslések (3 db)
+web/data/forecast_*.json  # a becslések (5 db: 3 fő + 2 trendalapú termény)
+web/data/market_prices.json     # piaci árak + forintosítási ár (4. oldal)
+web/data/official_estimates.json  # EU-becslés (viszonyítási sor; elhagyható)
 web/data/nuts3_hu.geojson # vármegyehatárok
 web/data/history/**       # a trendábrához
 requirements.txt          # függőségek
@@ -194,5 +204,5 @@ van.)
 
 Másold be a mappát, telepítsd a függőségeket (`requirements.txt` + `playwright
 install chromium`), majd hívd:
-`python -m src.report_html --out <cél.pdf>` — a 3 oldalas A4 PDF a megadott
+`python -m src.report_html --out <cél.pdf>` — a 2–4 oldalas A4 PDF a megadott
 helyre kerül, és a saját PDF-edhez fűzheted (pl. `pypdf`).
