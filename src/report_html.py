@@ -250,6 +250,10 @@ def crop_card(fc: dict) -> str:
     a = n["anomaly_pct"]
     a_col = RUST if a < -0.05 else GREEN if a > 0.05 else "var(--color-text)"
     lo, hi = n.get("pred_low_t_ha"), n.get("pred_high_t_ha")
+    oe = n.get("official_estimate")
+    official_row = (f'<div class="rep-stat-row" style="border-top:1px dotted var(--color-divider);'
+                    f'margin-top:3px;padding-top:3px"><span>EU-becslés</span>'
+                    f'<span style="font-weight:600">{hu(oe["yield_t_ha"])}</span></div>' if oe else "")
     band_row = (f'<div class="rep-stat-row"><span>80%-os sáv</span><span>{hu(lo)}–{hu(hi)}</span></div>'
                 if lo is not None else "")
     live_box = ""
@@ -279,6 +283,7 @@ def crop_card(fc: dict) -> str:
     {band_row}
     <div class="rep-stat-row"><span>szokásos</span><span>{hu(n['trend_t_ha'])}</span></div>
     <div class="rep-stat-row"><span>tavaly</span><span>{hu(n['prev_year_yield_t_ha'])}</span></div>
+    {official_row}
   </div>
   {val_block}
 </div>"""
@@ -381,14 +386,19 @@ def trend_strip(trend_fcs: list) -> str:
         val = (f'<span style="color:color-mix(in srgb,var(--color-text) 52%,transparent);'
                f'margin-left:auto;font-variant-numeric:tabular-nums">'
                f'~{v["production_value_bn_huf"]:.0f} mrd Ft</span>' if v else "")
+        oe = n.get("official_estimate")
+        eu_line = (f'<div style="font-size:10.5px;color:color-mix(in srgb,var(--color-text) 50%,'
+                   f'transparent);margin-top:1px">EU-becslés: {hu(oe["yield_t_ha"])} t/ha</div>'
+                   if oe else "")
         items.append(
-            f'<div style="display:flex;align-items:baseline;gap:8px;font-size:12px">'
+            f'<div><div style="display:flex;align-items:baseline;gap:8px;font-size:12px;'
+            f'white-space:nowrap">'
             f'<span style="font-family:var(--font-heading);font-weight:600;font-size:15px">'
             f'{fc["crop"].capitalize()}</span>'
             f'<span style="font-family:var(--font-heading);font-weight:600;font-size:15px;'
             f'font-variant-numeric:tabular-nums">{hu(n["predicted_yield_t_ha"])} t/ha</span>'
             f'<span style="color:color-mix(in srgb,var(--color-text) 50%,transparent)">'
-            f'±{hu(n["model_error_pct"], 1)}%</span>{val}</div>')
+            f'±{hu(n["model_error_pct"], 1)}%</span>{val}</div>{eu_line}</div>')
     return (
         '<div style="margin-top:14px;border-top:1px solid var(--color-divider);'
         'padding-top:10px;break-inside:avoid">'
@@ -534,6 +544,11 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
     total_val = sum(v["production_value_bn_huf"] for v in vals if v)
     total_gap = sum(v["trend_gap_bn_huf"] for v in vals if v)
     # a fejléc-sáv árfelirata: friss heti ár vagy (tartalékként) éves átlagár
+    has_official = any(f["national"].get("official_estimate")
+                       for f in list(fcs.values()) + list(trend_fcs or []))
+    official_note = (" EU-becslés: az Európai Bizottság aktuális hivatalos termésbecslése "
+                     "(t/ha); aratás után a betakarítási jelentéseket is tartalmazza, amelyeket "
+                     "egy időjárás-modell nem lát, ezért a kettő eltérhet." if has_official else "")
     banner_price = next((price_phrase(v, cap=True) for v in vals if v),
                         "A legutolsó hivatalos termelői áron")
     y, m, d = today.split("-")
@@ -705,7 +720,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
     </div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">{cards}</div>
-  <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:14px 0 0">A hozamok vármegyei statisztikai modellből (KSH 2000-től + ERA5 időjárás) származnak. A búza és őszi árpa szezonja gyakorlatilag lezárult; a kukorica becslése a hátralévő napokban még változhat.</p>
+  <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:14px 0 0">A hozamok vármegyei statisztikai modellből (KSH 2000-től + ERA5 időjárás) származnak. A búza és őszi árpa szezonja gyakorlatilag lezárult; a kukorica becslése a hátralévő napokban még változhat.{official_note}</p>
   {drivers_strip(fcs)}
   {trend_strip(trend_fcs or [])}
   {footer(1, total)}

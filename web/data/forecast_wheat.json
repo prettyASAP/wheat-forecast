@@ -30,6 +30,14 @@
    "trend_gap_bn_huf": -42.2,
    "note": "ár: étkezési és takarmánybúza termelői árainak átlaga, 4 jegyzett hét átlaga (2026-08-17 – 2026-09-13), 192.84 EUR/t × 363.47 Ft/EUR (MNB hivatalos középárfolyam, 2026-09-18); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
   },
+  "official_estimate": {
+   "year": 2026,
+   "yield_t_ha": 4.43,
+   "production_kt": 4762.2,
+   "area_kha": 1074.0,
+   "source": "Európai Bizottság (DG AGRI)",
+   "as_of": "2026-09-18"
+  },
   "drivers": {
    "groups": [
     {

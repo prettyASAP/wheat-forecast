@@ -508,6 +508,19 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
         "scenarios": sc,
         "counties": rows,
     }
+    # Hivatalos EU-becslés viszonyítási pontként (ha friss és erre a termésévre szól)
+    off_path = config.WEB_DATA / "official_estimates.json"
+    if off_path.exists():
+        try:
+            off = json.loads(off_path.read_text(encoding="utf-8"))
+            o = off["crops"].get(crop)
+            age = (today - date.fromisoformat(off["updated_at"])).days
+            if o and o["year"] == crop_year and age <= VALUATION_MAX_AGE_DAYS:
+                payload["national"]["official_estimate"] = {
+                    **o, "source": "Európai Bizottság (DG AGRI)", "as_of": off["updated_at"]}
+        except Exception as e:
+            print(f"  [info] hivatalos becslés nem olvasható: {e}")
+
     # Hajtóerő-bontás + modelltartomány-ellenőrzés (csak időjárás-modellnél):
     # a MEGLÉVŐ becslés pontos számtani bontása, a modellt nem érinti.
     if contrib is not None:

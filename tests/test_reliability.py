@@ -517,3 +517,26 @@ def test_attach_context_range_yoy_and_huf():
     assert a["pos52"] == 1.0 and a["hi52"] == 200.0          # az ár az éves csúcson
     assert a["yoy_pct"] == pytest.approx(100.0, abs=0.5)     # egy éve 100 volt
     assert "pos52" not in b and "yoy_pct" not in b           # kevés adat: nincs kontextus
+
+
+# --------------------------------------------------------------------------- #
+# 14) Időjárás-letöltő: 200-as, de nem JSON válasz = átmeneti hiba, újrapróba
+# --------------------------------------------------------------------------- #
+def test_get_daily_retries_on_non_json_response(monkeypatch):
+    from src import fetch_weather
+
+    class _Resp:
+        def __init__(self, ok):
+            self.status_code, self.headers, self._ok = 200, {}, ok
+            self.text = "" if not ok else "{}"
+        def raise_for_status(self): pass
+        def json(self):
+            if not self._ok:
+                raise ValueError("Expecting value")
+            return {"daily": {"time": ["2026-09-01"], "temperature_2m_max": [25.0]}}
+
+    calls = iter([_Resp(False), _Resp(True)])
+    monkeypatch.setattr(fetch_weather.requests, "get", lambda *a, **k: next(calls))
+    monkeypatch.setattr(fetch_weather.time, "sleep", lambda s: None)
+    df = fetch_weather.get_daily("http://x", {})
+    assert len(df) == 1 and df["temperature_2m_max"].iloc[0] == 25.0

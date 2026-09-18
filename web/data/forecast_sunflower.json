@@ -29,6 +29,14 @@
    "production_value_bn_huf": 402.7,
    "trend_gap_bn_huf": 1.5,
    "note": "ár: napraforgómag termelői ára, 4 jegyzett hét átlaga (2026-08-17 – 2026-09-13), 536.69 EUR/t × 363.47 Ft/EUR (MNB hivatalos középárfolyam, 2026-09-18); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
+  },
+  "official_estimate": {
+   "year": 2026,
+   "yield_t_ha": 1.94,
+   "production_kt": 1520.0,
+   "area_kha": 783.5,
+   "source": "Európai Bizottság (DG AGRI)",
+   "as_of": "2026-09-18"
   }
  },
  "scenarios": null,
@@ -58,7 +66,7 @@
    "high": 3.09,
    "weather_todate": {
     "prec_total_mm": 123.6,
-    "wb_total_mm": -741.1,
+    "wb_total_mm": -741.0,
     "heat_days": 13,
     "frost_days_winter": null,
     "gdd_total": 3529.0
@@ -177,7 +185,7 @@
    "high": 3.38,
    "weather_todate": {
     "prec_total_mm": 211.7,
-    "wb_total_mm": -593.6,
+    "wb_total_mm": -594.1,
     "heat_days": 10,
     "frost_days_winter": null,
     "gdd_total": 3491.0
@@ -228,7 +236,7 @@
    "high": 3.24,
    "weather_todate": {
     "prec_total_mm": 136.9,
-    "wb_total_mm": -678.0,
+    "wb_total_mm": -678.3,
     "heat_days": 11,
     "frost_days_winter": null,
     "gdd_total": 3470.0
@@ -262,7 +270,7 @@
    "high": 2.98,
    "weather_todate": {
     "prec_total_mm": 172.3,
-    "wb_total_mm": -630.0,
+    "wb_total_mm": -629.9,
     "heat_days": 9,
     "frost_days_winter": null,
     "gdd_total": 3311.0
@@ -279,7 +287,7 @@
    "high": 3.46,
    "weather_todate": {
     "prec_total_mm": 145.4,
-    "wb_total_mm": -659.2,
+    "wb_total_mm": -659.3,
     "heat_days": 11,
     "frost_days_winter": null,
     "gdd_total": 3445.0
@@ -313,7 +321,7 @@
    "high": 3.13,
    "weather_todate": {
     "prec_total_mm": 155.0,
-    "wb_total_mm": -659.2,
+    "wb_total_mm": -659.4,
     "heat_days": 9,
     "frost_days_winter": null,
     "gdd_total": 3390.0
@@ -330,7 +338,7 @@
    "high": 3.15,
    "weather_todate": {
     "prec_total_mm": 157.4,
-    "wb_total_mm": -748.6,
+    "wb_total_mm": -748.5,
     "heat_days": 17,
     "frost_days_winter": null,
     "gdd_total": 3689.0
@@ -347,7 +355,7 @@
    "high": 3.2,
    "weather_todate": {
     "prec_total_mm": 153.3,
-    "wb_total_mm": -734.9,
+    "wb_total_mm": -735.0,
     "heat_days": 18,
     "frost_days_winter": null,
     "gdd_total": 3695.0
@@ -364,7 +372,7 @@
    "high": 3.09,
    "weather_todate": {
     "prec_total_mm": 158.8,
-    "wb_total_mm": -689.7,
+    "wb_total_mm": -689.8,
     "heat_days": 16,
     "frost_days_winter": null,
     "gdd_total": 3571.0
