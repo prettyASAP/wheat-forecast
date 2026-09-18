@@ -575,6 +575,14 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
         def tonnes(t):
             return hu(t * area / 1e6, 2)
         risk = (sc["p90"] - sc["p10"]) * area * price / 1e9
+        an = live_fc["scenarios"].get("analogs")
+        analog_line = (
+            f'<p style="font-size:10.5px;line-height:1.45;margin:8px 0 0;color:color-mix(in srgb,'
+            f'var(--color-text) 55%,transparent)">Ha a hátralévő {rem} nap időjárása olyan lesz, mint '
+            f'<strong>{an["worst"][0]["year"]}</strong> azonos időszakában: '
+            f'{hu(an["worst"][0]["t_ha"])} t/ha; mint <strong>{an["best"][0]["year"]}</strong> '
+            f'azonos időszakában: {hu(an["best"][0]["t_ha"])} t/ha.</p>'
+            if an else "")
         hs = history_series(crop_key(live_fc), 30)
         fan = fan_chart_svg(hs) if len(hs) >= 2 else ""
         # fókusz-vármegyék időjárás-tábla
@@ -635,6 +643,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
       <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
       <div style="font-family:var(--font-heading);font-weight:600;font-size:13px;margin-bottom:12px">Forgatókönyvek (t/ha)</div>
       {scenario_bar_svg(sc['p10'], sc['p50'], sc['p90'], n['predicted_yield_t_ha'])}
+      {analog_line}
     </div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;margin-top:12px">
