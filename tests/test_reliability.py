@@ -445,3 +445,52 @@ def test_load_price_fresh_then_stale_fallback(tmp_path, monkeypatch):
     mp.write_text(_json.dumps({"updated_at": _date.today().isoformat(),
                                "valuation": {"fx": val["fx"], "crops": {}}}))
     assert predict_live._load_price("corn")["latest_huf_per_t"] == 69260
+
+
+# --------------------------------------------------------------------------- #
+# 12) Hajtóerő-bontás: pontos számtan, nem közelítés; modelltartomány-jelző
+# --------------------------------------------------------------------------- #
+def _panel_two_counties() -> pd.DataFrame:
+    rng = np.random.default_rng(7)
+    rows = []
+    for c, lvl in (("HU211", 4.0), ("HU331", 5.0)):
+        for i, y in enumerate(range(2001, 2016)):
+            wb, heat = float(rng.normal(-100, 60)), float(rng.integers(0, 10))
+            rows.append({"nuts_id": c, "crop_year": y, "wb_total": wb,
+                         "heat_days": heat, "gdd_flowering": float(rng.normal(600, 40)),
+                         "yield_t_ha": lvl + 0.05 * i + 0.004 * min(wb + 100, 0)
+                                       - 0.05 * heat + float(rng.normal(0, 0.1))})
+    return pd.DataFrame(rows)
+
+
+def test_driver_contributions_sum_exactly_to_weather_part():
+    """A tagok összege BITRE a modell időjárási része: becslés − (fixhatás + trend)."""
+    from src import drivers
+    train = _panel_two_counties()
+    feats = ["wb_deficit", "heat_days", "gdd_flowering"]
+    m = fit_panel_model(train, features=feats, trend_degree=1, ridge_alpha=5.0)
+    now = train[train["crop_year"] == 2015].drop(columns="yield_t_ha")
+    contrib = drivers.contributions(m, now)
+    k = len(m.counties) + m.trend_degree
+    base = m._design(now)[:, :k] @ m.beta[:k]          # fixhatás + trend
+    assert np.allclose(contrib.sum(axis=1).to_numpy(), m.predict(now) - base, atol=1e-10)
+
+    areas = pd.Series({"HU211": 100.0, "HU331": 300.0})
+    d = drivers.national_drivers(contrib, areas, baseline_nat=5.0, anomaly_pct=-4.0)
+    assert {g["key"] for g in d["groups"]} == {"water", "heat", "temp"}
+    assert sum(g["pct"] for g in d["groups"]) == pytest.approx(d["weather_total_pct"], abs=0.11)
+    assert d["weather_total_pct"] + d["baseline_shift_pct"] == pytest.approx(-4.0, abs=0.11)
+
+
+def test_envelope_flags_only_out_of_range_features():
+    from src import drivers
+    train = _panel_two_counties()
+    m = fit_panel_model(train, features=["wb_deficit", "heat_days"],
+                        trend_degree=1, ridge_alpha=5.0)
+    areas = pd.Series({"HU211": 100.0, "HU331": 300.0})
+    inside = train[train["crop_year"] == 2010].drop(columns="yield_t_ha")
+    # egy tanítóév definíció szerint a tanítóévek tartományán BELÜL van
+    assert drivers.envelope_check(m, train, inside, areas) == []
+    extreme = inside.assign(heat_days=99.0)                 # soha nem látott hőség
+    flagged = drivers.envelope_check(m, train, extreme, areas)
+    assert [e["feature"] for e in flagged if e["direction"] == "above"] == ["heat_days"]

@@ -55,6 +55,25 @@ const GLOSSARY = {
       "Nagyságrendi, „körülbelül” szám, nem bevételi előrejelzés. A „kiesés/többlet a szokásoshoz” ugyanez " +
       "a számítás a szokásos szinttel vetve össze.",
   },
+  hajtoerok: {
+    title: "Mi húzza a becslést?",
+    text: "A becslés időjárási részének pontos bontása: mennyit vett el (vagy adott " +
+      "hozzá) a vízellátás, a hőstressz, a hőmérséklet és a téli fagy. Nem külön " +
+      "modell és nem közelítés, hanem a meglévő számítás tagjai csoportosítva. " +
+      "Az értékek százalékpontok a modell időjárás-semleges szintjéhez mérve. " +
+      "Az összegük ezért nem pontosan azonos a fejlécben közölt eltéréssel: az a " +
+      "sokéves trendhez viszonyít, amely a múlt gyenge éveit is magában hordozza.",
+  },
+  szelsoseg: {
+    title: "Szélsőség-jelzés",
+    text: "Akkor jelenik meg, ha az idei szezon valamelyik időjárási mutatója " +
+      "országosan kívül esik azon a tartományon, amelyet a modell 2000 óta valaha " +
+      "látott. Ilyenkor a modell a tapasztalatán túlra következtet, ezért a " +
+      "tévedése a szokásosnál nagyobb lehet. A jelzés csak a modell által figyelt " +
+      "időszakokra és mutatókra vonatkozik: ami ezeken kívül történik (például egy " +
+      "aratás előtti kései hőhullám), azt nem látja. 2026 tanulsága, hogy ezt " +
+      "kimondjuk.",
+  },
   trendalapu: {
     title: "Trend-alapú becslés (napraforgó, repce)",
     text: "Ezeknél a terményeknél visszaméréssel kimutattuk, hogy az idei " +

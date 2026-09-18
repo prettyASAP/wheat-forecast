@@ -78,6 +78,16 @@ header h1 { font-size: 1.15rem; }
 .badge.final { background: #e8f6ee; color: #17693a; border: 1px solid #bfe3cd; }
 .badge.open  { background: #fdf3e0; color: #9a6a12; border: 1px solid #f0dcb0; }
 .badge.trend { background: #eef3f8; color: #3a5a7a; border: 1px solid #cdddeb; }
+.badge.extreme { background: #fbeae6; color: #8f3323; border: 1px solid #ecc3b9; }
+.headline-sub.envelope { margin-top: 4px; }
+.kpi-drivers { min-width: 300px; }
+.drv-row { display: grid; grid-template-columns: 1fr 90px 46px; gap: 8px;
+  align-items: center; font-size: 0.78rem; margin-top: 5px; color: #2c3e50; }
+.drv-bar { height: 7px; background: #eef1f3; border-radius: 2px; overflow: hidden; }
+.drv-bar i { display: block; height: 100%; }
+.drv-bar i.neg { background: #b0533a; }
+.drv-bar i.pos { background: #3f7d5c; }
+.drv-val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 
 #national {
   display: flex;
