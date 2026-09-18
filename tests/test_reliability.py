@@ -375,3 +375,33 @@ def test_market_sanity_gate_rejects_out_of_range():
     rows = [{"price": "€200", "beginDate": "13/07/2026", "endDate": "19/07/2026"}]
     it = _weekly_item(rows, "teszt", "HU", 80, 600, "EUR/t", _date(2026, 7, 27))
     assert it and it["price"] == 200.0  # friss + plauzibilis: átmegy
+
+
+def test_market_cereal_regional_fallback_and_rename():
+    """2026/27-től a forrás régiós árakat és 'Milling wheat' nevet használ:
+    országos átlag híján a régiók átlagát közöljük, a körben jelölve."""
+    from datetime import date as _date
+    from src.fetch_market_prices import _cereal_item
+    wk = {"beginDate": "07/09/2026", "endDate": "13/09/2026"}
+    rows = [
+        {**wk, "productName": "Milling wheat", "marketName": "Transdanubia", "price": "€200,00"},
+        {**wk, "productName": "Milling wheat", "marketName": "Great Plain", "price": "€190,00"},
+        # régi név, régi hét: nem keveredhet bele
+        {"beginDate": "29/06/2026", "endDate": "05/07/2026",
+         "productName": "Breadmaking common wheat", "marketName": "National Average",
+         "price": "€170,00"},
+    ]
+    it = _cereal_item(rows, ("Milling wheat", "Breadmaking common wheat"),
+                      "Étkezési búza", 80, 600, _date(2026, 9, 18))
+    assert it["price"] == 195.0 and it["scope"] == "HU, 2 régió átlaga"
+    # ha van országos átlag a legfrissebb héten, az nyer
+    rows.append({**wk, "productName": "Milling wheat",
+                 "marketName": "National Average", "price": "€196,50"})
+    it = _cereal_item(rows, ("Milling wheat", "Breadmaking common wheat"),
+                      "Étkezési búza", 80, 600, _date(2026, 9, 18))
+    assert it["price"] == 196.5 and it["scope"] == "HU, országos átlag"
+    # egyetlen kilógó régiós ár is kizárja a tételt
+    rows = [{**wk, "productName": "Feed maize", "marketName": "Transdanubia", "price": "€245"},
+            {**wk, "productName": "Feed maize", "marketName": "Great Plain", "price": "€2450"}]
+    assert _cereal_item(rows, ("Feed maize",), "Takarmánykukorica", 80, 600,
+                        _date(2026, 9, 18)) is None

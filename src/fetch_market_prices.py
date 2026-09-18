@@ -89,6 +89,51 @@ def _weekly_item(rows: list, label: str, scope: str, lo: float, hi: float,
     }
 
 
+_REGION_HU = {"Transdanubia": "Dunántúl", "Great Plain": "Alföld",
+              "North Hungary": "Észak-Magyarország"}
+
+
+def _cereal_item(rows: list, prods: tuple, label: str, lo: float, hi: float,
+                 today: date) -> dict | None:
+    """Gabonajegyzés a legfrissebb hétről: ha van országos átlag, azt közöljük;
+    ha a forrás csak régiós termelői árakat jelent, azok egyszerű átlagát —
+    a körben KIÍRVA, hány régióból. Minden régiós ár átmegy a szanity-kapun."""
+    cand = [r for r in rows if r.get("productName") in prods and r.get("beginDate")]
+    if not cand:
+        print(f"  [kimarad] {label}: nincs adat")
+        return None
+    newest = max(_d(r["beginDate"]) for r in cand)
+    week = [r for r in cand if _d(r["beginDate"]) == newest]
+    # ha ugyanazon a héten több terméknév is szerepel, az elsődlegeset használjuk
+    for p in prods:
+        if any(r["productName"] == p for r in week):
+            week = [r for r in week if r["productName"] == p]
+            break
+    end = max(_d(r["endDate"]) if r.get("endDate") else newest for r in week)
+    if (today - end).days > STALE_DAYS_WEEKLY:
+        print(f"  [kimarad] {label}: elavult jegyzés (utolsó hét vége: {end})")
+        return None
+    nat = [r for r in week if r.get("marketName") == "National Average"]
+    if nat:
+        prices, scope = [_num(nat[0]["price"])], "HU, országos átlag"
+    else:
+        regional = {r.get("marketName"): _num(r["price"]) for r in week}
+        prices = list(regional.values())
+        if len(prices) == 1:
+            # egyetlen régió jegyzése nem országos ár — a régiót névvel jelöljük
+            scope = f"HU, csak {_REGION_HU.get(next(iter(regional)), next(iter(regional)))}"
+        else:
+            scope = f"HU, {len(prices)} régió átlaga"
+    if not prices or not all(lo <= p <= hi for p in prices):
+        print(f"  [kimarad] {label}: ár a plauzibilis sávon kívül ({prices})")
+        return None
+    return {
+        "label": label, "scope": scope, "freq": "heti",
+        "price": round(sum(prices) / len(prices), 2), "unit": "EUR/t",
+        "period": f"{newest.isoformat()} – {end.isoformat()}",
+    }
+
+
 def collect(today: date) -> tuple[list, list]:
     """(tételek csoportosítva, kihagyások listája)"""
     items, skipped = [], []
@@ -99,16 +144,14 @@ def collect(today: date) -> tuple[list, list]:
     try:
         rows = _get("cereal/prices", {"memberStateCodes": "HU",
                                       "marketingYears": f"{my_prev},{my}"})
-        by_prod = {}
-        for r in rows:
-            if r.get("marketName") == "National Average":
-                by_prod.setdefault(r["productName"], []).append(r)
-        for prod, label in [("Breadmaking common wheat", "Étkezési búza"),
-                            ("Feed wheat", "Takarmánybúza"),
-                            ("Feed maize", "Takarmánykukorica"),
-                            ("Feed barley", "Takarmányárpa")]:
-            it = _weekly_item(by_prod.get(prod, []), label, "HU, országos átlag",
-                              80, 600, "EUR/t", today)
+        # A 2026/27-es gazdasági évtől a forrás az étkezési búzát "Milling wheat"
+        # néven, és országos átlag helyett jellemzően RÉGIÓS (Dunántúl, Alföld,
+        # Észak-Magyarország) termelői áron jelenti — mindkét alakot kezeljük.
+        for prods, label in [(("Milling wheat", "Breadmaking common wheat"), "Étkezési búza"),
+                             (("Feed wheat",), "Takarmánybúza"),
+                             (("Feed maize",), "Takarmánykukorica"),
+                             (("Feed barley",), "Takarmányárpa")]:
+            it = _cereal_item(rows, prods, label, 80, 600, today)
             if it:
                 it["group"] = "Gabona és takarmány"
                 items.append(it)
