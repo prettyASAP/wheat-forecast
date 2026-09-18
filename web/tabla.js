@@ -122,9 +122,12 @@
   }
 
   // ---- megjelenítés ----
+  // ISO-dátum (2026-09-19) magyar alakban (2026. 09. 19.)
+  function huDate(d) { return d ? d.replace(/-/g, ". ") + "." : ""; }
+
   function fmt(value, decimals) {
     if (value === null || value === undefined) return null;
-    return value.toFixed(decimals).replace(".", ",");
+    return value.toFixed(decimals).replace(".", ",").replace("-", "−");
   }
 
   function render() {
@@ -174,9 +177,9 @@
             if (v < 0) td.classList.add("anomaly-neg");
             else if (v > 0) td.classList.add("anomaly-pos");
           }
-          // adatsáv a cella hátterében (csak számított %-érték — XSS-mentes).
+          // adatsáv a cella hátterében (csak számított %-érték – XSS-mentes).
           // Anomáliánál a sáv HOSSZA az eltérés MÉRTÉKÉT kódolja (nullától),
-          // ne a tartományon belüli pozíciót — különben a legjobb megye kapná
+          // ne a tartományon belüli pozíciót – különben a legjobb megye kapná
           // a leghosszabb piros sávot (UX-audit P1.2).
           var rg = ranges[col.key];
           if (rg && rg[1] > rg[0]) {
@@ -267,10 +270,10 @@
         state.rows = (data.counties || []).map(flatten);
         meta.textContent =
           (data.crop ? data.crop + " · " : "") +
-          (data.crop_year ? data.crop_year + "-es termésév · " : "") +
-          (data.updated_at ? "frissítve: " + data.updated_at : "") +
+          (data.crop_year ? "termésév: " + data.crop_year + " · " : "") +
+          (data.updated_at ? "frissítve: " + huDate(data.updated_at) : "") +
           (data.weather_known_until
-            ? " · időjárás eddig: " + data.weather_known_until : "");
+            ? " · időjárás eddig: " + huDate(data.weather_known_until) : "");
         csvBtn.disabled = false;
         setStatus(null);
         render();

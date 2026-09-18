@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi mit jelent? — Terméshozam-előrejelző</title>
+  <title>Mi mit jelent? – Terméshozam-előrejelző</title>
   <link rel="stylesheet" href="style.css?v=11">
   <link rel="stylesheet" href="magyarazat.css?v=2">
 </head>
@@ -12,16 +12,17 @@
     <a class="back-link" href="index.html">← Vissza a térképre</a>
     <a class="back-link" href="tabla.html">Táblázat ↗</a>
     <h1>Mi mit jelent?</h1>
-    <p class="glossary-lead">Minden adat és ábra magyarázata egy helyen — ugyanezek
+    <p class="glossary-lead">Minden adat és ábra magyarázata egy helyen – ugyanezek
       a leírások érhetők el az oldalon a <span class="info-btn"
       style="cursor:default">i</span> gombokkal.</p>
     <div id="glossary"></div>
     <p class="glossary-lead">A becslés statisztikai modell eredménye, nem hivatalos
       adat. Adatforrások: KSH (vármegyei termésátlagok), Open-Meteo/ERA5 (időjárás,
-      CC BY 4.0), Eurostat (termelői árak, NUTS3 határok © EuroGeographics).</p>
+      CC BY 4.0), Európai Bizottság DG AGRI (heti termelői árak, termésbecslés), MNB
+      (hivatalos árfolyam), Eurostat (éves termelői árak; NUTS3 határok © EuroGeographics).</p>
 
     <details class="tech-section" id="szakmai">
-      <summary><h2>Szakmai leírás — mit és hogyan számol a szoftver</h2></summary>
+      <summary><h2>Szakmai leírás – mit és hogyan számol a szoftver</h2></summary>
 
       <h3>1. Bemeneti adatok</h3>
       <ul>
@@ -58,7 +59,7 @@
           virágzáskor (kukorica; Schlenker–Roberts 2009); téli fagynapok:
           T<sub>min</sub> &lt; −15 °C (dec.–febr.); vízmérleg: Σ(csapadék − ET₀)
           ablakonként és a teljes szezonra; halmozott aszály-tag:
-          wb_deficit = min(WB<sub>szezon</sub> − vármegyei medián, 0) — csak a
+          wb_deficit = min(WB<sub>szezon</sub> − vármegyei medián, 0) – csak a
           szokásosnál nagyobb hiány számít, a többlet nem.</li>
       </ul>
 
@@ -67,7 +68,7 @@
         vármegyei termésátlag (t/ha); magyarázók: 19 vármegye-fixhatás, közös
         lineáris évtrend (a fajta- és technológiai fejlődés leválasztására), és
         standardizált időjárási mutatók (a fenti ablakos GDD-k, csapadékok,
-        stresszmutatók, vízmérlegek — terményenként 10–11 változó). A becslés zárt
+        stresszmutatók, vízmérlegek – terményenként 10–12 változó). A becslés zárt
         alakú legkisebb négyzetek, szelektív ridge-büntetéssel (α = 25, kizárólag
         az időjárási blokkon; a fixhatás és a trend büntetlen). Minta: ~494
         megfigyelés terményenként (19 vármegye × 26 év). Budapest a modellből
@@ -76,30 +77,30 @@
         (nincs adatszivárgás a tesztévből).</p>
 
       <h3>4. Validáció (mért eredmények)</h3>
-      <p><b>Walk-forward (expanding-window) backtest — az elsődleges mérce
-        (2026. júliusi testületi felülvizsgálat óta):</b> 2011-től minden évre
+      <p><b>Walk-forward (expanding-window) backtest – az elsődleges mérce
+        (2026 júliusa óta):</b> 2011-től minden évre
         kizárólag a korábbi éveken tanított modell jelez előre; a
         hiperparamétereket és a változókészletet minden tanítóablakon belül
-        beágyazott keresztvalidáció választja — a tesztév utáni információ sehol
+        beágyazott keresztvalidáció választja – a tesztév utáni információ sehol
         nem szerepel. <b>Vármegyei</b> hiba (RMSE, ebből számoljuk a sávot):
         <b>búza 0,57 t/ha</b>, <b>kukorica 1,51 t/ha</b>, <b>őszi árpa 0,58
-        t/ha</b> — mindhárom veri a naiv trend-előrejelzést (0,62 / 1,95 / 0,67).
+        t/ha</b> – mindhárom veri a naiv trend-előrejelzést (0,62 / 1,95 / 0,67).
         Az <b>országos</b> becslés tipikus hibája ennél kisebb, mert a vármegyei
         tévedések aggregáláskor részben kioltják egymást: terület-súlyozott
         országos walk-forward RMSE <b>búza 0,44 t/ha (7,7%)</b>, <b>kukorica
-        1,35 t/ha (19,1%)</b>, <b>őszi árpa 0,43 t/ha (7,2%)</b> — a főoldali „a
+        1,35 t/ha (19,1%)</b>, <b>őszi árpa 0,43 t/ha (7,2%)</b> – a főoldali „a
         becslés tipikus tévedése ±X%” ezt az országos számot közli. A sáv a
         walk-forward reziduumok empirikus 10–90. percentiliséből számolódik,
         vármegyénként zsugorított szórással; a kvantiliseket és a lefedettséget
         ugyanazon reziduumokra illesztjük (in-sample kalibráció, tényleges
         lefedettség 80%). A változó-cseréket (terménybázisú, plafonozott GDD;
         EDD hőstressz-intenzitás; meleg éjszakák) ugyanez a kapu döntötte el
-        terményenként — a kukoricánál a csere nem javított, ott a korábbi
+        terményenként – a kukoricánál a csere nem javított, ott a korábbi
         készlet maradt. Részletek: reports/walkforward_report.md.</p>
-      <p>Kiegészítő diagnosztika — leave-one-year-out keresztvalidáció: a modellt
+      <p>Kiegészítő diagnosztika – leave-one-year-out keresztvalidáció: a modellt
         26-szor illesztjük, mindig egy teljes év kihagyásával.
         Out-of-sample hibák (RMSE): <b>búza 0,53 t/ha (11,4%)</b>,
-        <b>kukorica 1,40 t/ha (22,9%)</b>, <b>őszi árpa 0,55 t/ha (12,1%)</b> —
+        <b>kukorica 1,40 t/ha (22,9%)</b>, <b>őszi árpa 0,55 t/ha (12,1%)</b> –
         mindhárom terménynél érdemben jobb, mint a naiv trend-előrejelzés
         (0,68 / 1,73 / 0,69 t/ha). A 80%-os sáv (±1,282·reziduum-szórás) tényleges
         utólagos lefedettsége 82 / 85 / 81%. Szezonközi („as-of”) visszatesztek
@@ -108,16 +109,16 @@
         jelezte. A teljes visszamérési riportok a nyílt forráskódú tárolóban:
         <a href="https://github.com/prettyASAP/wheat-forecast/tree/main/reports">
         github.com/prettyASAP/wheat-forecast/reports</a>.</p>
-      <p><b>Trend-alapú termények (napraforgó, repce):</b> ugyanez a walk-forward
-        visszamérés azt mutatta, hogy náluk az időjárás-modell NEM veri a naiv
-        trendet (napraforgó 0,44 vs 0,41; repce 0,64 vs 0,53 t/ha vármegyei RMSE):
+      <p><b>Trendalapú termények (napraforgó, repce):</b> ugyanez a walk-forward
+        visszamérés azt mutatta, hogy náluk az időjárásmodell nem veri a naiv
+        trendet (vármegyei RMSE: napraforgó 0,44 a trend 0,41-ével szemben; repce 0,64 a 0,53-mal szemben, t/ha):
         a napraforgó időjárás-tűrő, a repce ingadozását pedig kifagyás, kártevők és
         a vetésterület változása mozgatja, amit a mért hőmérséklet és csapadék nem
-        ragad meg. Ezért ezeknél nem az időjárás-modellt közöljük, hanem a sokéves
+        ragad meg. Ezért ezeknél nem az időjárásmodellt közöljük, hanem a sokéves
         trendet (vármegye-fixhatás + közös évtrend), őszintén felcímkézve. A sáv és
         a tipikus tévedés itt is a naiv trend tényleges, csak-múltból-jósolt
         hibájából jön, ugyanazzal a protokollal: országos walk-forward tévedés
-        napraforgó ±12,6%, repce ±13,0% (2011–2025). Ezeknél nincs „a szokásostól
+        mindkét terménynél nagyjából ±13% (2011–2025). Ezeknél nincs „a szokásostól
         való eltérés” és szezonközi forgatókönyv, mert az nem lenne igazolható.</p>
 
       <h3>5. Napi élő becslés</h3>
@@ -126,7 +127,7 @@
         szezon maradékát rendre a 2000–2025-ös évek tényleges időjárásával
         folytatjuk, és mindegyikre kiszámoljuk a modell előrejelzését. A
         középbecslés az együttes átlaga (a nemlineáris wb_deficit-tag miatt az
-        „átlagos időjárás” behelyettesítése torzítana — Jensen-egyenlőtlenség); a
+        „átlagos időjárás” behelyettesítése torzítana – Jensen-egyenlőtlenség); a
         P10–P90 sáv az együttes 10. és 90. percentilise. A közölt 80%-os sáv szezon
         közben a modellhiba és az időjárási bizonytalanság négyzetes összege:
         σ = √(σ<sub>modell</sub>² + σ<sub>időjárás</sub>²). A rendszer minden nap
@@ -135,7 +136,7 @@
       <h3>6. Módszertani irodalom</h3>
       <ul class="bib">
         <li>Allen, R. G., Pereira, L. S., Raes, D., Smith, M. (1998): <i>Crop
-          evapotranspiration — Guidelines for computing crop water requirements.</i>
+          evapotranspiration – Guidelines for computing crop water requirements.</i>
           FAO Irrigation and Drainage Paper 56. (ET₀ referencia-párolgás)</li>
         <li>Hersbach, H. et al. (2020): The ERA5 global reanalysis. <i>Quarterly
           Journal of the Royal Meteorological Society</i> 146: 1999–2049.
@@ -162,10 +163,11 @@
         github.com/prettyASAP/wheat-forecast</a>.</p>
     </details>
   </div>
-  <script src="magyarazat.js?v=7"></script>
+  <script src="magyarazat.js?v=10"></script>
   <script>
     (function () {
       var order = ["modszertan", "becsles", "szokasos", "tartomany", "tevedes",
+        "hajtoerok", "szelsoseg", "eubecsles", "trendalapu",
         "forgatokonyvek", "helyezes", "ertek", "termesev", "idojaras_eddig",
         "csapadek", "vizmerleg", "hostressz", "fagynapok", "hoosszeg",
         "budapest", "frissites"];

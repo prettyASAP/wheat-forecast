@@ -274,7 +274,7 @@ def _load_price(crop: str) -> dict | None:
     p = json.loads(prices_path.read_text(encoding="utf-8"))["crops"].get(crop)
     if p:
         p = dict(p)
-        p["price_phrase"] = f"a {p['latest_year']}-es éves átlagáron"
+        p["price_phrase"] = f"a {p['latest_year']}. évi átlagáron"
         p["price_note"] = f"a {p['latest_year']}. évi termelői átlagár (Eurostat)"
     return p
 

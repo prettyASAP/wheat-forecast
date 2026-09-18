@@ -47,14 +47,26 @@ async function fetchJson(url, cacheBust = false) {
   return r.json();
 }
 
-// kattintható magyarázat-gomb (a fogalomtár kulcsával — lásd magyarazat.js)
+// kattintható magyarázat-gomb (a fogalomtár kulcsával – lásd magyarazat.js)
 function info(key) {
   return `<button class="info-btn" data-explain="${key}"
     aria-label="Magyarázat megnyitása">i</button>`;
 }
 
 // magyar tizedesvessző a kijelzett számokhoz (a JSON-ban pont marad)
-function hu(v, d = 2) { return v.toFixed(d).replace(".", ","); }
+function hu(v, d = 2) { return v.toFixed(d).replace(".", ",").replace("-", "−"); }
+
+// ISO-dátum (2026-09-19) magyar alakban (2026. 09. 19.)
+function huDate(d) { return d ? d.replace(/-/g, ". ") + "." : ""; }
+
+/* A mondat alanya névelővel és termésévvel: "A búza idei" / "Az őszi árpa idei" /
+   "A repce 2027. évi" – ősszel az őszi vetésűek már a KÖVETKEZŐ termésévben járnak,
+   ott az "idei" hamis lenne. */
+function cropSubject(fc) {
+  const art = /^[aáeéiíoóöőuúüű]/i.test(fc.crop) ? "Az" : "A";
+  const when = fc.crop_year === new Date().getFullYear() ? "idei" : `${fc.crop_year}. évi`;
+  return `${art} ${esc(fc.crop)} ${when}`;
+}
 
 // HTML-escape a JSON-ból érkező szövegekhez (védelem a template-interpolációnál)
 function esc(s) {
@@ -65,7 +77,7 @@ function esc(s) {
 // betöltési sorszám: a gyors termény-váltásnál a megkésett válasz eldobásához
 let loadSeq = 0;
 
-/* A térkép betöltési/hibaállapotának vezérlése — a szürke üres doboz helyett
+/* A térkép betöltési/hibaállapotának vezérlése – a szürke üres doboz helyett
    látható visszajelzés. state: "loading" | "error" | "hidden". */
 function setMapStatus(state, message) {
   const box = document.getElementById("map-status");
@@ -99,7 +111,7 @@ function paintForLayer(layer, fc) {
     .filter(v => v !== null && v !== undefined);
   let [lo, hi] = spec.fixed || (vals.length
     ? [Math.min(...vals), Math.max(...vals)]
-    : [0, 1]);  // üres réteg — ne legyen Infinity/NaN a skálában
+    : [0, 1]);  // üres réteg – ne legyen Infinity/NaN a skálában
   if (lo === hi) { lo -= 1; hi += 1; }  // konstans réteg (pl. 0 hőstressznap)
 
   const interp = ["interpolate", ["linear"], ["feature-state", "v_" + layer]];
@@ -116,7 +128,7 @@ function paintForLayer(layer, fc) {
   document.getElementById("legend-max").textContent = fmt(hi);
   let note = spec.note;
   if (layer === "wb" && hi < 0) {
-    note += " — idén mindenhol hiány; a kék a KISEBB hiányt jelenti";
+    note += " – idén mindenhol hiány; a kék a KISEBB hiányt jelenti";
   }
   document.getElementById("legend-note").textContent = note;
   const LAYER_EXPLAIN = { anomaly: "szokasos", wb: "vizmerleg", prec: "csapadek", heat: "hostressz", gdd: "hoosszeg" };
@@ -127,9 +139,31 @@ function paintForLayer(layer, fc) {
   return expr;
 }
 
+/* A térkép akkor "kész", ha a stílus betöltött ÉS a vármegye-rétegek felkerültek.
+   A szöveges tartalom (headline, mutatók) ettől FÜGGETLENÜL jelenik meg: lassú
+   kapcsolaton vagy korai terményváltásnál sem ragadhat be a "betöltés…". */
+let mapReady = false;
+
 function applyForecast(fc) {
   currentForecast = fc;
-  setMapStatus("hidden");  // az első adat megjött — az overlay eltűnhet
+  if (mapReady) paintMap(fc);  // különben a térkép "load" eseménye festi ki
+  const wxNote = fc.scenarios
+    ? `időjárási adat (mért + 7 napos előrejelzés): ${huDate(fc.weather_known_until).slice(0, -1)}-ig`
+    : `az időjárási adat a teljes szezont lefedi`;
+  document.getElementById("meta").textContent =
+    `${fc.crop} · termésév: ${fc.crop_year} · frissítve: ${huDate(fc.updated_at)} · ${wxNote}`;
+  // a PDF-link napi cache-törő paramétert kap, hogy sose régi (cache-elt)
+  // jelentés nyíljon meg
+  const pdfLink = document.getElementById("pdf-link");
+  if (pdfLink) pdfLink.href = "data/jelentes_latest.pdf?d=" +
+    encodeURIComponent(fc.updated_at || "");
+  renderHeadline(fc);
+  renderNational(fc);
+  if (selectedId) showPanel(selectedId);
+}
+
+function paintMap(fc) {
+  setMapStatus("hidden");  // az első adat megjött – az overlay eltűnhet
   const vals = layerValues(fc);
   for (const f of geojson.features) {
     const id = f.properties.NUTS_ID;
@@ -143,28 +177,15 @@ function applyForecast(fc) {
     map.setFeatureState({ source: "counties", id }, state);
   }
   map.setPaintProperty("counties-fill", "fill-color", paintForLayer(currentLayer, fc));
-  const wxNote = fc.scenarios
-    ? `időjárási adat (mért + 7 napos előrejelzés): ${fc.weather_known_until}-ig`
-    : `az időjárási adat a teljes szezont lefedi`;
-  document.getElementById("meta").textContent =
-    `${fc.crop} · ${fc.crop_year}-es termésév · frissítve: ${fc.updated_at} · ${wxNote}`;
-  // a PDF-link napi cache-törő paramétert kap, hogy sose régi (cache-elt)
-  // jelentés nyíljon meg
-  const pdfLink = document.getElementById("pdf-link");
-  if (pdfLink) pdfLink.href = "data/jelentes_latest.pdf?d=" +
-    encodeURIComponent(fc.updated_at || "");
-  renderHeadline(fc);
-  renderNational(fc);
-  if (selectedId) showPanel(selectedId);
 }
 
 /* Vezetői headline: kimondott üzenet a számok helyett (infografikai review).
-   A mondat a national blokk mezőiből áll össze — ugyanez a sablon szolgálja
+   A mondat a national blokk mezőiből áll össze – ugyanez a sablon szolgálja
    majd a napi PDF-jelentés fejlécét is. */
 /* A forintosítás árának mondatba illeszthető alakja. A régi (idővonalon
-   visszanézhető) pillanatképekben még nincs price_phrase — ott az ár éve áll. */
+   visszanézhető) pillanatképekben még nincs price_phrase – ott az ár éve áll. */
 function pricePhrase(v) {
-  return v.price_phrase ? esc(v.price_phrase) : `a ${v.price_year}-es árakon`;
+  return v.price_phrase ? esc(v.price_phrase) : `a ${v.price_year}. évi árakon`;
 }
 
 function renderHeadline(fc) {
@@ -175,15 +196,15 @@ function renderHeadline(fc) {
   const cap = fc.crop.charAt(0).toUpperCase() + fc.crop.slice(1);
 
   // TREND-alapú termények (napraforgó, repce): a mérési kapu elutasította az
-  // időjárás-modellt, ezért a sokéves trendet közöljük — őszintén felcímkézve.
+  // időjárásmodellt, ezért a sokéves trendet közöljük – őszintén felcímkézve.
   if (fc.method === "trend") {
-    const mainT = `A ${esc(fc.crop)} idei termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b>
+    const mainT = `${cropSubject(fc)} termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b>
       körül várható, a sokéves szokásos szint közelében`
-      + (v ? ` — ${pricePhrase(v)} ez kb.
+      + (v ? ` – ${pricePhrase(v)} ez kb.
          <b>${Math.round(v.production_value_bn_huf)} mrd Ft</b> termelési érték.` : ".");
-    const certT = `<span class="badge trend">TREND-ALAPÚ</span> Ennél a terménynél az
+    const certT = `<span class="badge trend">TRENDALAPÚ</span> Ennél a terménynél az
       idei időjárás statisztikailag nem javítja a becslést, ezért a sokéves trendet
-      közöljük (validált, de nem időjárás-informált). ${info("trendalapu")}`;
+      közöljük: visszamért becslés, de az idei időjárást nem veszi figyelembe. ${info("trendalapu")}`;
     const errT = n.model_error_pct
       ? ` A becslés tipikus tévedése a múltbeli visszamérések alapján
          ±${hu(n.model_error_pct, 1)}%. ${info("tevedes")}` : "";
@@ -194,30 +215,30 @@ function renderHeadline(fc) {
 
   let main;
   if (a <= -3) {
-    main = `A ${esc(fc.crop)} idei termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül
+    main = `${cropSubject(fc)} termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül
       várható, ami <b>${hu(Math.abs(a), 1)}%-kal marad el a sokéves szokásos
       szinttől</b>` +
-      (v ? ` — ${pricePhrase(v)} számolva ez kb.
+      (v ? ` – ${pricePhrase(v)} számolva ez kb.
        <b>${Math.round(Math.abs(v.trend_gap_bn_huf))} mrd Ft kiesést jelent</b>.` : ".");
   } else if (a >= 3) {
-    main = `A ${esc(fc.crop)} idei termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül
+    main = `${cropSubject(fc)} termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül
       várható, <b>${hu(a, 1)}%-kal a sokéves szokásos szint felett</b>` +
-      (v ? ` — ${pricePhrase(v)} számolva ez kb.
+      (v ? ` – ${pricePhrase(v)} számolva ez kb.
        <b>${Math.round(v.trend_gap_bn_huf)} mrd Ft többletet jelent</b>.` : ".");
   } else {
-    main = `A ${esc(fc.crop)} idei termése a sokéves szokásos szint közelében,
+    main = `${cropSubject(fc)} termése a sokéves szokásos szint közelében,
       <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül várható
-      (${a > 0 ? "+" : ""}${hu(a, 1)}%) —
+      (${a > 0 ? "+" : ""}${hu(a, 1)}%) –
       érdemi kiesés vagy többlet egyelőre nem látszik.`;
   }
 
   const clauses = [];
   // ellentmondó előjelek feloldása (pl. kukorica: rossz tavalyi év + gyenge trend)
   if (a < 0 && n.yoy_pct >= 3) {
-    clauses.push(`Tavalyhoz (${n.prev_year}) képest ez
+    clauses.push(`A ${n.prev_year}. évi terméshez képest ez
       +${hu(n.yoy_pct, 1)}%-os javulás, a megszokott szinttől azonban elmarad.`);
   } else if (a > 0 && n.yoy_pct <= -3) {
-    clauses.push(`Tavalyhoz (${n.prev_year}) képest ${hu(n.yoy_pct, 1)}%
+    clauses.push(`A ${n.prev_year}. évi terméshez képest ${hu(n.yoy_pct, 1)}%
       a visszaesés, a termés azonban így is a megszokott szint felett alakul.`);
   }
   if (n.rank_from_worst <= 5) {
@@ -246,7 +267,7 @@ function renderHeadline(fc) {
 }
 
 /* Modelltartomány-jelző: ha egy idei mutató kívül esik azon, amit a modell a
-   tanítóévekben valaha látott, a modell extrapolál — ezt kimondjuk. */
+   tanítóévekben valaha látott, a modell extrapolál – ezt kimondjuk. */
 function envelopeWarning(n) {
   const env = n.envelope || [];
   if (!env.length) return "";
@@ -266,7 +287,7 @@ function chip(v, suffix, inverse = false) {
 }
 
 /* Percentilis pöttysor: a történelmi trend-anomáliák pontokként, az idei kiemelve.
-   Az anomáliák a yield_history national blokkjából számolódnak kliensoldalon —
+   Az anomáliák a yield_history national blokkjából számolódnak kliensoldalon –
    ugyanazzal a trenddel, amivel a szerveroldal (trend_slope/intercept). */
 function rankStripSVG(fc) {
   const hist = yieldHistory[crop];
@@ -327,7 +348,7 @@ function renderNational(fc) {
       <div class="kpi-label">Országos becslés · ${fc.crop_year} ${info("becsles")}</div>
       <div class="kpi-value">${hu(n.predicted_yield_t_ha)} <small>t/ha</small></div>
       <div class="kpi-sub">${chip(n.anomaly_pct, "%")} a szokásoshoz ${info("szokasos")} ·
-        ${chip(n.yoy_pct, "%")} vs ${n.prev_year}</div>
+        ${chip(n.yoy_pct, "%")} a ${n.prev_year}. évihez</div>
       ${n.official_estimate ? `<div class="kpi-sub">Európai Bizottság becslése:
         <b>${hu(n.official_estimate.yield_t_ha)} t/ha</b> ${info("eubecsles")}</div>` : ""}
     </div>`);
@@ -372,18 +393,18 @@ function renderNational(fc) {
       <div class="kpi kpi-drivers" title="${esc(n.drivers.note)}">
         <div class="kpi-label">Mi húzza a becslést? ${info("hajtoerok")}</div>
         ${rows}
-        <div class="kpi-sub">az időjárás hatása százalékpontban, a modell
-          időjárás-semleges szintjéhez mérve</div>
+        <div class="kpi-sub">az időjárás hatása százalékpontban, a modell átlagos
+          időjárás mellett várt szintjéhez mérve</div>
       </div>`);
   }
   el.innerHTML = cards.join("");
 }
 
 /* Kézi SVG vonaldiagram: historikus hozamok + idei becslés sávval.
-   Semmi külső könyvtár — statikus oldal marad. */
+   Semmi külső könyvtár – statikus oldal marad. */
 function yieldChartSVG(years, yields, cur) {
   if (!years || !years.length || !yields || years.length !== yields.length) {
-    return "";  // nincs/inkonzisztens idősor — ne rajzoljunk NaN-koordinátákat
+    return "";  // nincs/inkonzisztens idősor – ne rajzoljunk NaN-koordinátákat
   }
   const W = 268, H = 130, PL = 30, PR = 8, PT = 8, PB = 18;
   const allY = yields.concat(cur ? [cur.low, cur.high] : []);
@@ -456,7 +477,7 @@ function showPanel(nutsId) {
       </div>`;
   }
   const wxRows = `
-    <div class="chart-title">Időjárás eddig — a pötty: hol áll a vármegye a 20 közül
+    <div class="chart-title">Időjárás eddig – a pötty: hol áll a vármegye a 20 közül
     (bal = legalacsonyabb, jobb = legmagasabb érték)</div>
     ${trackRow("Csapadék", wx.prec_total_mm, " mm", "#5499c7", "csapadek")}
     ${trackRow("Vízmérleg", wx.wb_total_mm, " mm", "#2874a6", "vizmerleg")}
@@ -492,7 +513,7 @@ function showPanel(nutsId) {
       : "";
     body.innerHTML = `
       <div class="big-number">${hu(c.predicted_yield_t_ha)} t/ha</div>
-      <div class="band" title="80%-os valószínűségi sáv${currentForecast.scenarios ? ' — a modell hibája és a hátralévő időjárás bizonytalansága együtt' : ''}">Várható tartomány: ${hu(c.low)} – ${hu(c.high)} t/ha — 10-ből 8 esetben ebbe esik ${info("tartomany")}</div>
+      <div class="band" title="80%-os valószínűségi sáv${currentForecast.scenarios ? ' – a modell hibája és a hátralévő időjárás bizonytalansága együtt' : ''}">Várható tartomány: ${hu(c.low)} – ${hu(c.high)} t/ha – 10-ből 8 esetben ebbe esik ${info("tartomany")}</div>
       ${scRow}
       <div class="anomaly ${cls}">${sign}${hu(c.anomaly_pct, 1)}% a szokásoshoz képest ${info("szokasos")}</div>
       ${c.value_bn_huf !== undefined ? `<div class="band">termelési érték: ~${hu(c.value_bn_huf, 1)} mrd Ft
@@ -546,8 +567,8 @@ async function loadCrop(newCrop) {
   let dates = [];
   try {
     dates = await fetchJson(`data/history/${newCrop}/index.json`, true);
-  } catch { /* nincs history — üres marad */ }
-  if (seq !== loadSeq) return;  // közben másik terményre váltottak — eldobjuk
+  } catch { /* nincs history – üres marad */ }
+  if (seq !== loadSeq) return;  // közben másik terményre váltottak – eldobjuk
   historyDates = dates;
   applyForecast(fc);
   setupTimeline();
@@ -565,7 +586,7 @@ document.querySelectorAll("#crop-switch button").forEach(b =>
 
 document.getElementById("layer-select").addEventListener("change", e => {
   currentLayer = e.target.value;
-  if (currentForecast) {
+  if (currentForecast && mapReady) {
     map.setPaintProperty("counties-fill", "fill-color",
       paintForLayer(currentLayer, currentForecast));
   }
@@ -591,6 +612,8 @@ async function init() {
   });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }));
 
+  loadCrop("wheat").catch(console.error);  // a szöveg a térképtől függetlenül tölt
+
   map.on("load", () => {
     // egyes böngészőkben a konténer mérete a map létrejötte után áll be
     map.resize();
@@ -610,7 +633,8 @@ async function init() {
       paint: { "line-color": COLORS.border, "line-width": 1 },
     });
 
-    loadCrop("wheat").catch(console.error);
+    mapReady = true;
+    if (currentForecast) paintMap(currentForecast);
 
     map.on("click", "counties-fill", e => showPanel(e.features[0].properties.NUTS_ID));
     map.on("mouseenter", "counties-fill", () => map.getCanvas().style.cursor = "pointer");
@@ -639,7 +663,7 @@ async function init() {
   });
 }
 
-// "Újrapróbálom" gomb a hibaállapotban — a legmegbízhatóbb újrapróba az
+// "Újrapróbálom" gomb a hibaállapotban – a legmegbízhatóbb újrapróba az
 // oldal újratöltése (az init/map felépítése tiszta állapotból induljon)
 document.getElementById("map-status-retry").addEventListener("click",
   () => location.reload());

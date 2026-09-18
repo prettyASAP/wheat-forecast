@@ -9,7 +9,7 @@ const GLOSSARY = {
     text: "A várható termésátlag tonna/hektárban, vármegyénként. A szoftver a KSH " +
       "2000 óta mért vármegyei hozamai és az ugyanott mért időjárás (hőmérséklet, " +
       "csapadék, párolgás) közti, statisztikailag kimutatott összefüggésekből számolja, " +
-      "mit ígér az idei szezon időjárása. Nem hivatalos adat — statisztikai becslés; " +
+      "mit ígér az idei szezon időjárása. Nem hivatalos adat – statisztikai becslés; " +
       "a pontos számítás a lap alján, a Szakmai leírásban.",
   },
   szokasos: {
@@ -22,16 +22,17 @@ const GLOSSARY = {
   tartomany: {
     title: "Várható tartomány",
     text: "A becslés bizonytalansági sávja: 10-ből 8 esetben ebbe a tartományba esik " +
-      "a végleges hozam (80%-os valószínűségi sáv). A sáv a modell múltbeli, " +
-      "csak-múltból-jósolt tévedéseinek tényleges eloszlásából számolódik, " +
+      "a végleges hozam (80%-os valószínűségi sáv). A sávot a modell múltbeli " +
+      "tévedéseiből számoljuk úgy, hogy minden évet csak a korábbi évek ismeretében " +
+      "becsültünk meg; " +
       "vármegyénként eltérő szélességgel (az ingadozóbb megyékben szélesebb), és " +
-      "aszimmetrikus lehet: az aszályos lehúzás jellemzően nagyobb, mint a felfelé " +
-      "meglepetés. Szezon közben a hátralévő időjárás bizonytalansága is hozzáadódik.",
+      "aszimmetrikus lehet: az aszály okozta elmaradás jellemzően nagyobb, mint a " +
+      "kedvező irányú meglepetés. Szezon közben a hátralévő időjárás bizonytalansága is hozzáadódik.",
   },
   forgatokonyvek: {
     title: "Mi lehet még belőle? (forgatókönyvek)",
-    text: "Amíg a szezon tart, a hátralévő heteket 26 korábbi év TÉNYLEGES időjárásával " +
-      "játsszuk végig — mintha az idei év innentől úgy folytatódna, mint 2003-ban, " +
+    text: "Amíg a szezon tart, a hátralévő heteket 26 korábbi év tényleges időjárásával " +
+      "játsszuk végig – mintha az idei év innentől úgy folytatódna, mint 2003-ban, " +
       "2010-ben stb. A sáv két széle a kedvezőtlen és a kedvező kimenet (a 26 " +
       "lejátszásból a leggyengébb és legerősebb 10-10%-a), a vonal a középső, " +
       "legvalószínűbb kimenet, a ▲ a mostani becslés.",
@@ -40,7 +41,7 @@ const GLOSSARY = {
     title: "Hol áll ez az elmúlt évek közt?",
     text: "Minden szürke pötty egy-egy év 2000 óta: mennyivel tért el akkor a termés " +
       "a szokásos szinttől. A színes, nagyobb pötty az idei becslés. A szaggatott " +
-      "függőleges vonal a szokásos szint (0%) — ettől balra a gyenge, jobbra a jó évek. " +
+      "függőleges vonal a szokásos szint (0%) – ettől balra a gyenge, jobbra a jó évek. " +
       "Ha a pötty fölé viszi az egeret, az évszám is megjelenik.",
   },
   ertek: {
@@ -49,7 +50,7 @@ const GLOSSARY = {
       "A terület a legutóbbi lezárt KSH-évből való (az idei hivatalos terület csak " +
       "ősszel jelenik meg). Az ár a friss hazai termelői ár: az utolsó négy jegyzett " +
       "hét átlaga (EU agrárpiaci adatszolgáltatás, a magyar adat az AKI PÁIR " +
-      "jelentése), hivatalos MNB-középárfolyamon forintra váltva — ugyanaz az " +
+      "jelentése), hivatalos MNB-középárfolyamon forintra váltva – ugyanaz az " +
       "árszint, mint a napi jelentés ártáblájában. Ha friss ár nem érhető el, a " +
       "legutolsó éves Eurostat-átlagárra váltunk, és a felirat ezt ki is írja. " +
       "Nagyságrendi, „körülbelül” szám, nem bevételi előrejelzés. A „kiesés/többlet a szokásoshoz” ugyanez " +
@@ -57,12 +58,11 @@ const GLOSSARY = {
   },
   eubecsles: {
     title: "Európai Bizottság becslése",
-    text: "Az Európai Bizottság (DG AGRI) aktuális hivatalos termésbecslése " +
-      "Magyarországra, tagállami adatokból; havonta frissül. Viszonyítási pontként " +
-      "közöljük a saját becslésünk mellett. Aratás után ez a szám már a tényleges " +
-      "betakarítási jelentéseket is tartalmazza, amelyeket egy időjárás-modell nem " +
-      "láthat, ezért a kettő eltérhet: 2026-ban az aszály és a kései hőség miatt a " +
-      "hivatalos becslés a modellekénél jóval alacsonyabb lett. Becslés, nem végleges " +
+    text: "Az Európai Bizottság agrárpiaci adatportálján közölt, havonta frissülő " +
+      "magyarországi termésadat (terület, termés, hozam). Viszonyítási pontként " +
+      "közöljük a saját becslésünk mellett. A modellünktől független szám, ezért " +
+      "eltérhet tőle: 2026-ban jóval alacsonyabb " +
+      "lett a modellünk becslésénél. Becslés, nem végleges " +
       "adat: a végleges számot a KSH közli. Az őszi árpánál nincs összemérhető sor, " +
       "mert a forrás csak az összes árpát közli.",
   },
@@ -71,7 +71,8 @@ const GLOSSARY = {
     text: "A becslés időjárási részének pontos bontása: mennyit vett el (vagy adott " +
       "hozzá) a vízellátás, a hőstressz, a hőmérséklet és a téli fagy. Nem külön " +
       "modell és nem közelítés, hanem a meglévő számítás tagjai csoportosítva. " +
-      "Az értékek százalékpontok a modell időjárás-semleges szintjéhez mérve. " +
+      "Az értékek százalékpontok ahhoz a szinthez mérve, amelyet a modell átlagos " +
+      "időjárás mellett várna. " +
       "Az összegük ezért nem pontosan azonos a fejlécben közölt eltéréssel: az a " +
       "sokéves trendhez viszonyít, amely a múlt gyenge éveit is magában hordozza.",
   },
@@ -86,22 +87,22 @@ const GLOSSARY = {
       "kimondjuk.",
   },
   trendalapu: {
-    title: "Trend-alapú becslés (napraforgó, repce)",
+    title: "Trendalapú becslés (napraforgó, repce)",
     text: "Ezeknél a terményeknél visszaméréssel kimutattuk, hogy az idei " +
-      "időjárás statisztikailag NEM javítja a becslést: a napraforgó időjárás-" +
+      "időjárás statisztikailag nem javítja a becslést: a napraforgó időjárás-" +
       "tűrő, a repce ingadozását pedig kifagyás, kártevők és a vetésterület " +
       "változása mozgatja, amit a hőmérséklet és a csapadék nem lát. Ezért nem " +
-      "„időjárás-modellt”, hanem a sokéves TRENDET közöljük (a vármegyék eltérő " +
-      "szintje + az évről évre emelkedő pálya). Ez validált, számszerű " +
-      "bizonytalansággal járó becslés — csak nem használ idei időjárás-jelet, " +
+      "„időjárásmodellt”, hanem a sokéves trendet közöljük (a vármegyék eltérő " +
+      "szintje + az évről évre emelkedő pálya). Ez visszamért, számszerű " +
+      "bizonytalansággal járó becslés, csak az idei időjárást nem használja fel, " +
       "ezért nincs nála „a szokásostól való eltérés” és szezonközi forgatókönyv.",
   },
   tevedes: {
     title: "A becslés tipikus tévedése",
-    text: "Visszamértük a modellt 2011-től évről évre úgy, hogy mindig CSAK a " +
-      "korábbi évekből jósolt — pontosan úgy, ahogy élesben is dolgozik. A ±X% " +
-      "ennek a tévedésnek a tipikus mértéke; szigorúbb (és nagyobb) szám, mint a " +
-      "korábban közölt, de erre lehet üzleti döntést alapozni. A kukoricánál " +
+    text: "Visszamértük a modellt 2011-től évről évre úgy, hogy mindig csak a " +
+      "korábbi évekből becsült, pontosan úgy, ahogy élesben is dolgozik. A ±X% " +
+      "ennek a tévedésnek a tipikus mértéke. Szigorú mérce: erre lehet üzleti " +
+      "döntést alapozni. A kukoricánál " +
       "nagyobb, mert az érzékenyebb a nyári időjárásra.",
   },
   csapadek: {
@@ -112,11 +113,11 @@ const GLOSSARY = {
   },
   vizmerleg: {
     title: "Vízmérleg (mm)",
-    text: "Csapadék MÍNUSZ párolgás (a növényzet és a talaj vízigénye, FAO-módszerrel " +
+    text: "Csapadék mínusz párolgás (a növényzet és a talaj vízigénye, FAO-módszerrel " +
       "számolva). A −250 mm azt jelenti: negyed méternyi vízoszloppal több párolgott " +
-      "el, mint amennyi eső esett — ekkora a hiány. Magyarországon nyáron szinte " +
-      "mindig negatív; a kérdés a hiány MÉRTÉKE. Ez a modell legfontosabb " +
-      "aszály-jelzője.",
+      "el, mint amennyi eső esett – ekkora a hiány. Magyarországon nyáron szinte " +
+      "mindig negatív; a kérdés a hiány mértéke. Ez a modell legfontosabb " +
+      "aszályjelzője.",
   },
   hostressz: {
     title: "Hőstressznapok",
@@ -138,12 +139,12 @@ const GLOSSARY = {
     text: "A napi középhőmérsékletek összege a szezon kezdete óta (fok×nap, 0 °C " +
       "felett számolva; angolul GDD). A növény fejlődésének „üzemanyag-mérője”: " +
       "minél több gyűlik, annál előrébb tart a kalászolás/érés. Önmagában se nem jó, " +
-      "se nem rossz — a többi vármegyéhez és az évszakhoz képest érdemes nézni.",
+      "se nem rossz – a többi vármegyéhez és az évszakhoz képest érdemes nézni.",
   },
   termesev: {
     title: "Termésév",
     text: "A termés betakarításának éve. Az őszi vetésű terményeknél (búza, őszi árpa) " +
-      "a hozzá tartozó időjárás az ELŐZŐ ősszel kezdődik: a 2026-os termésév a 2025. " +
+      "a hozzá tartozó időjárás az előző ősszel kezdődik: a 2026-os termésév a 2025. " +
       "október 1. – 2026. június 30. időjárását jelenti. A kukoricánál minden az adott " +
       "naptári évben történik (április–szeptember).",
   },
@@ -151,18 +152,18 @@ const GLOSSARY = {
     title: "Időjárási adat / „eddig”",
     text: "A mutatók a szezonból eddig eltelt, ténylegesen megfigyelt napokból " +
       "számolódnak (plusz legfeljebb 7 nap meteorológiai előrejelzés). A szezon " +
-      "hátralévő részét a becslésben a korábbi évek időjárása képviseli — ez a " +
+      "hátralévő részét a becslésben a korábbi évek időjárása képviseli – ez a " +
       "„még változhat” rész.",
   },
   frissites: {
     title: "Frissítés",
     text: "A rendszer minden reggel automatikusan letölti a legfrissebb időjárási " +
-      "adatokat, újraszámolja a becslést mindhárom terményre, és eltárolja az aznapi " +
-      "állapotot — az idővonal-csúszkán visszanézhető, hogyan mozgott a becslés a " +
+      "adatokat és piaci árakat, újraszámolja a becslést mind az öt terményre, és eltárolja az aznapi " +
+      "állapotot – az idővonal-csúszkán visszanézhető, hogyan mozgott a becslés a " +
       "szezon során.",
   },
   budapest: {
-    title: "Budapest — miért nincs becslés?",
+    title: "Budapest – miért nincs becslés?",
     text: "Budapest termőterülete elhanyagolható (a búzánál az országos terület kevesebb " +
       "mint 0,1%-a), a kevés tábla hozama pedig évről évre szeszélyesen ingadozik. " +
       "Egy megbízhatatlan becslés helyett inkább nem adunk becslést; az időjárási " +
@@ -172,12 +173,14 @@ const GLOSSARY = {
     title: "Hogyan készül a becslés? (módszertan dióhéjban)",
     text: "1) A KSH 2000 óta mért vármegyei termésátlagai + az ERA5 időjárási " +
       "adatbázis napi adatai vármegyénként. 2) Az időjárásból a növény szempontjából " +
-      "fontos mutatókat számolunk (hőösszeg, hőstressz, fagy, vízmérleg — a fejlődési " +
+      "fontos mutatókat számolunk (hőösszeg, hőstressz, fagy, vízmérleg – a fejlődési " +
       "szakaszokra bontva). 3) Regressziós modell számszerűsíti, hogy e mutatók " +
       "egy-egy egységnyi változása átlagosan mennyivel mozdította el a hozamot a 26 év " +
       "vármegyei adataiban. 4) Az idei szezon mutatóit behelyettesítve kapjuk a " +
-      "becslést. A modellt minden évre visszamértük: az aszályéveket (2003, 2007, " +
-      "2012, 2022) iránytartóan jelezte előre. Részletek: Szakmai leírás a lap alján.",
+      "becslést. A modellt minden évre visszamértük: a nagy aszályévekben (2003, 2007, " +
+      "2012, 2022) az elmaradás irányát előre jelezte, a mértékét viszont jellemzően " +
+      "alábecsülte (2022-ben a kukoricánál 22%-os kiesést jelzett, a tény 52% lett). " +
+      "Részletek: Szakmai leírás a lap alján.",
   },
 };
 
