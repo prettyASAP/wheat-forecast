@@ -308,6 +308,13 @@ def focus_bar_rows(fcs: dict) -> str:
     return "\n".join(rows)
 
 
+def price_phrase(v: dict, cap: bool = False) -> str:
+    """A forintosítás árának mondatba illeszthető alakja (friss heti ár vagy
+    tartalékként az éves átlagár) — a JSON mondja meg, melyikkel számoltunk."""
+    s = v.get("price_phrase") or f"a {v['price_year']}-es éves átlagáron"
+    return s[0].upper() + s[1:] if cap else s
+
+
 def trend_strip(trend_fcs: list) -> str:
     """Kompakt, ALÁRENDELT csík a trend-alapú terményekhez (napraforgó, repce).
     Tudatosan a konfidencia-hierarchia legalján, kis súllyal: 15 px-es értékek a
@@ -407,6 +414,9 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
     vals = [fc["national"].get("value") for fc in fcs.values()]
     total_val = sum(v["production_value_bn_huf"] for v in vals if v)
     total_gap = sum(v["trend_gap_bn_huf"] for v in vals if v)
+    # a fejléc-sáv árfelirata: friss heti ár vagy (tartalékként) éves átlagár
+    banner_price = next((price_phrase(v, cap=True) for v in vals if v),
+                        "A legutolsó hivatalos termelői áron")
     y, m, d = today.split("-")
     cards = "\n".join(crop_card(fc) for fc in fcs.values())
 
@@ -483,7 +493,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
             "tévedés ennek szokásos nagysága a trendszinthez mérve (búza "
             f"{hu(me.get('wheat',0),1)}%, kukorica {hu(me.get('corn',0),1)}%, árpa "
             f"{hu(me.get('barley',0),1)}%), a sáv ennél mintegy 1,3-szer szélesebb. "
-            "A termelési érték a hozam, a terület és a 2024-es ár szorzata, volumen "
+            "A termelési érték a hozam, a legutóbbi lezárt évi terület és a jelölt termelői ár szorzata, volumen "
             "alapú indikátor, nem bevételi előrejelzés. Nem hivatalos adat. Részletes "
             "leírás és visszamérés: <a href=\"https://prettyasap.github.io/"
             "wheat-forecast/magyarazat.html\" style=\"color:var(--color-accent);"
@@ -499,7 +509,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
   </div>
   <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start">
     <div>
-      <p style="font-size:15px;line-height:1.6;margin:0 0 10px"><strong>A {live_fc['crop']} idei termése {hu(n['predicted_yield_t_ha'])} t/ha körül várható</strong>, ami {hu(abs(n['anomaly_pct']),1)}%-kal marad el a sokéves szokásos szinttől. {v['price_year']}-es árakon számolva ez kb. <strong>{abs(v['trend_gap_bn_huf']):.0f} mrd Ft</strong> kiesést jelent. Tavalyhoz ({n['prev_year']}) képest ez <span style="color:{GREEN};font-weight:600">{signed(n['yoy_pct'],1)}%-os javulás</span>, a megszokott szinttől azonban elmarad.</p>
+      <p style="font-size:15px;line-height:1.6;margin:0 0 10px"><strong>A {live_fc['crop']} idei termése {hu(n['predicted_yield_t_ha'])} t/ha körül várható</strong>, ami {hu(abs(n['anomaly_pct']),1)}%-kal marad el a sokéves szokásos szinttől. {price_phrase(v, cap=True)} számolva ez kb. <strong>{abs(v['trend_gap_bn_huf']):.0f} mrd Ft</strong> kiesést jelent. Tavalyhoz ({n['prev_year']}) képest ez <span style="color:{GREEN};font-weight:600">{signed(n['yoy_pct'],1)}%-os javulás</span>, a megszokott szinttől azonban elmarad.</p>
       <p style="font-size:13px;line-height:1.6;color:color-mix(in srgb,var(--color-text) 62%,transparent);margin:0">A szezonból még {rem} nap van hátra; a végeredmény az időjárástól függően <strong>{hu(sc['p10'])}–{hu(sc['p90'])} t/ha</strong> között alakulhat. A becslés tipikus tévedése a múltbeli visszamérések alapján ±{hu(n['model_error_pct'],1)}%.</p>
     </div>
     <div class="blueprint" style="padding:14px;margin:0;break-inside:avoid">
@@ -519,7 +529,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
           <tr><td>Kedvező</td><td style="text-align:right;font-variant-numeric:tabular-nums">{hu(sc['p90'])}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{tonnes(sc['p90'])}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{money(sc['p90'])}</td></tr>
         </tbody>
       </table>
-      <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:7px 0 0">*{v['price_year']}-es termelői átlagáron ({price_fmt} Ft/t) és a legutóbbi lezárt évi vetésterülettel ({area/1e3:.0f} ezer ha) számolva — indikatív.</p>
+      <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:7px 0 0">*{price_phrase(v, cap=True)} ({price_fmt} Ft/t) és a legutóbbi lezárt évi betakarított területtel ({area/1e3:.0f} ezer ha) számolva — indikatív.</p>
     </div>
     <div style="align-self:center;border-left:3px solid var(--color-accent);padding:6px 0 6px 16px">
       <div style="font-family:var(--font-heading);font-weight:600;font-size:20px;line-height:1.15">A két szélső kimenet között kb. <span style="color:var(--color-accent-700)">{risk:.0f} mrd Ft</span> a különbség.</div>
@@ -559,7 +569,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
     <div style="flex:1">
       <p style="font-family:var(--font-heading);font-weight:600;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--color-accent-300);margin:0 0 6px">Ma a lényeg</p>
       <p style="margin:0;font-family:var(--font-heading);font-weight:600;font-size:22px;line-height:1.15">A három termény együtt <span style="color:#fff">~{total_val:.0f} mrd Ft</span> termelési értéket ígér — <span style="color:#f0b7a5">{signed(total_gap,0)} mrd Ft</span> a szokásoshoz képest.</p>
-      <p style="margin:8px 0 0;font-size:12px;color:var(--color-accent-300)">A legutolsó hivatalos (2024-es) termelői árakon számolva — indikatív becslés.</p>
+      <p style="margin:8px 0 0;font-size:12px;color:var(--color-accent-300)">{banner_price} és a legutóbbi lezárt évi területtel számolva — indikatív becslés.</p>
     </div>
     <div style="flex:none;text-align:right;border-left:1px solid color-mix(in srgb,#fff 22%,transparent);padding-left:22px">
       <div style="font-family:var(--font-heading);font-weight:600;font-size:44px;line-height:0.9;color:#fff">{total_val:.0f}</div>

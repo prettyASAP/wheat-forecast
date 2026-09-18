@@ -161,6 +161,12 @@ function applyForecast(fc) {
 /* Vezetői headline: kimondott üzenet a számok helyett (infografikai review).
    A mondat a national blokk mezőiből áll össze — ugyanez a sablon szolgálja
    majd a napi PDF-jelentés fejlécét is. */
+/* A forintosítás árának mondatba illeszthető alakja. A régi (idővonalon
+   visszanézhető) pillanatképekben még nincs price_phrase — ott az ár éve áll. */
+function pricePhrase(v) {
+  return v.price_phrase ? esc(v.price_phrase) : `a ${v.price_year}-es árakon`;
+}
+
 function renderHeadline(fc) {
   const el = document.getElementById("headline");
   const n = fc.national;
@@ -173,7 +179,7 @@ function renderHeadline(fc) {
   if (fc.method === "trend") {
     const mainT = `A ${esc(fc.crop)} idei termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b>
       körül várható, a sokéves szokásos szint közelében`
-      + (v ? ` — a ${v.price_year}-es árakon ez kb.
+      + (v ? ` — ${pricePhrase(v)} ez kb.
          <b>${Math.round(v.production_value_bn_huf)} mrd Ft</b> termelési érték.` : ".");
     const certT = `<span class="badge trend">TREND-ALAPÚ</span> Ennél a terménynél az
       idei időjárás statisztikailag nem javítja a becslést, ezért a sokéves trendet
@@ -191,12 +197,12 @@ function renderHeadline(fc) {
     main = `A ${esc(fc.crop)} idei termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül
       várható, ami <b>${hu(Math.abs(a), 1)}%-kal marad el a sokéves szokásos
       szinttől</b>` +
-      (v ? ` — a ${v.price_year}-es árakon számolva ez kb.
+      (v ? ` — ${pricePhrase(v)} számolva ez kb.
        <b>${Math.round(Math.abs(v.trend_gap_bn_huf))} mrd Ft kiesést jelent</b>.` : ".");
   } else if (a >= 3) {
     main = `A ${esc(fc.crop)} idei termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül
       várható, <b>${hu(a, 1)}%-kal a sokéves szokásos szint felett</b>` +
-      (v ? ` — a ${v.price_year}-es árakon számolva ez kb.
+      (v ? ` — ${pricePhrase(v)} számolva ez kb.
        <b>${Math.round(v.trend_gap_bn_huf)} mrd Ft többletet jelent</b>.` : ".");
   } else {
     main = `A ${esc(fc.crop)} idei termése a sokéves szokásos szint közelében,
@@ -331,7 +337,7 @@ function renderNational(fc) {
         <div class="kpi-label">Termelési érték ${info("ertek")}</div>
         <div class="kpi-value">~${Math.round(v.production_value_bn_huf)} <small>mrd Ft</small></div>
         <div class="kpi-sub">${chip(v.trend_gap_bn_huf, " mrd Ft")} ${v.trend_gap_bn_huf < 0 ? "kiesés" : "többlet"} a szokásoshoz ·
-          a legutolsó hivatalos áron (${v.price_year}): ${hu(v.price_huf_per_t / 1000, 1)} eFt/t</div>
+          ${v.price_phrase ? esc(v.price_phrase) : `a legutolsó hivatalos áron (${v.price_year})`}: ${hu(v.price_huf_per_t / 1000, 1)} eFt/t</div>
       </div>`);
   }
   el.innerHTML = cards.join("");

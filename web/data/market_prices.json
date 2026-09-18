@@ -148,6 +148,55 @@
    "period": "2026. 06. hó"
   }
  ],
+ "valuation": {
+  "fx": {
+   "rate": 363.47,
+   "source": "MNB hivatalos középárfolyam",
+   "date": "2026-09-18"
+  },
+  "crops": {
+   "wheat": {
+    "eur_per_t": 192.84,
+    "huf_per_t": 70090,
+    "weeks": 4,
+    "period": "2026-08-17 – 2026-09-13",
+    "basis": "étkezési és takarmánybúza termelői árainak átlaga",
+    "phrase": "2026. szeptemberi termelői áron"
+   },
+   "corn": {
+    "eur_per_t": 240.28,
+    "huf_per_t": 87330,
+    "weeks": 4,
+    "period": "2026-08-17 – 2026-09-13",
+    "basis": "takarmánykukorica termelői ára",
+    "phrase": "2026. szeptemberi termelői áron"
+   },
+   "barley": {
+    "eur_per_t": 175.72,
+    "huf_per_t": 63870,
+    "weeks": 4,
+    "period": "2026-08-17 – 2026-09-13",
+    "basis": "takarmányárpa termelői ára",
+    "phrase": "2026. szeptemberi termelői áron"
+   },
+   "sunflower": {
+    "eur_per_t": 536.69,
+    "huf_per_t": 195070,
+    "weeks": 4,
+    "period": "2026-08-17 – 2026-09-13",
+    "basis": "napraforgómag termelői ára",
+    "phrase": "2026. szeptemberi termelői áron"
+   },
+   "rapeseed": {
+    "eur_per_t": 536.32,
+    "huf_per_t": 194940,
+    "weeks": 4,
+    "period": "2026-08-17 – 2026-09-13",
+    "basis": "repcemag termelői ára",
+    "phrase": "2026. szeptemberi termelői áron"
+   }
+  }
+ },
  "skipped_today": [],
  "not_available": [
   "Bioetanol (nincs nyilvános hivatalos jegyzés)",

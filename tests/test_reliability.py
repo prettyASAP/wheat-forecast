@@ -405,3 +405,43 @@ def test_market_cereal_regional_fallback_and_rename():
             {**wk, "productName": "Feed maize", "marketName": "Great Plain", "price": "€2450"}]
     assert _cereal_item(rows, ("Feed maize",), "Takarmánykukorica", 80, 600,
                         _date(2026, 9, 18)) is None
+
+
+# --------------------------------------------------------------------------- #
+# 11) Forintosítási ár: friss heti ár elsőbbsége, elavulásnál éves tartalék
+# --------------------------------------------------------------------------- #
+def test_weekly_series_prefers_national_average():
+    from src.fetch_market_prices import _weekly_series
+    wk = {"beginDate": "07/09/2026", "endDate": "13/09/2026"}
+    rows = [{**wk, "productName": "Feed maize", "marketName": "Transdanubia", "price": "€240"},
+            {**wk, "productName": "Feed maize", "marketName": "Great Plain", "price": "€250"}]
+    assert list(_weekly_series(rows, "productName", ("Feed maize",)).values()) == [245.0]
+    rows.append({**wk, "productName": "Feed maize", "marketName": "National Average",
+                 "price": "€247"})
+    assert list(_weekly_series(rows, "productName", ("Feed maize",)).values()) == [247.0]
+
+
+def test_load_price_fresh_then_stale_fallback(tmp_path, monkeypatch):
+    import json as _json
+    from datetime import date as _date, timedelta as _td
+    from src import predict_live
+    monkeypatch.setattr(config, "WEB_DATA", tmp_path)
+    (tmp_path / "prices.json").write_text(_json.dumps(
+        {"crops": {"corn": {"latest_year": 2024, "latest_huf_per_t": 69260}}}))
+    val = {"fx": {"rate": 363.47, "source": "MNB", "date": "2026-09-18"},
+           "crops": {"corn": {"eur_per_t": 240.28, "huf_per_t": 87330, "weeks": 4,
+                              "period": "2026-08-17 – 2026-09-13", "basis": "x",
+                              "phrase": "2026. szeptemberi termelői áron"}}}
+    mp = tmp_path / "market_prices.json"
+    mp.write_text(_json.dumps({"updated_at": _date.today().isoformat(), "valuation": val}))
+    p = predict_live._load_price("corn")
+    assert p["latest_huf_per_t"] == 87330 and "szeptemberi" in p["price_phrase"]
+    # 10 napnál régebbi árfájl: vissza az éves átlagárra, és a felirat is azt mondja
+    old = (_date.today() - _td(days=30)).isoformat()
+    mp.write_text(_json.dumps({"updated_at": old, "valuation": val}))
+    p = predict_live._load_price("corn")
+    assert p["latest_huf_per_t"] == 69260 and "2024" in p["price_phrase"]
+    # olyan termény, amire nincs friss ár: szintén éves tartalék
+    mp.write_text(_json.dumps({"updated_at": _date.today().isoformat(),
+                               "valuation": {"fx": val["fx"], "crops": {}}}))
+    assert predict_live._load_price("corn")["latest_huf_per_t"] == 69260

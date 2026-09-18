@@ -226,12 +226,43 @@ def scenario_ensemble(season_daily: pd.DataFrame, known_until, crop: str,
     return payload, ens.mean(axis=1), ens.std(axis=1, ddof=1)
 
 
+VALUATION_MAX_AGE_DAYS = 10
+
+
 def _load_price(crop: str) -> dict | None:
-    """A termény legutolsó hivatalos termelői ára a prices.json-ból (vagy None)."""
+    """A forintosítás ára. Elsődlegesen a FRISS heti termelői ár (market_prices.json
+    valuation blokkja: utolsó 4 jegyzett hét átlaga × hivatalos EUR/HUF), hogy a
+    termelési érték és a közölt piaci árak ugyanarra az árszintre épüljenek. Ha ez
+    nincs vagy elavult, a legutolsó ÉVES Eurostat termelői átlagár a tartalék.
+    A 'price_phrase' mondatba illeszthető alak — a kimenet mindig megmondja,
+    melyik árral számoltunk."""
+    mp_path = config.WEB_DATA / "market_prices.json"
+    if mp_path.exists():
+        try:
+            mp = json.loads(mp_path.read_text(encoding="utf-8"))
+            age = (date.today() - date.fromisoformat(mp["updated_at"])).days
+            c = ((mp.get("valuation") or {}).get("crops") or {}).get(crop)
+            if c and age <= VALUATION_MAX_AGE_DAYS:
+                fx = mp["valuation"]["fx"]
+                return {
+                    "latest_huf_per_t": c["huf_per_t"],
+                    "latest_year": int(c["period"][-10:-6]),
+                    "price_phrase": c["phrase"],
+                    "price_note": (f"{c['basis']}, {c['weeks']} jegyzett hét átlaga "
+                                   f"({c['period']}), {c['eur_per_t']} EUR/t × "
+                                   f"{fx['rate']} Ft/EUR ({fx['source']}, {fx['date']})"),
+                }
+        except Exception as e:  # sérült fájl: csendben az éves árra esünk vissza
+            print(f"  [info] friss ár nem olvasható ({e}) — éves átlagár")
     prices_path = config.WEB_DATA / "prices.json"
     if not prices_path.exists():
         return None
-    return json.loads(prices_path.read_text(encoding="utf-8"))["crops"].get(crop)
+    p = json.loads(prices_path.read_text(encoding="utf-8"))["crops"].get(crop)
+    if p:
+        p = dict(p)
+        p["price_phrase"] = f"a {p['latest_year']}-es éves átlagáron"
+        p["price_note"] = f"a {p['latest_year']}. évi termelői átlagár (Eurostat)"
+    return p
 
 
 def national_block(crop: str, crop_year: int, rows: list[dict],
@@ -313,11 +344,14 @@ def national_block(crop: str, crop_year: int, rows: list[dict],
             out["value"] = {
                 "price_huf_per_t": price,
                 "price_year": prices["latest_year"],
+                "price_phrase": prices["price_phrase"],
                 "area_ha": round(area_total),
+                "area_year": last_year,
+                "production_mt": round(predicted * area_total / 1e6, 2),
                 "production_value_bn_huf": round(value_bn, 1),
                 "trend_gap_bn_huf": round(trend_gap_bn, 1),
-                "note": (f"a {prices['latest_year']}. évi termelői átlagáron, "
-                         f"a {last_year}. évi területtel számolva"),
+                "note": (f"ár: {prices['price_note']}; terület: a {last_year}. évi "
+                         f"betakarított terület (az idei hivatalos adat még nem ismert)"),
             }
     return out
 
