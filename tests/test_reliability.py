@@ -494,3 +494,26 @@ def test_envelope_flags_only_out_of_range_features():
     extreme = inside.assign(heat_days=99.0)                 # soha nem látott hőség
     flagged = drivers.envelope_check(m, train, extreme, areas)
     assert [e["feature"] for e in flagged if e["direction"] == "above"] == ["heat_days"]
+
+
+# --------------------------------------------------------------------------- #
+# 13) Árkontextus: 52 hetes sáv, éves változás, forint — a saját idősorból
+# --------------------------------------------------------------------------- #
+def test_attach_context_range_yoy_and_huf():
+    from datetime import date as _date, timedelta as _td
+    from src.fetch_market_prices import _attach_context
+    newest = _date(2026, 9, 7)
+    # 60 hét: egy éve 100, azóta lineárisan 200-ig emelkedik
+    series = {newest - _td(weeks=k): 200.0 - (100.0 * k / 52) for k in range(0, 60)}
+    items = [{"label": "x", "freq": "heti", "unit": "EUR/t", "price": 200.0,
+              "period": "2026-09-07 – 2026-09-13", "_series": series},
+             {"label": "hús", "freq": "heti", "unit": "EUR/100 kg", "price": 170.0,
+              "period": "2026-09-07 – 2026-09-13", "_series": {newest: 170.0}}]
+    _attach_context(items, {"rate": 360.0})
+    a, b = items
+    assert "_series" not in a and "_series" not in b        # privát kulcs nem szivárog
+    assert a["huf"] == 72000 and a["huf_unit"] == "Ft/t"
+    assert b["huf"] == pytest.approx(612.0) and b["huf_unit"] == "Ft/kg"
+    assert a["pos52"] == 1.0 and a["hi52"] == 200.0          # az ár az éves csúcson
+    assert a["yoy_pct"] == pytest.approx(100.0, abs=0.5)     # egy éve 100 volt
+    assert "pos52" not in b and "yoy_pct" not in b           # kevés adat: nincs kontextus
