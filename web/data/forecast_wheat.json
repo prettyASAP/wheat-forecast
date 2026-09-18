@@ -20,12 +20,15 @@
   "weights": "2025. évi vármegyei betakarított területek, Budapest nélkül",
   "model_error_pct": 7.7,
   "value": {
-   "price_huf_per_t": 70490,
-   "price_year": 2024,
+   "price_huf_per_t": 70090,
+   "price_year": 2026,
+   "price_phrase": "2026. szeptemberi termelői áron",
    "area_ha": 1046156,
-   "production_value_bn_huf": 381.9,
-   "trend_gap_bn_huf": -42.5,
-   "note": "a 2024. évi termelői átlagáron, a 2025. évi területtel számolva"
+   "area_year": 2025,
+   "production_mt": 5.42,
+   "production_value_bn_huf": 379.7,
+   "trend_gap_bn_huf": -42.2,
+   "note": "ár: étkezési és takarmánybúza termelői árainak átlaga, 4 jegyzett hét átlaga (2026-08-17 – 2026-09-13), 192.84 EUR/t × 363.47 Ft/EUR (MNB hivatalos középárfolyam, 2026-09-18); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
   }
  },
  "scenarios": null,
@@ -60,7 +63,7 @@
     "frost_days_winter": 1,
     "gdd_total": 2545.0
    },
-   "value_bn_huf": 16.2,
+   "value_bn_huf": 16.1,
    "trend_gap_bn_huf": -2.5
   },
   {
@@ -77,8 +80,8 @@
     "frost_days_winter": 0,
     "gdd_total": 2630.0
    },
-   "value_bn_huf": 27.7,
-   "trend_gap_bn_huf": -3.4
+   "value_bn_huf": 27.6,
+   "trend_gap_bn_huf": -3.3
   },
   {
    "nuts_id": "HU212",
@@ -94,7 +97,7 @@
     "frost_days_winter": 0,
     "gdd_total": 2452.0
    },
-   "value_bn_huf": 7.4,
+   "value_bn_huf": 7.3,
    "trend_gap_bn_huf": -0.9
   },
   {
@@ -111,7 +114,7 @@
     "frost_days_winter": 0,
     "gdd_total": 2158.0
    },
-   "value_bn_huf": 8.6,
+   "value_bn_huf": 8.5,
    "trend_gap_bn_huf": -1.1
   },
   {
@@ -128,8 +131,8 @@
     "frost_days_winter": 0,
     "gdd_total": 2689.0
    },
-   "value_bn_huf": 22.9,
-   "trend_gap_bn_huf": -3.6
+   "value_bn_huf": 22.7,
+   "trend_gap_bn_huf": -3.5
   },
   {
    "nuts_id": "HU222",
@@ -145,8 +148,8 @@
     "frost_days_winter": 0,
     "gdd_total": 2529.0
    },
-   "value_bn_huf": 16.7,
-   "trend_gap_bn_huf": -1.4
+   "value_bn_huf": 16.6,
+   "trend_gap_bn_huf": -1.3
   },
   {
    "nuts_id": "HU223",
@@ -162,7 +165,7 @@
     "frost_days_winter": 2,
     "gdd_total": 2545.0
    },
-   "value_bn_huf": 10.7,
+   "value_bn_huf": 10.6,
    "trend_gap_bn_huf": -1.0
   },
   {
@@ -179,7 +182,7 @@
     "frost_days_winter": 0,
     "gdd_total": 2558.0
    },
-   "value_bn_huf": 24.1,
+   "value_bn_huf": 24.0,
    "trend_gap_bn_huf": -0.4
   },
   {
@@ -196,7 +199,7 @@
     "frost_days_winter": 1,
     "gdd_total": 2546.0
    },
-   "value_bn_huf": 24.1,
+   "value_bn_huf": 24.0,
    "trend_gap_bn_huf": -1.5
   },
   {
@@ -213,7 +216,7 @@
     "frost_days_winter": 0,
     "gdd_total": 2484.0
    },
-   "value_bn_huf": 23.7,
+   "value_bn_huf": 23.6,
    "trend_gap_bn_huf": -1.5
   },
   {
@@ -230,7 +233,7 @@
     "frost_days_winter": 2,
     "gdd_total": 2499.0
    },
-   "value_bn_huf": 21.8,
+   "value_bn_huf": 21.7,
    "trend_gap_bn_huf": -1.9
   },
   {
@@ -281,7 +284,7 @@
     "frost_days_winter": 0,
     "gdd_total": 2574.0
    },
-   "value_bn_huf": 25.5,
+   "value_bn_huf": 25.3,
    "trend_gap_bn_huf": -3.0
   },
   {
@@ -298,8 +301,8 @@
     "frost_days_winter": 1,
     "gdd_total": 2663.0
    },
-   "value_bn_huf": 35.3,
-   "trend_gap_bn_huf": -5.4
+   "value_bn_huf": 35.1,
+   "trend_gap_bn_huf": -5.3
   },
   {
    "nuts_id": "HU323",
@@ -332,7 +335,7 @@
     "frost_days_winter": 0,
     "gdd_total": 2704.0
    },
-   "value_bn_huf": 24.9,
+   "value_bn_huf": 24.8,
    "trend_gap_bn_huf": -4.7
   },
   {
@@ -349,8 +352,8 @@
     "frost_days_winter": 1,
     "gdd_total": 2736.0
    },
-   "value_bn_huf": 39.8,
-   "trend_gap_bn_huf": -8.6
+   "value_bn_huf": 39.6,
+   "trend_gap_bn_huf": -8.5
   },
   {
    "nuts_id": "HU333",
@@ -366,7 +369,7 @@
     "frost_days_winter": 0,
     "gdd_total": 2666.0
    },
-   "value_bn_huf": 24.0,
+   "value_bn_huf": 23.9,
    "trend_gap_bn_huf": -2.3
   }
  ]

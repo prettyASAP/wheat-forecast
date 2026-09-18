@@ -36,8 +36,7 @@
           T<sub>max</sub>, T<sub>min</sub>, T<sub>közép</sub>, csapadékösszeg és
           FAO-56 referencia-párolgás (ET₀; Allen et al. 1998, Penman–Monteith).
           Historikus idősor: 1999. október 1-től.</li>
-        <li><b>Termelői árak:</b> Eurostat apri_ap_crpouta (nemzeti éves termelői
-          átlagárak, HUF/100 kg → HUF/t), a legutolsó lezárt évjárat.</li>
+        <li><b>Termelői árak:</b> a forintosítás a friss hazai termelői árral számol (EU agrárpiaci adatszolgáltatás, a magyar adat az AKI PÁIR jelentése; az utolsó négy jegyzett hét átlaga, hivatalos MNB-középárfolyamon átváltva, tartalékként EKB referencia-árfolyamon). Ha friss ár nem érhető el, a tartalék az Eurostat apri_ap_crpouta éves nemzeti termelői átlagára (HUF/100 kg → HUF/t); a kimenet mindig jelöli, melyik árral készült a számítás.</li>
         <li><b>Térkép:</b> Eurostat GISCO NUTS3 2024 (1:20M).</li>
       </ul>
 
@@ -163,7 +162,7 @@
         github.com/prettyASAP/wheat-forecast</a>.</p>
     </details>
   </div>
-  <script src="magyarazat.js?v=4"></script>
+  <script src="magyarazat.js?v=5"></script>
   <script>
     (function () {
       var order = ["modszertan", "becsles", "szokasos", "tartomany", "tevedes",

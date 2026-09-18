@@ -46,9 +46,13 @@ const GLOSSARY = {
   ertek: {
     title: "Termelési érték (mrd Ft)",
     text: "Várható hozam × betakarított terület × termelői ár, milliárd forintban. " +
-      "A terület a legutóbbi lezárt KSH-évből, az ár a legutolsó hivatalos Eurostat " +
-      "termelői átlagár — a tényleges bevétel az idei ártól és területtől függ, ezért " +
-      "ez nagyságrendi, „körülbelül” szám. A „kiesés/többlet a szokásoshoz” ugyanez " +
+      "A terület a legutóbbi lezárt KSH-évből való (az idei hivatalos terület csak " +
+      "ősszel jelenik meg). Az ár a friss hazai termelői ár: az utolsó négy jegyzett " +
+      "hét átlaga (EU agrárpiaci adatszolgáltatás, a magyar adat az AKI PÁIR " +
+      "jelentése), hivatalos MNB-középárfolyamon forintra váltva — ugyanaz az " +
+      "árszint, mint a napi jelentés ártáblájában. Ha friss ár nem érhető el, a " +
+      "legutolsó éves Eurostat-átlagárra váltunk, és a felirat ezt ki is írja. " +
+      "Nagyságrendi, „körülbelül” szám, nem bevételi előrejelzés. A „kiesés/többlet a szokásoshoz” ugyanez " +
       "a számítás a szokásos szinttel vetve össze.",
   },
   trendalapu: {

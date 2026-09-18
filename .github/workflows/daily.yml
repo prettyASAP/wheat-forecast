@@ -49,6 +49,14 @@ jobs:
           set -euo pipefail
           python -m pytest tests/ -q
 
+      - name: Piaci árjegyzések letöltése (EU agrifood API / AKI PÁIR-eredetű)
+        run: |
+          set -euo pipefail
+          # az előrejelzés ELŐTT fut: a forintosítás ezt a friss árat használja.
+          # ha az API elérhetetlen, a meglévő (7 napnál frissebb) árak maradnak,
+          # elavulás esetén a 4. oldal magától kimarad — a job nem bukik el ezen
+          python -m src.fetch_market_prices || echo "::warning::piaci árak frissítése nem sikerült — a meglévő/kimaradó árakkal megy tovább"
+
       - name: Élő előrejelzés futtatása (mind az öt termény)
         run: |
           set -euo pipefail
@@ -59,13 +67,6 @@ jobs:
           # a sokéves trendet közlik, őszintén felcímkézve — csak a weben szerepelnek
           python -m src.predict_live --crop sunflower
           python -m src.predict_live --crop rapeseed
-
-      - name: Piaci árjegyzések letöltése (EU agrifood API / AKI PÁIR-eredetű)
-        run: |
-          set -euo pipefail
-          # ha az API elérhetetlen, a meglévő (7 napnál frissebb) árak maradnak,
-          # elavulás esetén a 4. oldal magától kimarad — a job nem bukik el ezen
-          python -m src.fetch_market_prices || echo "::warning::piaci árak frissítése nem sikerült — a meglévő/kimaradó árakkal megy tovább"
 
       - name: Napi PDF-jelentés generálása (HTML→PDF, Claude Design szedés)
         run: |

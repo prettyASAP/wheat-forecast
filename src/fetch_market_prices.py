@@ -300,6 +300,131 @@ def collect(today: date) -> tuple[list, list]:
     return items, skipped
 
 
+# --------------------------------------------------------------------------- #
+# Forintosítási alap: friss termelői ár (utolsó 4 jegyzett hét átlaga) × hivatalos
+# EUR/HUF árfolyam. Ezt használja a predict_live a termelési érték számításához,
+# hogy az 1. oldal forintja és a 4. oldal árai UGYANARRA az árszintre épüljenek.
+# --------------------------------------------------------------------------- #
+VALUATION_WEEKS = 4
+_HU_MONTH_ADJ = ["", "januári", "februári", "márciusi", "áprilisi", "májusi",
+                 "júniusi", "júliusi", "augusztusi", "szeptemberi", "októberi",
+                 "novemberi", "decemberi"]
+
+# termény -> (végpont, névmező, terméknevek, plauzibilis EUR/t sáv, alap leírása)
+_VALUATION_SPEC = {
+    "wheat": ("cereal/prices", "productName",
+              ("Milling wheat", "Breadmaking common wheat", "Feed wheat"),
+              80, 600, "étkezési és takarmánybúza termelői árainak átlaga"),
+    "corn": ("cereal/prices", "productName", ("Feed maize",),
+             80, 600, "takarmánykukorica termelői ára"),
+    "barley": ("cereal/prices", "productName", ("Feed barley",),
+               80, 600, "takarmányárpa termelői ára"),
+    "sunflower": ("oilseeds/prices", "product", ("Sunflower seed",),
+                  200, 900, "napraforgómag termelői ára"),
+    "rapeseed": ("oilseeds/prices", "product", ("Rapeseed",),
+                 250, 900, "repcemag termelői ára"),
+}
+
+
+def _weekly_series(rows: list, name_key: str, names: tuple) -> dict:
+    """hét kezdőnapja -> heti ár: országos átlag, annak híján a heti sorok
+    (régiók, ill. terméknevek) egyszerű átlaga."""
+    by_week: dict = {}
+    for r in rows:
+        if r.get(name_key) in names and r.get("beginDate"):
+            by_week.setdefault(_d(r["beginDate"]), []).append(r)
+    out = {}
+    for wk, rs in by_week.items():
+        nat = [r for r in rs if r.get("marketName") == "National Average"]
+        use = nat or rs
+        out[wk] = sum(_num(r["price"]) for r in use) / len(use)
+    return out
+
+
+def _fx_rate() -> dict | None:
+    """Hivatalos EUR/HUF: MNB középárfolyam, tartalékként EKB referencia-árfolyam.
+    Plauzibilitási kapu: 300–500 Ft/EUR."""
+    try:
+        import html as _html
+        body = ('<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap='
+                '"http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>'
+                '<GetCurrentExchangeRates xmlns="http://www.mnb.hu/webservices/" />'
+                '</soap:Body></soap:Envelope>')
+        r = requests.post(
+            "http://www.mnb.hu/arfolyamok.asmx", data=body, timeout=TIMEOUT,
+            headers={"Content-Type": "text/xml; charset=utf-8",
+                     "SOAPAction": '"http://www.mnb.hu/webservices/'
+                                   'MNBArfolyamServiceSoap/GetCurrentExchangeRates"'})
+        r.raise_for_status()
+        t = _html.unescape(r.text)
+        day = re.search(r'Day date="([^"]+)"', t)
+        eur = re.search(r'curr="EUR">([^<]+)<', t)
+        rate = float(eur.group(1).replace(",", "."))
+        if 300 <= rate <= 500:
+            return {"rate": round(rate, 2), "source": "MNB hivatalos középárfolyam",
+                    "date": day.group(1)}
+    except Exception as e:
+        print(f"  [info] MNB-árfolyam nem elérhető ({e}) — EKB-tartalék")
+    try:
+        r = requests.get("https://data-api.ecb.europa.eu/service/data/EXR/"
+                         "D.HUF.EUR.SP00.A", timeout=TIMEOUT,
+                         params={"lastNObservations": 1, "format": "csvdata"})
+        r.raise_for_status()
+        lines = [ln for ln in r.text.strip().splitlines() if ln]
+        head, last = lines[0].split(","), lines[-1].split(",")
+        rate = float(last[head.index("OBS_VALUE")])
+        if 300 <= rate <= 500:
+            return {"rate": round(rate, 2), "source": "EKB referencia-árfolyam",
+                    "date": last[head.index("TIME_PERIOD")]}
+    except Exception as e:
+        print(f"  [hiba] EKB-árfolyam sem elérhető: {e}")
+    return None
+
+
+def collect_valuation(today: date) -> dict | None:
+    """Terményenkénti friss forintosítási ár. Ha az árfolyam vagy egy termény
+    ára nem megbízható, az a termény kimarad (a predict_live ilyenkor az éves
+    Eurostat-átlagárra esik vissza) — elavult vagy kilógó árral nem forintosítunk."""
+    fx = _fx_rate()
+    if fx is None:
+        return None
+    my = f"{today.year - 1}/{today.year}" if today.month < 7 else f"{today.year}/{today.year + 1}"
+    my_prev = f"{int(my[:4])-1}/{int(my[:4])}"
+    cache: dict = {}
+    crops = {}
+    for crop, (path, key, names, lo, hi, basis) in _VALUATION_SPEC.items():
+        try:
+            if path not in cache:
+                cache[path] = _get(path, {"memberStateCodes": "HU",
+                                          "marketingYears": f"{my_prev},{my}"})
+            series = _weekly_series(cache[path], key, names)
+            if not series:
+                continue
+            weeks = sorted(series)[-VALUATION_WEEKS:]
+            newest_end = weeks[-1] + timedelta(days=6)
+            if (today - newest_end).days > STALE_DAYS_WEEKLY:
+                print(f"  [érték] {crop}: elavult ársor ({weeks[-1]}) — éves árra esik vissza")
+                continue
+            vals = [series[w] for w in weeks]
+            if not all(lo <= v <= hi for v in vals):
+                print(f"  [érték] {crop}: ár a plauzibilis sávon kívül {vals}")
+                continue
+            eur = sum(vals) / len(vals)
+            crops[crop] = {
+                "eur_per_t": round(eur, 2),
+                "huf_per_t": int(round(eur * fx["rate"], -1)),
+                "weeks": len(weeks),
+                "period": f"{weeks[0].isoformat()} – {newest_end.isoformat()}",
+                "basis": basis,
+                "phrase": f"{newest_end.year}. {_HU_MONTH_ADJ[newest_end.month]} termelői áron",
+            }
+        except Exception as e:
+            print(f"  [érték] {crop}: {e}")
+    if not crops:
+        return None
+    return {"fx": fx, "crops": crops}
+
+
 # gépi forrásból NEM elérhető kérések — tudatosan nem közöljük
 NOT_AVAILABLE = [
     "Bioetanol (nincs nyilvános hivatalos jegyzés)",
@@ -329,6 +454,7 @@ def main() -> None:
                  "árjegyzés nem létezik; a jelentés naponta frissül, a "
                  "referencia-időszak tételenként jelölve."),
         "items": items,
+        "valuation": collect_valuation(today),
         "skipped_today": skipped,
         "not_available": NOT_AVAILABLE,
     }
