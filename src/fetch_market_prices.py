@@ -115,15 +115,15 @@ def _cereal_item(rows: list, prods: tuple, label: str, lo: float, hi: float,
         return None
     nat = [r for r in week if r.get("marketName") == "National Average"]
     if nat:
-        prices, scope = [_num(nat[0]["price"])], "HU, országos átlag"
+        prices, scope = [_num(nat[0]["price"])], "hazai, országos átlag"
     else:
         regional = {r.get("marketName"): _num(r["price"]) for r in week}
         prices = list(regional.values())
         if len(prices) == 1:
             # egyetlen régió jegyzése nem országos ár — a régiót névvel jelöljük
-            scope = f"HU, csak {_REGION_HU.get(next(iter(regional)), next(iter(regional)))}"
+            scope = f"hazai, csak {_REGION_HU.get(next(iter(regional)), next(iter(regional)))}"
         else:
-            scope = f"HU, {len(prices)} régió átlaga"
+            scope = f"hazai, {len(prices)} régió átlaga"
     if not prices or not all(lo <= p <= hi for p in prices):
         print(f"  [kimarad] {label}: ár a plauzibilis sávon kívül ({prices})")
         return None
@@ -132,6 +132,25 @@ def _cereal_item(rows: list, prods: tuple, label: str, lo: float, hi: float,
         "price": round(sum(prices) / len(prices), 2), "unit": "EUR/t",
         "period": f"{newest.isoformat()} – {end.isoformat()}",
     }
+
+
+def _ms_balanced_series(rows: list) -> tuple[dict, dict]:
+    """hét -> tagállamok átlaga, ahol minden tagállam a SAJÁT piacainak átlagával
+    szerepel; plusz hét -> hány tagállam jelentett."""
+    by: dict = {}
+    for r in rows:
+        if r.get("beginDate") and r.get("memberStateCode"):
+            by.setdefault(_d(r["beginDate"]), {}).setdefault(
+                r["memberStateCode"], []).append(_num(r["price"]))
+    if not by:
+        return {}, {}
+    # RÖGZÍTETT KOSÁR: a legfrissebb héten jelentő tagállamok. A múltbeli hetekből
+    # csak azok számítanak, amikor a kosár MINDEN tagja jelentett — különben az
+    # éves változás és az 52 hetes sáv az összetétel-váltást is mérné.
+    basket = set(by[max(by)])
+    series = {wk: sum(sum(ms[m]) / len(ms[m]) for m in basket) / len(basket)
+              for wk, ms in by.items() if basket <= set(ms)}
+    return series, {wk: len(basket) for wk in series}
 
 
 def _mean_by_week(rows: list) -> dict:
@@ -155,6 +174,8 @@ def _attach_context(items: list, fx: dict | None) -> None:
         if fx:
             if it["unit"] == "EUR/100 kg":
                 it["huf"], it["huf_unit"] = round(it["price"] * fx["rate"] / 100, 1), "Ft/kg"
+            elif it["unit"] == "EUR/db":
+                it["huf"], it["huf_unit"] = int(round(it["price"] * fx["rate"], -1)), "Ft/db"
             else:
                 it["huf"], it["huf_unit"] = int(round(it["price"] * fx["rate"], -1)), "Ft/t"
         if not series or newest is None:
@@ -252,51 +273,48 @@ def collect(today: date) -> tuple[list, list]:
     try:
         rows = _get("oilseeds/prices", {"memberStateCodes": "HU",
                                         "marketingYears": f"{my_prev},{my}"})
-        by_prod = {}
-        for r in rows:
-            by_prod.setdefault(r.get("product"), []).append(r)
-        for prod, label, lo, hi in [("Sunflower seed", "Napraforgómag", 200, 900),
-                                    ("Rapeseed", "Repcemag", 250, 900),
-                                    ("Sunflower seed meal", "Napraforgódara", 100, 600),
-                                    ("Rapeseed meal", "Repcedara", 100, 600),
-                                    ("Crude sunflower oil", "Napraforgóolaj (nyers)", 500, 2500)]:
-            it = _weekly_item(by_prod.get(prod, []), label, "HU", lo, hi, "EUR/t", today)
+        # A napraforgómagnál a forrás KÉT típust jelent (hagyományos és magas
+        # olajsavas, ~10–15% felárral): külön sorok, különben a két ár keveredne.
+        for prod, ptype, label, lo, hi in [
+                ("Sunflower seed", "Standard", "Napraforgómag (hagyományos)", 200, 900),
+                ("Sunflower seed", "High-oleic", "Napraforgómag (magas olajsavas)", 200, 1000),
+                ("Rapeseed", None, "Repcemag", 250, 900),
+                ("Sunflower seed meal", None, "Napraforgódara", 100, 600),
+                ("Rapeseed meal", None, "Repcedara", 100, 600),
+                ("Crude sunflower oil", None, "Napraforgóolaj (nyers)", 500, 2500)]:
+            sub = [r for r in rows if r.get("product") == prod
+                   and (ptype is None or r.get("productType") == ptype)]
+            it = _weekly_item(sub, label, "hazai", lo, hi, "EUR/t", today)
             if it:
-                it["_series"] = _weekly_series(rows, "product", (prod,))
+                it["_series"] = _mean_by_week(sub)
                 it["group"] = "Olajos termékek"
                 items.append(it)
             else:
                 skipped.append(label)
     except Exception as e:
         print(f"  [hiba] olajos: {e}")
-        skipped += ["Napraforgómag", "Repcemag", "Napraforgódara", "Repcedara",
+        skipped += ["Napraforgómag (hagyományos)", "Napraforgómag (magas olajsavas)",
+                    "Repcemag", "Napraforgódara", "Repcedara",
                     "Napraforgóolaj (nyers)"]
 
     try:
         rows = _get("oilseeds/prices", {"products": "soya meal",
                                         "marketingYears": f"{my_prev},{my}"})
-        # nincs HU-jegyzés: a jelentő tagállamok legfrissebb hetének átlaga
-        latest_by_ms = {}
-        for r in rows:
-            ms = r.get("memberStateCode")
-            if not r.get("beginDate"):
-                continue
-            cur = latest_by_ms.get(ms)
-            if cur is None or _d(r["beginDate"]) > _d(cur["beginDate"]):
-                latest_by_ms[ms] = r
-        if latest_by_ms:
-            newest = max(_d(r["beginDate"]) for r in latest_by_ms.values())
-            week = [r for r in latest_by_ms.values() if _d(r["beginDate"]) == newest]
-            prices = [_num(r["price"]) for r in week]
-            avg = sum(prices) / len(prices)
-            end = max(_d(r["endDate"]) for r in week)
+        # nincs hazai jegyzés: a jelentő tagállamok átlaga. Egy tagállam több piacot
+        # is jelenthet, ezért ELŐBB tagállamon belül átlagolunk, aztán a tagállamok
+        # között (országonként egyenlő súllyal) — így egyetlen piac sem esetleges.
+        series, n_ms = _ms_balanced_series(rows)
+        if series:
+            newest = max(series)
+            avg = series[newest]
+            end = newest + timedelta(days=6)
             if 150 <= avg <= 900 and (today - end).days <= STALE_DAYS_WEEKLY:
                 items.append({
                     "label": "Szójadara", "group": "Olajos termékek",
-                    "scope": f"EU-átlag ({len(week)} tagállam; HU-jegyzés nincs)",
+                    "scope": f"{n_ms[newest]} tagállam átlaga (hazai jegyzés nincs)",
                     "freq": "heti", "price": round(avg, 2), "unit": "EUR/t",
                     "period": f"{newest.isoformat()} – {end.isoformat()}",
-                    "_series": _mean_by_week(rows),
+                    "_series": series,
                 })
             else:
                 skipped.append("Szójadara")
@@ -313,16 +331,25 @@ def collect(today: date) -> tuple[list, list]:
         for cls, label in [("S", "Vágósertés (hasított, S oszt.)"),
                            ("E", "Vágósertés (hasított, E oszt.)")]:
             sub = [r for r in rows if r.get("pigClass") == cls]
-            it = _weekly_item(sub, label, "HU", 80, 400, "EUR/100 kg", today)
+            it = _weekly_item(sub, label, "hazai", 80, 400, "EUR/100 kg", today)
             if it:
                 it["_series"] = _mean_by_week(sub)
                 it["group"] = "Sertés"
                 items.append(it)
             else:
                 skipped.append(label)
+        sub = [r for r in rows if r.get("pigClass") == "Piglet"]
+        it = _weekly_item(sub, "Malac", "hazai, kb. havonta frissül", 15, 150,
+                          "EUR/db", today)
+        if it:
+            it["_series"] = _mean_by_week(sub)
+            it["group"] = "Sertés"
+            items.append(it)
+        else:
+            skipped.append("Malac")
     except Exception as e:
         print(f"  [hiba] sertés: {e}")
-        skipped += ["Vágósertés (hasított, S oszt.)", "Vágósertés (hasított, E oszt.)"]
+        skipped += ["Vágósertés (hasított, S oszt.)", "Vágósertés (hasított, E oszt.)", "Malac"]
 
     # -- Baromfi (HU, heti, vágott/darabolt csirke) -------------------------- #
     try:
@@ -334,7 +361,7 @@ def collect(today: date) -> tuple[list, list]:
         for prod, label, lo, hi in [("Whole broiler (65%)", "Egész csirke (65%-os)", 120, 500),
                                     ("Breast Fillet", "Csirkemell-filé", 250, 1200),
                                     ("Legs", "Csirkecomb", 100, 600)]:
-            it = _weekly_item(by_prod.get(prod, []), label, "HU", lo, hi,
+            it = _weekly_item(by_prod.get(prod, []), label, "hazai", lo, hi,
                               "EUR/100 kg", today)
             if it:
                 it["_series"] = _mean_by_week(by_prod.get(prod, []))
@@ -376,7 +403,7 @@ def collect(today: date) -> tuple[list, list]:
             if 300 <= price <= 1500 and (today - ref).days <= STALE_DAYS_MONTHLY:
                 items.append({
                     "label": "Kristálycukor", "group": "Feldolgozóipari termékek",
-                    "scope": "EU-átlag (HU-bontás nincs)", "freq": "havi",
+                    "scope": "EU-átlag (hazai bontás nincs)", "freq": "havi",
                     "price": round(price, 2), "unit": "EUR/t",
                     "period": f"{y}. {m:02d}. hó",
                     "_series": {date(*ym_key(r), 1): _num(r["price"]) for r in eu},
@@ -413,7 +440,7 @@ _VALUATION_SPEC = {
     "barley": ("cereal/prices", "productName", ("Feed barley",),
                80, 600, "takarmányárpa termelői ára"),
     "sunflower": ("oilseeds/prices", "product", ("Sunflower seed",),
-                  200, 900, "napraforgómag termelői ára"),
+                  200, 900, "hagyományos napraforgómag termelői ára"),
     "rapeseed": ("oilseeds/prices", "product", ("Rapeseed",),
                  250, 900, "repcemag termelői ára"),
 }
@@ -489,7 +516,10 @@ def collect_valuation(today: date, fx: dict | None) -> dict | None:
             if path not in cache:
                 cache[path] = _get(path, {"memberStateCodes": "HU",
                                           "marketingYears": f"{my_prev},{my}"})
-            series = _weekly_series(cache[path], key, names)
+            src_rows = cache[path]
+            if crop == "sunflower":  # csak a hagyományos típus (a HO felára torzítana)
+                src_rows = [r for r in src_rows if r.get("productType") == "Standard"]
+            series = _weekly_series(src_rows, key, names)
             if not series:
                 continue
             weeks = sorted(series)[-VALUATION_WEEKS:]
@@ -567,7 +597,6 @@ NOT_AVAILABLE = [
     "Izocukor (nincs nyilvános jegyzés)",
     "Keményítő (nincs nyilvános jegyzés)",
     "Takarmánykeverékek (AKI-kiadványban létezik, gépi forrás nincs)",
-    "Malac (nincs a nyilvános API-ban)",
     "Vágópulyka / pulykahús (nincs a nyilvános API-ban)",
     "Tenyészállat (nincs hivatalos árjegyzés)",
     "Víz (szabályozott díj, nincs piaci árjegyzés)",

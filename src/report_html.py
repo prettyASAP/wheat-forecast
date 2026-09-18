@@ -1,4 +1,4 @@
-"""Napi vezetői PDF-jelentés — HTML→PDF (Claude Design-alapú szedés).
+"""Napi vezetői PDF-jelentés – HTML→PDF (Claude Design-alapú szedés).
 
 A vizuális tervet a felhasználó a Claude Designban készítette
 („Napi jelentés.dc.html"); ez a modul azt reprodukálja ÖNÁLLÓ, szabványos
@@ -174,7 +174,7 @@ def fan_chart_svg(hs: list[dict]) -> str:
     dots = "".join(f'<circle cx="{X(i):.1f}" cy="{Y(preds[i]):.1f}" r="{4.2 if i==n-1 else 3.4}"></circle>'
                    for i in range(n))
     labels = "".join(
-        f'<text x="{X(i):.1f}" y="120">{hs[i]["date"][5:]}</text>'
+        f'<text x="{X(i):.1f}" y="120">{_HU_MONTHS[int(hs[i]["date"][5:7])]} {int(hs[i]["date"][8:10])}.</text>'
         for i in range(0, n, max(1, n // 6)))
     return f"""<svg width="100%" viewBox="0 0 620 132" style="display:block">
   {grid}
@@ -222,7 +222,7 @@ figure{margin:0}
 .rep-stat-row > span:last-child{font-variant-numeric:tabular-nums;font-weight:500}
 .blueprint{position:relative;border:1px solid var(--color-divider);border-radius:0}
 /* A sarok-regisztrációs jelek a Claude Design szerkesztőjében csak igazítási/
-   padding-segédek voltak — a kész jelentésen NEM látszanak. */
+   padding-segédek voltak – a kész jelentésen NEM látszanak. */
 .blueprint > .corner{display:none}
 .tag{display:inline-flex;align-items:center;font-size:11px;letter-spacing:0.02em;padding:3px 10px;border-radius:0}
 .tag-accent{background:var(--color-accent-100);color:var(--color-accent-800)}
@@ -232,7 +232,7 @@ figure{margin:0}
   color:color-mix(in srgb,var(--color-text) 60%,transparent);padding:6.8px;
   border-bottom:1px solid var(--color-divider)}
 .table td{padding:6.8px;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)}
-.price-table td{padding:3.8px 6.8px;white-space:nowrap}
+.price-table td{padding:3.2px 6.8px;white-space:nowrap}
 """
 
 
@@ -261,7 +261,7 @@ def crop_card(fc: dict) -> str:
         sn = fc["scenarios"]["national"]
         live_box = (f'<div style="background:var(--color-accent-100);border:1px solid var(--color-accent-200);'
                     f'padding:5px 8px;font-size:11px;color:var(--color-accent-800)">'
-                    f'Időjárástól még: <strong>{hu(sn["p10"])}–{hu(sn["p90"])} t/ha</strong></div>')
+                    f'Az időjárástól függően: <strong>{hu(sn["p10"])}–{hu(sn["p90"])} t/ha</strong></div>')
     val_block = ""
     if v:
         val_block = (
@@ -274,7 +274,7 @@ def crop_card(fc: dict) -> str:
             f'margin-top:1px">termelési érték · eltérés</div></div>')
     return f"""<div class="blueprint" style="break-inside:avoid;padding:15px 14px 13px;display:flex;flex-direction:column;gap:9px">
   <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
-  <h3 style="margin:0;font-size:22px">{fc['crop'].capitalize()}</h3>
+  <h3 style="margin:0;font-size:22px">{fc['crop'].capitalize()} <span style="font-family:var(--font-body);font-weight:400;font-size:12px;color:color-mix(in srgb,var(--color-text) 50%,transparent)">{fc['crop_year']}</span></h3>
   <div>{tag}<div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);margin-top:5px">{status}</div></div>
   <div style="margin-top:2px"><span style="font-family:var(--font-heading);font-weight:600;font-size:38px;line-height:0.9">{hu(n['predicted_yield_t_ha'])}</span> <span style="font-size:15px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">t/ha</span></div>
   <div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:var(--font-heading);font-weight:600;font-size:24px;color:{a_col};line-height:1">{signed(a,1)}%</span><span style="font-size:11px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">a szokásoshoz</span></div>
@@ -282,7 +282,7 @@ def crop_card(fc: dict) -> str:
   <div style="border-top:1px solid var(--color-divider);padding-top:8px;margin-top:2px">
     {band_row}
     <div class="rep-stat-row"><span>szokásos</span><span>{hu(n['trend_t_ha'])}</span></div>
-    <div class="rep-stat-row"><span>tavaly</span><span>{hu(n['prev_year_yield_t_ha'])}</span></div>
+    <div class="rep-stat-row"><span>{n['prev_year']}. évi tény</span><span>{hu(n['prev_year_yield_t_ha'])}</span></div>
     {official_row}
   </div>
   {val_block}
@@ -315,13 +315,13 @@ def focus_bar_rows(fcs: dict) -> str:
 
 def price_phrase(v: dict, cap: bool = False) -> str:
     """A forintosítás árának mondatba illeszthető alakja (friss heti ár vagy
-    tartalékként az éves átlagár) — a JSON mondja meg, melyikkel számoltunk."""
-    s = v.get("price_phrase") or f"a {v['price_year']}-es éves átlagáron"
+    tartalékként az éves átlagár) – a JSON mondja meg, melyikkel számoltunk."""
+    s = v.get("price_phrase") or f"a {v['price_year']}. évi átlagáron"
     return s[0].upper() + s[1:] if cap else s
 
 
 def drivers_strip(fcs: dict) -> str:
-    """'Mi húzza a becslést?' — a három kártya alatt, oszlopra igazítva: a becslés
+    """'Mi húzza a becslést?' – a három kártya alatt, oszlopra igazítva: a becslés
     időjárási részének pontos bontása (a meglévő lineáris modell tagjai
     csoportosítva), plusz szélsőség-jelzés, ha az idei szezon a modell
     tapasztalatán kívül esik. A tendencia MEGÉRTÉSÉT szolgálja, nem napi zaj."""
@@ -353,8 +353,8 @@ def drivers_strip(fcs: dict) -> str:
             worst = env[-1] if len(env) == 1 else max(
                 env, key=lambda e: abs(e["value"] - e["hist_extreme"]) / (abs(e["hist_extreme"]) or 1))
             warn = (f'<p style="font-size:10px;line-height:1.4;margin:6px 0 0;color:{RUST}">'
-                    f'<strong>Szélsőség:</strong> {worst["label"]} az eddigi szélsőértéken '
-                    f'({worst["hist_extreme_year"]}) is túl van; a tévedés a szokásosnál '
+                    f'<strong>Szélsőség:</strong> {worst["label"]} kívül esik a 2000 óta mért tartományon '
+                    f'(eddigi szélsőérték: {worst["hist_extreme_year"]}); a tévedés a szokásosnál '
                     f'nagyobb lehet.</p>')
         cols.append(f'<div style="padding:0 15px">{rows}{warn}</div>')
     if not any_data:
@@ -366,15 +366,46 @@ def drivers_strip(fcs: dict) -> str:
         'margin:0 0 2px">Mi húzza a becslést? <span style="font-weight:400;'
         'letter-spacing:0;text-transform:none;font-size:10px;color:color-mix(in srgb,'
         'var(--color-text) 48%,transparent)">az időjárás hatása százalékpontban, a modell '
-        'időjárás-semleges szintjéhez mérve</span></p>'
+        'átlagos időjárás mellett várt szintjéhez mérve</span></p>'
         '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">'
         + "".join(cols) + '</div></div>')
+
+
+def lead_sentence(fc: dict) -> str:
+    """A 3. oldal vezetőmondata ELŐJELFÜGGŐEN (elmaradás / többlet / szokásos szint),
+    a webes renderHeadline logikájával azonosan – hogy a futó termény váltásakor
+    (pl. októbertől a búza) se állítson hamisat."""
+    n, v = fc["national"], fc["national"]["value"]
+    a, yoy = n["anomaly_pct"], n["yoy_pct"]
+    art = "Az" if fc["crop"][0].lower() in "aáeéiíoóöőuúüű" else "A"
+    est = f"<strong>{art} {fc['crop']} termése {hu(n['predicted_yield_t_ha'])} t/ha körül várható</strong>"
+    if a <= -3:
+        main = (f"{est}, ami {hu(abs(a), 1)}%-kal marad el a sokéves szokásos szinttől. "
+                f"{price_phrase(v, cap=True)} számolva ez kb. <strong>"
+                f"{abs(v['trend_gap_bn_huf']):.0f} mrd Ft</strong> kiesést jelent.")
+    elif a >= 3:
+        main = (f"{est}, {hu(a, 1)}%-kal a sokéves szokásos szint felett. "
+                f"{price_phrase(v, cap=True)} számolva ez kb. <strong>"
+                f"{v['trend_gap_bn_huf']:.0f} mrd Ft</strong> többletet jelent.")
+    else:
+        main = (f"{est}, a sokéves szokásos szint közelében ({signed(a, 1)}%); érdemi "
+                f"kiesés vagy többlet egyelőre nem látszik.")
+    clause = ""
+    if a < 0 and yoy >= 3:
+        clause = (f" A {n['prev_year']}. évi terméshez képest ez <span style=\"color:{GREEN};"
+                  f"font-weight:600\">{signed(yoy, 1)}%-os javulás</span>, a megszokott "
+                  f"szinttől azonban elmarad.")
+    elif a > 0 and yoy <= -3:
+        clause = (f" A {n['prev_year']}. évi terméshez képest ez <span style=\"color:{RUST};"
+                  f"font-weight:600\">{signed(yoy, 1)}%-os visszaesés</span>, a termés azonban "
+                  f"így is a megszokott szint felett alakul.")
+    return f'<p style="font-size:15px;line-height:1.6;margin:0 0 10px">{main}{clause}</p>'
 
 
 def trend_strip(trend_fcs: list) -> str:
     """Kompakt, ALÁRENDELT csík a trend-alapú terményekhez (napraforgó, repce).
     Tudatosan a konfidencia-hierarchia legalján, kis súllyal: 15 px-es értékek a
-    fő kártyák 38 px-éhez képest, halvány szín, a lap alján — a gyengébb
+    fő kártyák 38 px-éhez képest, halvány szín, a lap alján – a gyengébb
     bizonyosságnak arányos vizuális dominancia, a 3-kártyás design felborítása
     nélkül. Nincs időjárás-anomália-állítás, csak becslés + tipikus tévedés."""
     if not trend_fcs:
@@ -395,6 +426,7 @@ def trend_strip(trend_fcs: list) -> str:
             f'white-space:nowrap">'
             f'<span style="font-family:var(--font-heading);font-weight:600;font-size:15px">'
             f'{fc["crop"].capitalize()}</span>'
+            f'<span style="color:color-mix(in srgb,var(--color-text) 50%,transparent)">{fc["crop_year"]}</span>'
             f'<span style="font-family:var(--font-heading);font-weight:600;font-size:15px;'
             f'font-variant-numeric:tabular-nums">{hu(n["predicted_yield_t_ha"])} t/ha</span>'
             f'<span style="color:color-mix(in srgb,var(--color-text) 50%,transparent)">'
@@ -404,10 +436,10 @@ def trend_strip(trend_fcs: list) -> str:
         'padding-top:10px;break-inside:avoid">'
         '<p style="font-family:var(--font-heading);font-weight:600;font-size:11px;'
         'letter-spacing:0.14em;text-transform:uppercase;color:color-mix(in srgb,'
-        'var(--color-text) 45%,transparent);margin:0 0 7px">Trend-alapú termények '
+        'var(--color-text) 45%,transparent);margin:0 0 7px">Trendalapú termények '
         '<span style="font-weight:400;letter-spacing:0;text-transform:none;font-size:10px'
-        ';color:color-mix(in srgb,var(--color-text) 42%,transparent)">— a sokéves trend, '
-        'nem időjárás-informált</span></p>'
+        ';color:color-mix(in srgb,var(--color-text) 42%,transparent)">– a sokéves trend, '
+        'az idei időjárás figyelembevétele nélkül</span></p>'
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 18px">'
         + "".join(items) + '</div></div>')
 
@@ -456,8 +488,18 @@ def _regional_block(regional: list) -> str:
         for c in r["cells"]:
             if c["name"] not in names:
                 names.append(c["name"])
+    # a közös (leggyakoribb) hét; ha egy ország jegyzése RÉGEBBI, a dátumot kiírjuk
+    weeks = [c["week"] for r in regional for c in r["cells"]]
+    common_week = max(set(weeks), key=weeks.count)
+
+    def _older(c: dict) -> str:
+        if c["week"] == common_week:
+            return ""
+        mo, d = int(c["week"][5:7]), int(c["week"][8:10])
+        return f" · {_HU_MONTHS[mo]} {d}."
     muted = "color:color-mix(in srgb,var(--color-text) 52%,transparent)"
-    head = "".join(f'<th style="text-align:right">{n}</th>' for n in names)
+    head = "".join(f'<th style="text-align:right;font-size:9.5px;letter-spacing:0.04em">{n}</th>'
+                   for n in names)
     body = ""
     for r in regional:
         by = {c["name"]: c for c in r["cells"]}
@@ -466,20 +508,20 @@ def _regional_block(regional: list) -> str:
             c = by.get(n)
             tds += ('<td style="text-align:right;white-space:normal">'
                     + (f'<span style="font-weight:600;font-variant-numeric:tabular-nums">{hu(c["price"], 0)}</span>'
-                       f'<br><span style="font-size:9.5px;{muted};white-space:nowrap">{_PARITY_SHORT.get(c["parity"], c["parity"])}</span>' if c
+                       f'<br><span style="font-size:9.5px;{muted};white-space:nowrap">{_PARITY_SHORT.get(c["parity"], c["parity"])}{_older(c)}</span>' if c
                        else f'<span style="{muted}">n. a.</span>') + '</td>')
         body += f'<tr><td>{r["label"]}</td>{tds}</tr>'
     return (f'<p class="rep-kicker" style="margin:14px 0 4px">Regionális árkörkép '
             f'<span style="font-weight:400;letter-spacing:0;text-transform:none;font-size:10px;{muted}">'
             f'EUR/t, a legutolsó jegyzett hét</span></p>'
-            f'<table class="table price-table" style="font-size:12px"><thead><tr>'
+            f'<table class="table price-table" style="font-size:12px;table-layout:fixed;width:100%"><thead><tr>'
             f'<th style="width:22%">Termék</th>{head}</tr></thead><tbody>{body}</tbody></table>')
 
 
 def market_price_page(market: dict, page_no: int, total: int, footer) -> str:
     """4. oldal: hivatalos piaci árjegyzések (EU agrifood API ← AKI PÁIR).
     Csak validált, friss tételek; a referencia-időszak tételenként jelölve.
-    Napi hivatalos ár nem létezik — ezt a lap őszintén kimondja. Az árkontextus
+    Napi hivatalos ár nem létezik – ezt a lap őszintén kimondja. Az árkontextus
     (forint, éves változás, 52 hetes sáv) heti trend-mutató, nem napi zaj."""
     groups: dict[str, list] = {}
     for it in market["items"]:
@@ -490,7 +532,7 @@ def market_price_page(market: dict, page_no: int, total: int, footer) -> str:
     common = max(set(periods), key=periods.count) if periods else None
 
     def scope_cell(it: dict) -> str:
-        sc = (it["scope"].replace("; HU-jegyzés nincs", "").replace(" (HU-bontás nincs)", "")
+        sc = (it["scope"].replace(" (hazai jegyzés nincs)", "").replace(" (hazai bontás nincs)", "")
               .replace(" (", ", ").replace(")", ""))
         return sc if it["period"] == common else f'{_period_hu(it["period"])} · {sc}'
 
@@ -501,12 +543,12 @@ def market_price_page(market: dict, page_no: int, total: int, footer) -> str:
             continue
         rows.append(f'<tr><td colspan="6" style="font-family:var(--font-heading);'
                     f'font-weight:600;font-size:15px;background:color-mix(in srgb,'
-                    f'var(--color-text) 4%,transparent);padding-top:6px;'
-                    f'padding-bottom:6px">{gname}</td></tr>')
+                    f'var(--color-text) 4%,transparent);padding-top:4px;'
+                    f'padding-bottom:4px">{gname}</td></tr>')
         for it in groups[gname]:
             price = f"{it['price']:,.2f}".replace(",", " ").replace(".", ",")
             if it.get("huf") is not None:
-                huf = (f"{it['huf']:,.0f}".replace(",", " ") if it["huf_unit"] == "Ft/t"
+                huf = (f"{it['huf']:,.0f}".replace(",", " ") if it["huf_unit"] in ("Ft/t", "Ft/db")
                        else hu(it["huf"], 0)) + f' <span style="{muted}">{it["huf_unit"]}</span>'
             else:
                 huf = ""
@@ -521,7 +563,7 @@ def market_price_page(market: dict, page_no: int, total: int, footer) -> str:
                 f'<td style="{muted};font-size:11px">{scope_cell(it)}</td></tr>')
     fx = (market.get("valuation") or {}).get("fx")
     fx_note = (f" A forintérték a jegyzés és a hivatalos árfolyam szorzata "
-               f"({hu(fx['rate'], 2)} Ft/EUR, {fx['source']}, {fx['date']})." if fx else "")
+               f"({hu(fx['rate'], 2)} Ft/EUR, {fx['source']}, {fx['date'].replace('-', '. ')}.)." if fx else "")
     return f"""<section class="page">
   <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-bottom:12px">
     <div><p class="rep-kicker">Piaci árjegyzések</p>
@@ -529,11 +571,11 @@ def market_price_page(market: dict, page_no: int, total: int, footer) -> str:
     <div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);text-align:right;white-space:nowrap">jegyzett hét: {_period_hu(common) if common else "n. a."} · {page_no} / {total}</div>
   </div>
   <table class="table price-table" style="font-size:12px">
-    <thead><tr><th style="width:25%">Termék</th><th style="width:19%;text-align:right">Jegyzés</th><th style="width:13%;text-align:right">Forintban</th><th style="width:9%;text-align:right;white-space:nowrap">Egy év</th><th style="width:12%;white-space:nowrap">52 hetes sáv</th><th style="width:22%">Kör</th></tr></thead>
+    <thead><tr><th style="width:25%">Termék</th><th style="width:19%;text-align:right">Jegyzés</th><th style="width:13%;text-align:right">Forintban</th><th style="width:9%;text-align:right;white-space:nowrap">Egy év</th><th style="width:12%;white-space:nowrap">52 hetes sáv</th><th style="width:22%">Piac</th></tr></thead>
     <tbody>{''.join(rows)}</tbody>
   </table>
   {_regional_block(market.get("regional") or [])}
-  <p style="font-size:10px;line-height:1.5;text-align:justify;color:color-mix(in srgb,var(--color-text) 52%,transparent);margin:10px 0 0;border-top:1px solid var(--color-divider);padding-top:7px"><strong>A jegyzésekről.</strong> Forrás: Európai Bizottság (DG AGRI) agrifood adatszolgáltatás; a magyar adatokat a tagállami jelentés (AKI PÁIR) adja. Hivatalos napi árjegyzés nem létezik, a jegyzések heti (a cukor havi) rendszerűek, a lap a legutolsó lezárt időszakot közli. A gabonáknál országos átlag híján a régiós termelői árak egyszerű átlaga szerepel.{fx_note} Az 52 hetes sávban a pont helye mutatja, hol áll az ár az elmúlt év mélypontja (bal) és csúcsa (jobb) között. A regionális körkép árai eltérő paritásúak (termelői, silóból kitárolt, szállított), ezért egymásból közvetlenül nem vonhatók ki. A nyilvános hivatalos forrásból nem elérhető kért termékek (bioetanol, izocukor, keményítő, takarmánykeverék, malac, pulyka, tenyészállat, víz) nem szerepelnek; elavult árat a lap nem közöl.</p>
+  <p style="font-size:10px;line-height:1.5;text-align:justify;color:color-mix(in srgb,var(--color-text) 52%,transparent);margin:10px 0 0;border-top:1px solid var(--color-divider);padding-top:7px"><strong>A jegyzésekről.</strong> Forrás: az Európai Bizottság (DG AGRI) agrárpiaci adatszolgáltatása; a magyar adatokat a tagállami jelentés (AKI PÁIR) adja. Hivatalos napi árjegyzés nem létezik: a jegyzések hetiek (a cukor havi, a malacárat a forrás nagyjából havonta frissíti).{fx_note} Az 52 hetes sáv pontja az ár helye az elmúlt év mélypontja (bal) és csúcsa (jobb) között. A regionális körkép árai eltérő paritásúak (termelői, silóból kitárolt, szállított), ezért egymásból nem vonhatók ki. Megbízható nyilvános jegyzés híján nem szerepel: bioetanol, izocukor, keményítő, takarmánykeverék, pulyka, tenyészállat, víz.</p>
   {footer(page_no, total)}
 </section>"""
 
@@ -544,11 +586,27 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
     total_val = sum(v["production_value_bn_huf"] for v in vals if v)
     total_gap = sum(v["trend_gap_bn_huf"] for v in vals if v)
     # a fejléc-sáv árfelirata: friss heti ár vagy (tartalékként) éves átlagár
+    # ősszel a búza/árpa már az új termésévben jár, a kukorica még a régiben:
+    # az összeg ilyenkor eltérő termésévekből áll — ezt kimondjuk
+    years_note = (" Az összeg eltérő termésévek becsléseiből áll (az évszám a nevek mellett)."
+                  if len({f["crop_year"] for f in fcs.values()}) > 1 else "")
     has_official = any(f["national"].get("official_estimate")
                        for f in list(fcs.values()) + list(trend_fcs or []))
-    official_note = (" EU-becslés: az Európai Bizottság aktuális hivatalos termésbecslése "
-                     "(t/ha); aratás után a betakarítási jelentéseket is tartalmazza, amelyeket "
-                     "egy időjárás-modell nem lát, ezért a kettő eltérhet." if has_official else "")
+    official_note = (" EU-becslés: az Európai Bizottság agrárpiaci adatportáljának havonta "
+                     "frissülő termésadata (t/ha); a modellünktől független szám, ezért "
+                     "eltérhet tőle." if has_official else "")
+
+    def _names(fs):
+        ns = [f["crop"] for f in fs]
+        return ns[0] if len(ns) == 1 else ", ".join(ns[:-1]) + " és " + ns[-1]
+    closed = [f for f in fcs.values() if not f.get("scenarios")]
+    running = [f for f in fcs.values() if f.get("scenarios")]
+    if closed and running:
+        season_note = (f"Lezárult szezon: {_names(closed)}. Még változhat: {_names(running)}.")
+    elif running:
+        season_note = "Mindhárom termény szezonja tart, a becslések még változhatnak."
+    else:
+        season_note = "Mindhárom termény szezonja lezárult."
     banner_price = next((price_phrase(v, cap=True) for v in vals if v),
                         "A legutolsó hivatalos termelői áron")
     y, m, d = today.split("-")
@@ -557,9 +615,9 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
     # oldal-láblécek
     def footer(page_no, total):
         return (f'<div class="page-footer"><span>Terméshozam-előrejelző · statisztikai modell</span>'
-                f'<span>{stamp} · {page_no} / {total} · nem hivatalos, indikatív adat</span></div>')
+                f'<span>{stamp} · {page_no} / {total} · nem hivatalos, tájékoztató adat</span></div>')
 
-    # 2. oldal — térképek
+    # 2. oldal – térképek
     map_figs = "".join(
         f'<figure class="blueprint" style="padding:12px;margin:0;break-inside:avoid">'
         f'<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>'
@@ -571,7 +629,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
 
     focus_rows = focus_bar_rows(fcs)
 
-    # 3. oldal — futó szezonú termény (kukorica); 4. oldal — piaci árjegyzések
+    # 3. oldal – futó szezonú termény (kukorica); 4. oldal – piaci árjegyzések
     live_fc = next((fc for fc in fcs.values() if fc.get("scenarios")), None)
     has_market = bool(market and market.get("items"))
     total = 2 + (1 if live_fc else 0) + (1 if has_market else 0)
@@ -589,7 +647,8 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
 
         def tonnes(t):
             return hu(t * area / 1e6, 2)
-        risk = (sc["p90"] - sc["p10"]) * area * price / 1e9
+        # a táblában kijelzett, kerekített értékek különbsége (hogy a két szám egyezzen)
+        risk = round(sc["p90"] * area * price / 1e9) - round(sc["p10"] * area * price / 1e9)
         an = live_fc["scenarios"].get("analogs")
         analog_line = (
             f'<p style="font-size:10.5px;line-height:1.45;margin:8px 0 0;color:color-mix(in srgb,'
@@ -609,7 +668,9 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
                 continue
             scc = sc_c.get(rec["nuts_id"])
             wx = rec["weather_todate"]
-            rng = f'{hu(scc["p10"])}–{hu(scc["p90"])}' if scc else "–"
+            # a 80%-os sáv (modellhiba + hátralévő időjárás) – UGYANAZ a fogalom,
+            # mint az 1. oldalon; a csak-időjárás sáv itt hamis pontosságot sugallna
+            rng = f'{hu(rec["low"])}–{hu(rec["high"])}'
             wrows.append(
                 f'<tr><td style="font-weight:600">{county}</td>'
                 f'<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">{hu(rec["predicted_yield_t_ha"])} t/ha</td>'
@@ -630,28 +691,29 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
             "2000 óta mért hozamaira és az ERA5 időjárásra: a fajta és technológiai "
             "fejlődést közös trend, a vármegyei adottságokat rögzített hatás kezeli, "
             "öntözést, talajtípust és fajtaszerkezetet nem. A 80%-os sáv a becslés "
-            "predikciós intervalluma, a modell múltból jósló, tesztéven kívüli "
-            "tévedéseinek eloszlásából (visszamérés 2011 és 2025 között); a tipikus "
+            "előrejelzési tartománya. A modell múltbeli tévedéseiből számoljuk úgy, "
+            "hogy minden évet csak a korábbi évek ismeretében becsültünk meg "
+            "(visszamérés 2011 és 2025 között); a tipikus "
             "tévedés ennek szokásos nagysága a trendszinthez mérve (búza "
             f"{hu(me.get('wheat',0),1)}%, kukorica {hu(me.get('corn',0),1)}%, árpa "
-            f"{hu(me.get('barley',0),1)}%), a sáv ennél mintegy 1,3-szer szélesebb. "
-            "A termelési érték a hozam, a legutóbbi lezárt évi terület és a jelölt termelői ár szorzata, volumen "
-            "alapú indikátor, nem bevételi előrejelzés. Nem hivatalos adat. Részletes "
+            f"{hu(me.get('barley',0),1)}%), a sáv ennél nagyjából negyedével szélesebb. "
+            "A termelési érték a hozam, a legutóbbi lezárt évi terület és a jelölt termelői ár szorzata: "
+            "mennyiségi alapú tájékoztató mutató, nem bevételi előrejelzés. Nem hivatalos adat. Részletes "
             "leírás és visszamérés: <a href=\"https://prettyasap.github.io/"
             "wheat-forecast/magyarazat.html\" style=\"color:var(--color-accent);"
             "text-decoration:underline;text-underline-offset:2px\">prettyasap."
             "github.io/wheat-forecast/magyarazat.html</a>. Források: KSH, "
-            "Open-Meteo (ERA5), Eurostat."
+            "Open-Meteo (ERA5), Európai Bizottság (DG AGRI), MNB, Eurostat."
         )
         page3 = f"""<section class="page">
   <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-bottom:16px">
-    <div><p class="rep-kicker">Szezonközi kilátás — {live_fc['crop']}</p>
+    <div><p class="rep-kicker">Szezonközi kilátás – {live_fc['crop']}</p>
       <h2 style="margin:0;font-size:30px;line-height:1">Még {rem} nap van hátra</h2></div>
     <div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);text-align:right;white-space:nowrap">a becslés még változhat · 3 / {total}</div>
   </div>
   <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start">
     <div>
-      <p style="font-size:15px;line-height:1.6;margin:0 0 10px"><strong>A {live_fc['crop']} idei termése {hu(n['predicted_yield_t_ha'])} t/ha körül várható</strong>, ami {hu(abs(n['anomaly_pct']),1)}%-kal marad el a sokéves szokásos szinttől. {price_phrase(v, cap=True)} számolva ez kb. <strong>{abs(v['trend_gap_bn_huf']):.0f} mrd Ft</strong> kiesést jelent. Tavalyhoz ({n['prev_year']}) képest ez <span style="color:{GREEN};font-weight:600">{signed(n['yoy_pct'],1)}%-os javulás</span>, a megszokott szinttől azonban elmarad.</p>
+      {lead_sentence(live_fc)}
       <p style="font-size:13px;line-height:1.6;color:color-mix(in srgb,var(--color-text) 62%,transparent);margin:0">A szezonból még {rem} nap van hátra; a végeredmény az időjárástól függően <strong>{hu(sc['p10'])}–{hu(sc['p90'])} t/ha</strong> között alakulhat. A becslés tipikus tévedése a múltbeli visszamérések alapján ±{hu(n['model_error_pct'],1)}%.</p>
     </div>
     <div class="blueprint" style="padding:14px;margin:0;break-inside:avoid">
@@ -665,14 +727,14 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
     <div style="break-inside:avoid">
       <p class="rep-kicker" style="margin-bottom:6px">Terményben és forintban</p>
       <table class="table">
-        <thead><tr><th>Forgatókönyv</th><th style="text-align:right">t/ha</th><th style="text-align:right">M tonna</th><th style="text-align:right">mrd Ft*</th></tr></thead>
+        <thead><tr><th>Forgatókönyv</th><th style="text-align:right">t/ha</th><th style="text-align:right">millió t</th><th style="text-align:right">mrd Ft*</th></tr></thead>
         <tbody>
           <tr><td>Kedvezőtlen</td><td style="text-align:right;font-variant-numeric:tabular-nums">{hu(sc['p10'])}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{tonnes(sc['p10'])}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{money(sc['p10'])}</td></tr>
-          <tr style="background:var(--color-accent-100)"><td style="font-weight:700">Középső</td><td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums">{hu(sc['p50'])}</td><td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums">{tonnes(sc['p50'])}</td><td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums">{money(sc['p50'])}</td></tr>
+          <tr style="background:var(--color-accent-100)"><td style="font-weight:700">Becslés</td><td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums">{hu(n['predicted_yield_t_ha'])}</td><td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums">{tonnes(n['predicted_yield_t_ha'])}</td><td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums">{money(n['predicted_yield_t_ha'])}</td></tr>
           <tr><td>Kedvező</td><td style="text-align:right;font-variant-numeric:tabular-nums">{hu(sc['p90'])}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{tonnes(sc['p90'])}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{money(sc['p90'])}</td></tr>
         </tbody>
       </table>
-      <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:7px 0 0">*{price_phrase(v, cap=True)} ({price_fmt} Ft/t) és a legutóbbi lezárt évi betakarított területtel ({area/1e3:.0f} ezer ha) számolva — indikatív.</p>
+      <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:7px 0 0">*{price_phrase(v, cap=True)} ({price_fmt} Ft/t) és a legutóbbi lezárt évi betakarított területtel ({area/1e3:.0f} ezer ha) számolva; tájékoztató adat.</p>
     </div>
     <div style="align-self:center;border-left:3px solid var(--color-accent);padding:6px 0 6px 16px">
       <div style="font-family:var(--font-heading);font-weight:600;font-size:20px;line-height:1.15">A két szélső kimenet között kb. <span style="color:var(--color-accent-700)">{risk:.0f} mrd Ft</span> a különbség.</div>
@@ -680,16 +742,16 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
   </div>
   <figure class="blueprint" style="padding:12px 14px 8px;margin:14px 0 0;break-inside:avoid">
     <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
-    <div style="font-family:var(--font-heading);font-weight:600;font-size:14px;margin-bottom:8px">A becslés alakulása a szezonban <span style="font-weight:400;color:color-mix(in srgb,var(--color-text) 55%,transparent);font-size:12px">(várható sávval, t/ha)</span></div>
+    <div style="font-family:var(--font-heading);font-weight:600;font-size:14px;margin-bottom:8px">A becslés alakulása a szezonban <span style="font-weight:400;color:color-mix(in srgb,var(--color-text) 55%,transparent);font-size:12px">(az időjárástól függő sávval, t/ha)</span></div>
     {fan}
   </figure>
   <div style="margin-top:14px;break-inside:avoid">
-    <p class="rep-kicker" style="margin-bottom:6px">Fókusz-vármegyék — kilátás és időjárás</p>
+    <p class="rep-kicker" style="margin-bottom:6px">Fókusz-vármegyék – kilátás és időjárás</p>
     <table class="table">
-      <thead><tr><th>Vármegye</th><th style="text-align:right">Becslés</th><th style="text-align:right">várható sáv</th><th style="text-align:right">Hőstressz</th><th style="text-align:right">Vízmérleg</th><th style="text-align:right">Csapadék</th></tr></thead>
+      <thead><tr><th>Vármegye</th><th style="text-align:right">Becslés</th><th style="text-align:right">80%-os sáv</th><th style="text-align:right">Hőstressz</th><th style="text-align:right">Vízmérleg</th><th style="text-align:right">Csapadék</th></tr></thead>
       <tbody>{''.join(wrows)}</tbody>
     </table>
-    <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:8px 0 0"><strong>Vízmérleg:</strong> a csapadék és a párolgás egyenlege a szezon eddigi részében — minél negatívabb, annál erősebb az aszálynyomás.</p>
+    <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:8px 0 0"><strong>Vízmérleg:</strong> a csapadék és a párolgás egyenlege a szezon eddigi részében; minél negatívabb, annál súlyosabb az aszály.</p>
   </div>
   <p style="font-size:10px;line-height:1.5;text-align:justify;color:color-mix(in srgb,var(--color-text) 52%,transparent);margin:10px 0 0;border-top:1px solid var(--color-divider);padding-top:8px">{methodology}</p>
   {footer(3, total)}
@@ -699,7 +761,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
 
     return f"""<!DOCTYPE html>
 <html lang="hu"><head><meta charset="utf-8">
-<title>Napi vezetői jelentés — {today}</title>
+<title>Napi vezetői jelentés – {today}</title>
 <style>{CSS}</style></head><body>
 <section class="page">
   <div style="border-bottom:2px solid var(--color-text);padding-bottom:10px;margin-bottom:4px">
@@ -711,8 +773,8 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
   <div style="break-inside:avoid;background:var(--color-accent-900);color:#eef4fb;padding:18px 20px;margin:16px 0 22px;display:flex;gap:22px;align-items:center">
     <div style="flex:1">
       <p style="font-family:var(--font-heading);font-weight:600;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--color-accent-300);margin:0 0 6px">Ma a lényeg</p>
-      <p style="margin:0;font-family:var(--font-heading);font-weight:600;font-size:22px;line-height:1.15">A három termény együtt <span style="color:#fff">~{total_val:.0f} mrd Ft</span> termelési értéket ígér — <span style="color:#f0b7a5">{signed(total_gap,0)} mrd Ft</span> a szokásoshoz képest.</p>
-      <p style="margin:8px 0 0;font-size:12px;color:var(--color-accent-300)">{banner_price} és a legutóbbi lezárt évi területtel számolva — indikatív becslés.</p>
+      <p style="margin:0;font-family:var(--font-heading);font-weight:600;font-size:22px;line-height:1.15">A három termény együtt <span style="color:#fff">~{total_val:.0f} mrd Ft</span> termelési értéket ígér, ez <span style="color:#f0b7a5">{abs(total_gap):.0f} mrd Ft-tal {"kevesebb" if total_gap < 0 else "több"}</span> a szokásosnál.</p>
+      <p style="margin:8px 0 0;font-size:12px;color:var(--color-accent-300)">{banner_price} és a legutóbbi lezárt évi területtel számolva; tájékoztató becslés.{years_note}</p>
     </div>
     <div style="flex:none;text-align:right;border-left:1px solid color-mix(in srgb,#fff 22%,transparent);padding-left:22px">
       <div style="font-family:var(--font-heading);font-weight:600;font-size:44px;line-height:0.9;color:#fff">{total_val:.0f}</div>
@@ -720,7 +782,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
     </div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">{cards}</div>
-  <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:14px 0 0">A hozamok vármegyei statisztikai modellből (KSH 2000-től + ERA5 időjárás) származnak. A búza és őszi árpa szezonja gyakorlatilag lezárult; a kukorica becslése a hátralévő napokban még változhat.{official_note}</p>
+  <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:14px 0 0">A hozamok vármegyei statisztikai modellből (KSH 2000-től + ERA5 időjárás) származnak. {season_note}{official_note}</p>
   {drivers_strip(fcs)}
   {trend_strip(trend_fcs or [])}
   {footer(1, total)}
@@ -743,10 +805,10 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
     </div>
   </div>
   <div style="margin-top:14px;break-inside:avoid">
-    <p class="rep-kicker" style="margin-bottom:8px">Fókusz-vármegyék — {' · '.join(FOCUS)}</p>
-    <table class="table"><thead><tr><th style="width:24%">Termény</th><th style="width:16%;text-align:right">Becslés</th><th style="width:16%;text-align:right">vs. szokásos</th><th style="width:16%;text-align:right">vs. országos</th><th style="width:28%">Eltérés a szokásostól</th></tr></thead>
+    <p class="rep-kicker" style="margin-bottom:8px">Fókusz-vármegyék – {' · '.join(FOCUS)}</p>
+    <table class="table"><thead><tr><th style="width:24%">Termény</th><th style="width:16%;text-align:right">Becslés</th><th style="width:16%;text-align:right">Eltérés (%)</th><th style="width:16%;text-align:right">Országostól (t/ha)</th><th style="width:28%">Eltérés a szokásostól</th></tr></thead>
     <tbody>{focus_rows}</tbody></table>
-    <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:8px 0 0">A bar a szokásos hozamtól való eltérést mutatja (skála ±20%); a függőleges vonás a 0%. „vs. országos" oszlop: t/ha eltérés az országos becsléshez képest.</p>
+    <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:8px 0 0">A sáv a szokásostól való eltérést mutatja ±20%-os skálán, a függőleges vonás a 0%. „Országostól”: eltérés az országos becsléstől.</p>
   </div>
   {footer(2, total)}
 </section>
@@ -764,6 +826,20 @@ def render_pdf(html_path: Path, pdf_path: Path) -> None:
         browser = p.chromium.launch()
         page = browser.new_page()
         page.goto(html_path.resolve().as_uri(), wait_until="networkidle")
+        # Túlcsordulás-őr: az oldalak FIX magasságúak (overflow:hidden), ezért a
+        # láblécre ráfutó tartalom a PDF-ben csendben takarásba kerülne. Minden
+        # generáláskor lemérjük a tartalom alja és a lábléc teteje közti hézagot.
+        gaps = page.evaluate("""() => [...document.querySelectorAll('.page')].map(pg => {
+            const f = pg.querySelector('.page-footer');
+            const kids = [...pg.children].filter(e => e !== f);
+            const bottom = Math.max(...kids.map(e => e.getBoundingClientRect().bottom));
+            return Math.round(f.getBoundingClientRect().top - bottom);
+        })""")
+        for i, g in enumerate(gaps, 1):
+            if g < 0:
+                # a GitHub Actions felületén figyelmeztetésként jelenik meg
+                print(f"::warning::PDF {i}. oldal: a tartalom {-g} px-lel a láblécre fut")
+        print(f"  oldal-hézagok a lábléc fölött (px): {gaps}")
         page.pdf(path=str(pdf_path), prefer_css_page_size=True, print_background=True)
         browser.close()
 
@@ -771,20 +847,20 @@ def render_pdf(html_path: Path, pdf_path: Path) -> None:
 def main(make_pdf: bool = True, out_path: str | Path | None = None) -> Path | None:
     """A napi jelentés legenerálása. Visszaadja a kész PDF útvonalát (vagy None,
     ha --no-pdf). Külső PDF-pipeline-hoz: add meg az `out_path`-t (tetszőleges
-    cél .pdf), és a kész PDF oda is odamásolódik — lásd INTEGRACIO.md."""
+    cél .pdf), és a kész PDF oda is odamásolódik – lásd INTEGRACIO.md."""
     today = date.today().isoformat()
-    stamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    stamp = datetime.now().strftime("%Y. %m. %d. %H:%M")
     JELENTES_DIR.mkdir(parents=True, exist_ok=True)
     ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 
     # A napi PDF az időjárás-informált fő terményeket szedi (a trend-alapú
-    # napraforgó/repce a webes előrejelzésben szerepel) — lásd config.REPORT_CROPS.
+    # napraforgó/repce a webes előrejelzésben szerepel) – lásd config.REPORT_CROPS.
     fcs = {crop: load_fc(crop) for crop in config.REPORT_CROPS}
     gdf = gpd.read_file(config.WEB_DATA / "nuts3_hu.geojson")
     for crop, fc in fcs.items():
         save_crop_map(fc, gdf, ASSETS_DIR / f"map_{crop}.png")
 
-    # trend-alapú termények (napraforgó, repce) — a page 1 alján, alárendelt
+    # trend-alapú termények (napraforgó, repce) – a page 1 alján, alárendelt
     # csíkban (a konfidencia-hierarchia legalja). Csak akkor, ha van forecastjuk.
     trend_fcs = []
     for crop, spec in config.CROPS.items():
@@ -792,7 +868,7 @@ def main(make_pdf: bool = True, out_path: str | Path | None = None) -> Path | No
                 (config.WEB_DATA / f"forecast_{crop}.json").exists():
             trend_fcs.append(load_fc(crop))
 
-    # piaci árjegyzések (4. oldal) — csak ha a fájl létezik és 7 napnál frissebb
+    # piaci árjegyzések (4. oldal) – csak ha a fájl létezik és 7 napnál frissebb
     # (elavult árakat nem közlünk; a blokk ilyenkor egyszerűen kimarad)
     market = None
     mp = config.WEB_DATA / "market_prices.json"
@@ -802,7 +878,7 @@ def main(make_pdf: bool = True, out_path: str | Path | None = None) -> Path | No
         if age <= 7 and m.get("items"):
             market = m
         else:
-            print(f"  [info] market_prices.json elavult ({age} nap) — a 4. oldal kimarad")
+            print(f"  [info] market_prices.json elavult ({age} nap) – a 4. oldal kimarad")
 
     html = build_html(fcs, today, stamp, trend_fcs=trend_fcs, market=market)
     html_out = JELENTES_DIR / f"jelentes_{today}.html"

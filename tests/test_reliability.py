@@ -393,13 +393,13 @@ def test_market_cereal_regional_fallback_and_rename():
     ]
     it = _cereal_item(rows, ("Milling wheat", "Breadmaking common wheat"),
                       "Étkezési búza", 80, 600, _date(2026, 9, 18))
-    assert it["price"] == 195.0 and it["scope"] == "HU, 2 régió átlaga"
+    assert it["price"] == 195.0 and it["scope"] == "hazai, 2 régió átlaga"
     # ha van országos átlag a legfrissebb héten, az nyer
     rows.append({**wk, "productName": "Milling wheat",
                  "marketName": "National Average", "price": "€196,50"})
     it = _cereal_item(rows, ("Milling wheat", "Breadmaking common wheat"),
                       "Étkezési búza", 80, 600, _date(2026, 9, 18))
-    assert it["price"] == 196.5 and it["scope"] == "HU, országos átlag"
+    assert it["price"] == 196.5 and it["scope"] == "hazai, országos átlag"
     # egyetlen kilógó régiós ár is kizárja a tételt
     rows = [{**wk, "productName": "Feed maize", "marketName": "Transdanubia", "price": "€245"},
             {**wk, "productName": "Feed maize", "marketName": "Great Plain", "price": "€2450"}]
@@ -540,3 +540,76 @@ def test_get_daily_retries_on_non_json_response(monkeypatch):
     monkeypatch.setattr(fetch_weather.time, "sleep", lambda s: None)
     df = fetch_weather.get_daily("http://x", {})
     assert len(df) == 1 and df["temperature_2m_max"].iloc[0] == 25.0
+
+
+def test_envelope_ignores_marginal_exceedance():
+    """A rekord hajszálnyi (a történeti terjedelem <5%-a) túllépése NEM szélsőség."""
+    from src import drivers
+    train = _panel_two_counties()
+    m = fit_panel_model(train, features=["wb_deficit", "heat_days"],
+                        trend_degree=1, ridge_alpha=5.0)
+    areas = pd.Series({"HU211": 100.0, "HU331": 300.0})
+    base = train[train["crop_year"] == 2010].drop(columns="yield_t_ha")
+    w = base["nuts_id"].map(areas)
+    yearly = (train["heat_days"] * train["nuts_id"].map(areas)).groupby(train["crop_year"]).sum() \
+        / train["nuts_id"].map(areas).groupby(train["crop_year"]).sum()
+    hi, rng_ = float(yearly.max()), float(yearly.max() - yearly.min())
+    marginal = base.assign(heat_days=hi + 0.01 * rng_)     # +1%: zaj
+    material = base.assign(heat_days=hi + 0.20 * rng_)     # +20%: érdemi
+    assert drivers.envelope_check(m, train, marginal, areas) == []
+    assert [e["feature"] for e in drivers.envelope_check(m, train, material, areas)] == ["heat_days"]
+
+
+def test_lead_sentence_is_sign_aware():
+    """A 3. oldal vezetőmondata nem égetheti be az 'elmarad / kiesés' szöveget."""
+    from src.report_html import lead_sentence
+    def fc(a, yoy, gap):
+        return {"crop": "búza", "national": {
+            "anomaly_pct": a, "yoy_pct": yoy, "predicted_yield_t_ha": 5.5, "prev_year": 2025,
+            "value": {"trend_gap_bn_huf": gap, "price_year": 2026,
+                      "price_phrase": "2026. októberi termelői áron"}}}
+    low, high, flat = lead_sentence(fc(-10, 4, -40)), lead_sentence(fc(8, -5, 30)), lead_sentence(fc(0.4, 1, 2))
+    assert "marad el" in low and "kiesést" in low and "javulás" in low
+    assert "felett" in high and "többletet" in high and "visszaesés" in high and "kiesés" not in high
+    assert "közelében" in flat and "kiesést jelent" not in flat and "marad el" not in flat
+
+
+def test_ms_balanced_series_fixed_basket():
+    """Tagállamon belül átlag, aztán tagállamok között; a múltból csak a teljes
+    kosarat tartalmazó hetek számítanak (összetétel-váltás ne torzítson)."""
+    from src.fetch_market_prices import _ms_balanced_series
+    now = {"beginDate": "07/09/2026"}; old = {"beginDate": "08/09/2025"}
+    rows = [{**now, "memberStateCode": "FR", "price": "€400"}, {**now, "memberStateCode": "FR", "price": "€420"},
+            {**now, "memberStateCode": "DE", "price": "€430"},
+            {**old, "memberStateCode": "FR", "price": "€300"},          # DE hiányzik: a hét kiesik
+            {**old, "memberStateCode": "PL", "price": "€100"}]
+    series, n = _ms_balanced_series(rows)
+    assert list(series.values()) == [420.0]      # (FR 410 + DE 430) / 2, nem a 3 sor átlaga
+    assert list(n.values()) == [2]
+
+
+# --------------------------------------------------------------------------- #
+# 15) Nyelvi őr: az ügyfélnek szóló szövegekben ne legyen idegen/gépi hatású elem
+# --------------------------------------------------------------------------- #
+def test_report_text_has_no_foreign_or_machine_like_phrases():
+    import re as _re
+    from src import report_html
+    fcs = {c: report_html.load_fc(c) for c in config.REPORT_CROPS}
+    html = report_html.build_html(fcs, "2026-09-19", "2026. 09. 19. 06:30")
+    text = _re.sub(r"<style.*?</style>", " ", html, flags=_re.S)
+    text = _re.sub(r"<[^>]+>", " ", text)
+    for banned in ("—",                 # angol hosszú gondolatjel (a magyar: – szóközökkel)
+                   "indikatív", "időjárás-informált", "A bar ", " vs", "agrifood adat",
+                   "Tavalyhoz", "Trend-alapú", "időjárás-modell", "volumen alapú"):
+        assert banned not in text, f"tiltott kifejezés a jelentésben: {banned!r}"
+
+
+def test_web_texts_use_hungarian_dash_and_no_year_suffix():
+    """A webes szövegekben magyar gondolatjel; évszámhoz nem ragasztunk toldalékot
+    (2026-os, de 2027-es: a rag évszámonként változik, ezért rag nélküli alak kell)."""
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1] / "web"
+    for name in ("app.js", "tabla.js", "magyarazat.js", "magyarazat.html", "index.html", "tabla.html"):
+        src = (root / name).read_text(encoding="utf-8")
+        assert "—" not in src, f"angol hosszú gondolatjel: {name}"
+        assert "_year}-es" not in src and 'crop_year + "-es' not in src, f"évszám-toldalék: {name}"

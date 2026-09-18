@@ -21,6 +21,8 @@ import numpy as np
 import pandas as pd
 
 # (kulcs, teljes címke, rövid címke a szűk helyekre)
+ENVELOPE_MIN_EXCESS = 0.05
+
 GROUPS = [
     ("water", "Vízellátás (csapadék, vízmérleg)", "Vízellátás"),
     ("heat", "Hőstressz", "Hőstressz"),
@@ -127,7 +129,11 @@ def envelope_check(m, train: pd.DataFrame, feats_now: pd.DataFrame,
                   / w_hist.groupby(hist["crop_year"]).sum())
         cur = float((now[f] * w_now).sum() / w_now.sum())
         lo, hi = float(yearly.min()), float(yearly.max())
-        if cur < lo or cur > hi:
+        # Érdemi túllépés kell: a rekordot a történeti terjedelem legalább
+        # ENVELOPE_MIN_EXCESS részével haladja meg. Egy hajszálnyi (pl. 0,5%-os)
+        # túllépés nem szélsőség, hanem zaj — arra nem riasztunk.
+        excess = (lo - cur) if cur < lo else (cur - hi)
+        if excess > 0 and (hi - lo) > 0 and excess / (hi - lo) >= ENVELOPE_MIN_EXCESS:
             ext_year = int(yearly.idxmin() if cur < lo else yearly.idxmax())
             out.append({
                 "feature": f,
@@ -136,5 +142,6 @@ def envelope_check(m, train: pd.DataFrame, feats_now: pd.DataFrame,
                 "value": round(cur, 1),
                 "hist_extreme": round(lo if cur < lo else hi, 1),
                 "hist_extreme_year": ext_year,
+                "excess_pct_of_range": round(100 * excess / (hi - lo), 1),
             })
     return out
