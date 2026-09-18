@@ -242,7 +242,20 @@ function renderHeadline(fc) {
 
   el.innerHTML = `
     <div class="headline-main">${main} ${clauses.join(" ")}</div>
-    <div class="headline-sub">${cert}${err}</div>`;
+    <div class="headline-sub">${cert}${err}</div>${envelopeWarning(n)}`;
+}
+
+/* Modelltartomány-jelző: ha egy idei mutató kívül esik azon, amit a modell a
+   tanítóévekben valaha látott, a modell extrapolál — ezt kimondjuk. */
+function envelopeWarning(n) {
+  const env = n.envelope || [];
+  if (!env.length) return "";
+  const worst = env.map(e =>
+    `${esc(e.label)} (${e.direction === "below" ? "rosszabb" : "magasabb"}, mint az
+     eddigi szélsőérték, ${e.hist_extreme_year})`).join("; ");
+  return `<div class="headline-sub envelope"><span class="badge extreme">SZÉLSŐSÉG</span>
+    Az idei szezon a modell tapasztalatán kívül esik: ${worst}. Ilyenkor a becslés
+    tévedése a szokásosnál nagyobb lehet. ${info("szelsoseg")}</div>`;
 }
 
 /* Delta-chip: színezett +/- badge */
@@ -338,6 +351,24 @@ function renderNational(fc) {
         <div class="kpi-value">~${Math.round(v.production_value_bn_huf)} <small>mrd Ft</small></div>
         <div class="kpi-sub">${chip(v.trend_gap_bn_huf, " mrd Ft")} ${v.trend_gap_bn_huf < 0 ? "kiesés" : "többlet"} a szokásoshoz ·
           ${v.price_phrase ? esc(v.price_phrase) : `a legutolsó hivatalos áron (${v.price_year})`}: ${hu(v.price_huf_per_t / 1000, 1)} eFt/t</div>
+      </div>`);
+  }
+  if (n.drivers && n.drivers.groups.length) {
+    const gs = n.drivers.groups;
+    const max = Math.max(1, ...gs.map(g => Math.abs(g.pct)));
+    const rows = gs.map(g => {
+      const w = Math.round(Math.abs(g.pct) / max * 100);
+      return `<div class="drv-row"><span class="drv-name" title="${esc(g.label)}">${esc(g.short || g.label)}</span>
+        <span class="drv-bar"><i class="${g.pct < 0 ? "neg" : "pos"}"
+          style="width:${w}%"></i></span>
+        <span class="drv-val">${g.pct > 0 ? "+" : ""}${hu(g.pct, 1)}</span></div>`;
+    }).join("");
+    cards.push(`
+      <div class="kpi kpi-drivers" title="${esc(n.drivers.note)}">
+        <div class="kpi-label">Mi húzza a becslést? ${info("hajtoerok")}</div>
+        ${rows}
+        <div class="kpi-sub">az időjárás hatása százalékpontban, a modell
+          időjárás-semleges szintjéhez mérve</div>
       </div>`);
   }
   el.innerHTML = cards.join("");

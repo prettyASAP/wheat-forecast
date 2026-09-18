@@ -29,6 +29,7 @@ from src import config
 from src.build_panel import assign_crop_year
 from src.features import compute_features
 from src.fetch_weather import CENTROIDS_CSV, fetch_county, get_daily
+from src import drivers
 from src.model import fit_panel_model, load_model_data, predict_naive_trend
 from src.validate import loyo_summary_json
 
@@ -150,7 +151,7 @@ def scenario_ensemble(season_daily: pd.DataFrame, known_until, crop: str,
     """
     start, end = season_window(crop_year, crop)
     if known_until >= end:
-        return None, None, None
+        return None, None, None, None
 
     hist = pd.read_parquet(config.weather_daily_parquet(crop))
     hist["date"] = pd.to_datetime(hist["date"]).dt.date
@@ -175,6 +176,7 @@ def scenario_ensemble(season_daily: pd.DataFrame, known_until, crop: str,
             .mean().reset_index())
 
     preds_by_analog = {}
+    contrib_sum = None  # hajtóerő-bontás: az analóg-pályák bontásainak átlaga
     for ay in analog_years:
         h = hist[hist["crop_year"] == ay]
         tail = h[[( m_, d_) in rem_md for m_, d_ in zip(h["_m"], h["_d"])]].copy()
@@ -198,6 +200,8 @@ def scenario_ensemble(season_daily: pd.DataFrame, known_until, crop: str,
         feats = feats.sort_values("nuts_id")
         preds_by_analog[ay] = pd.Series(m.predict(feats),
                                         index=feats["nuts_id"].values)
+        c = drivers.contributions(m, feats)
+        contrib_sum = c if contrib_sum is None else contrib_sum.add(c)
 
     ens = pd.DataFrame(preds_by_analog)  # sor: vármegye, oszlop: analóg év
 
@@ -223,7 +227,8 @@ def scenario_ensemble(season_daily: pd.DataFrame, known_until, crop: str,
     # átlag-időjárásból számolt becslés FELFELÉ torzítana (Jensen-egyenlőtlenség
     # konkáv függvényre). Az együttes tényleges átlaga ezt a torzítást elkerüli.
     # A szórás a hátralévő időjárás bizonytalansága (a sáv-kombinációhoz).
-    return payload, ens.mean(axis=1), ens.std(axis=1, ddof=1)
+    contrib_mean = contrib_sum / len(analog_years)
+    return payload, ens.mean(axis=1), ens.std(axis=1, ddof=1), contrib_mean
 
 
 VALUATION_MAX_AGE_DAYS = 10
@@ -419,14 +424,16 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
         # trend-alapú: a becslés MAGA a trend (anomália = 0, „a szokásos szint
         # körül"); nincs időjárás-szcenárió. A sáv a trend-summary-ből (lásd wf).
         preds = baseline
-        sc, ens_mean, ens_std = None, None, None
+        sc, ens_mean, ens_std, contrib = None, None, None, None
     else:
         # Szezon közben a fő becslés az analóg-együttes átlaga (Jensen-korrekció,
         # lásd scenario_ensemble); lezárt szezonnál a valós időjárásos becslés.
-        sc, ens_mean, ens_std = scenario_ensemble(season_daily, known_until, crop,
-                                                  crop_year, m, df)
+        sc, ens_mean, ens_std, contrib = scenario_ensemble(
+            season_daily, known_until, crop, crop_year, m, df)
         if ens_mean is not None:
             preds = ens_mean.reindex(model_feats["nuts_id"].values).to_numpy()
+        else:
+            contrib = drivers.contributions(m, model_feats)
 
     # vármegyénkénti sáv: modell-hiba + (szezon közben) a hátralévő időjárás
     # bizonytalansága, függetlenként kombinálva: sigma_tot = sqrt(m^2 + w^2)
@@ -492,6 +499,13 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
         "scenarios": sc,
         "counties": rows,
     }
+    # Hajtóerő-bontás + modelltartomány-ellenőrzés (csak időjárás-modellnél):
+    # a MEGLÉVŐ becslés pontos számtani bontása, a modellt nem érinti.
+    if contrib is not None:
+        nat = payload["national"]
+        nat["drivers"] = drivers.national_drivers(
+            contrib, county_area, nat["trend_t_ha"], nat["anomaly_pct"])
+        nat["envelope"] = drivers.envelope_check(m, df, model_feats, county_area)
     hdir = history_dir(crop)
     hdir.mkdir(parents=True, exist_ok=True)
     forecast_json(crop).write_text(json.dumps(payload, ensure_ascii=False, indent=1),

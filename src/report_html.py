@@ -315,6 +315,57 @@ def price_phrase(v: dict, cap: bool = False) -> str:
     return s[0].upper() + s[1:] if cap else s
 
 
+def drivers_strip(fcs: dict) -> str:
+    """'Mi húzza a becslést?' — a három kártya alatt, oszlopra igazítva: a becslés
+    időjárási részének pontos bontása (a meglévő lineáris modell tagjai
+    csoportosítva), plusz szélsőség-jelzés, ha az idei szezon a modell
+    tapasztalatán kívül esik. A tendencia MEGÉRTÉSÉT szolgálja, nem napi zaj."""
+    cols = []
+    any_data = False
+    # KÖZÖS skála a három terményre: a sávhosszak oszlopok között is összemérhetők
+    mx = max([1.0] + [abs(g["pct"]) for fc in fcs.values()
+                      for g in (fc["national"].get("drivers") or {}).get("groups", [])])
+    for fc in fcs.values():
+        n = fc["national"]
+        d = n.get("drivers")
+        if not d or not d.get("groups"):
+            cols.append("<div></div>")
+            continue
+        any_data = True
+        rows = "".join(
+            f'<div style="display:grid;grid-template-columns:1fr 64px 38px;gap:6px;'
+            f'align-items:center;font-size:11px;margin-top:4px">'
+            f'<span>{g.get("short") or g["label"]}</span>'
+            f'<span style="height:6px;background:color-mix(in srgb,var(--color-text) 7%,transparent)">'
+            f'<i style="display:block;height:100%;width:{abs(g["pct"])/mx*100:.0f}%;'
+            f'background:{RUST if g["pct"] < 0 else GREEN}"></i></span>'
+            f'<span style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">'
+            f'{signed(g["pct"], 1)}</span></div>'
+            for g in d["groups"])
+        env = n.get("envelope") or []
+        warn = ""
+        if env:
+            worst = env[-1] if len(env) == 1 else max(
+                env, key=lambda e: abs(e["value"] - e["hist_extreme"]) / (abs(e["hist_extreme"]) or 1))
+            warn = (f'<p style="font-size:10px;line-height:1.4;margin:6px 0 0;color:{RUST}">'
+                    f'<strong>Szélsőség:</strong> {worst["label"]} az eddigi szélsőértéken '
+                    f'({worst["hist_extreme_year"]}) is túl van; a tévedés a szokásosnál '
+                    f'nagyobb lehet.</p>')
+        cols.append(f'<div style="padding:0 15px">{rows}{warn}</div>')
+    if not any_data:
+        return ""
+    return (
+        '<div style="margin-top:14px;break-inside:avoid">'
+        '<p style="font-family:var(--font-heading);font-weight:600;font-size:11px;'
+        'letter-spacing:0.14em;text-transform:uppercase;color:var(--color-accent);'
+        'margin:0 0 2px">Mi húzza a becslést? <span style="font-weight:400;'
+        'letter-spacing:0;text-transform:none;font-size:10px;color:color-mix(in srgb,'
+        'var(--color-text) 48%,transparent)">az időjárás hatása százalékpontban, a modell '
+        'időjárás-semleges szintjéhez mérve</span></p>'
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">'
+        + "".join(cols) + '</div></div>')
+
+
 def trend_strip(trend_fcs: list) -> str:
     """Kompakt, ALÁRENDELT csík a trend-alapú terményekhez (napraforgó, repce).
     Tudatosan a konfidencia-hierarchia legalján, kis súllyal: 15 px-es értékek a
@@ -578,6 +629,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">{cards}</div>
   <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:14px 0 0">A hozamok vármegyei statisztikai modellből (KSH 2000-től + ERA5 időjárás) származnak. A búza és őszi árpa szezonja gyakorlatilag lezárult; a kukorica becslése a hátralévő napokban még változhat.</p>
+  {drivers_strip(fcs)}
   {trend_strip(trend_fcs or [])}
   {footer(1, total)}
 </section>

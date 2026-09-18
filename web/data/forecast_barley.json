@@ -29,7 +29,43 @@
    "production_value_bn_huf": 96.6,
    "trend_gap_bn_huf": -7.4,
    "note": "ár: takarmányárpa termelői ára, 4 jegyzett hét átlaga (2026-08-17 – 2026-09-13), 175.72 EUR/t × 363.47 Ft/EUR (MNB hivatalos középárfolyam, 2026-09-18); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
-  }
+  },
+  "drivers": {
+   "groups": [
+    {
+     "key": "water",
+     "label": "Vízellátás (csapadék, vízmérleg)",
+     "short": "Vízellátás",
+     "t_ha": -0.223,
+     "pct": -3.7
+    },
+    {
+     "key": "heat",
+     "label": "Hőstressz",
+     "short": "Hőstressz",
+     "t_ha": -0.005,
+     "pct": -0.1
+    },
+    {
+     "key": "temp",
+     "label": "Hőmérséklet, fejlődési ütem",
+     "short": "Hőmérséklet",
+     "t_ha": -0.061,
+     "pct": -1.0
+    },
+    {
+     "key": "frost",
+     "label": "Téli fagy",
+     "short": "Téli fagy",
+     "t_ha": 0.026,
+     "pct": 0.4
+    }
+   ],
+   "weather_total_pct": -4.4,
+   "baseline_shift_pct": -2.8,
+   "note": "a modell időjárási tagjainak pontos bontása a szokásos szint százalékában; az 'alapszint' a modell és a naiv trend alapszintjének különbsége"
+  },
+  "envelope": []
  },
  "scenarios": null,
  "counties": [
