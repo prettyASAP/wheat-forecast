@@ -79,7 +79,17 @@ def get_daily(url: str, params: dict) -> pd.DataFrame:
             time.sleep(30)
             continue
         resp.raise_for_status()
-        daily = resp.json().get("daily")
+        try:
+            daily = resp.json().get("daily")
+        except ValueError:
+            # 200-as státusz, de nem JSON a törzs (üres / HTML hibaoldal): átmeneti
+            # forráshiba, ugyanúgy újrapróbáljuk, mint a hálózati hibát. Az utolsó
+            # próbán továbbra is hibával állunk meg — hibás adatból nem számolunk.
+            if attempt == MAX_RETRIES:
+                raise RuntimeError(f"Nem JSON válasz: {resp.text[:200]!r}")
+            print(f"    [nem JSON válasz] várok 30 mp, újrapróba {attempt}/{MAX_RETRIES-1}")
+            time.sleep(30)
+            continue
         if not daily or "time" not in daily:
             raise RuntimeError(f"Üres/hibás válasz: {resp.text[:200]}")
         df = pd.DataFrame(daily).rename(columns={"time": "date"})

@@ -30,13 +30,21 @@
    "trend_gap_bn_huf": -105.4,
    "note": "ár: takarmánykukorica termelői ára, 4 jegyzett hét átlaga (2026-08-17 – 2026-09-13), 240.28 EUR/t × 363.47 Ft/EUR (MNB hivatalos középárfolyam, 2026-09-18); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
   },
+  "official_estimate": {
+   "year": 2026,
+   "yield_t_ha": 3.85,
+   "production_kt": 2306.8,
+   "area_kha": 599.2,
+   "source": "Európai Bizottság (DG AGRI)",
+   "as_of": "2026-09-18"
+  },
   "drivers": {
    "groups": [
     {
      "key": "water",
      "label": "Vízellátás (csapadék, vízmérleg)",
      "short": "Vízellátás",
-     "t_ha": -1.797,
+     "t_ha": -1.798,
      "pct": -25.5
     },
     {
@@ -79,7 +87,7 @@
     "feature": "wb_deficit",
     "label": "a szezon halmozott vízhiánya",
     "direction": "below",
-    "value": -304.9,
+    "value": -305.0,
     "hist_extreme": -205.4,
     "hist_extreme_year": 2003
    }
@@ -90,7 +98,7 @@
   "remaining_days": 6,
   "national": {
    "p10": 5.34,
-   "p50": 5.4,
+   "p50": 5.39,
    "p90": 5.5
   },
   "counties": {
@@ -131,7 +139,7 @@
    },
    "HU231": {
     "p10": 6.96,
-    "p50": 7.02,
+    "p50": 7.01,
     "p90": 7.11
    },
    "HU232": {
@@ -146,7 +154,7 @@
    },
    "HU311": {
     "p10": 5.52,
-    "p50": 5.58,
+    "p50": 5.57,
     "p90": 5.71
    },
    "HU312": {
@@ -157,7 +165,7 @@
    "HU313": {
     "p10": 2.85,
     "p50": 2.87,
-    "p90": 3.06
+    "p90": 3.07
    },
    "HU321": {
     "p10": 6.45,
@@ -171,7 +179,7 @@
    },
    "HU323": {
     "p10": 5.21,
-    "p50": 5.27,
+    "p50": 5.26,
     "p90": 5.36
    },
    "HU331": {
@@ -194,7 +202,7 @@
    "worst": [
     {
      "year": 2011,
-     "t_ha": 5.33
+     "t_ha": 5.32
     },
     {
      "year": 2009,
@@ -242,12 +250,12 @@
    "nuts_id": "HU120",
    "county_name": "Pest",
    "predicted_yield_t_ha": 4.19,
-   "anomaly_pct": -35.8,
+   "anomaly_pct": -35.7,
    "low": 2.05,
    "high": 6.38,
    "weather_todate": {
     "prec_total_mm": 123.6,
-    "wb_total_mm": -741.1,
+    "wb_total_mm": -741.0,
     "heat_days": 7,
     "frost_days_winter": null,
     "gdd_total": 3529.0
@@ -361,12 +369,12 @@
    "nuts_id": "HU231",
    "county_name": "Baranya",
    "predicted_yield_t_ha": 7.02,
-   "anomaly_pct": -11.5,
+   "anomaly_pct": -11.6,
    "low": 5.17,
    "high": 8.91,
    "weather_todate": {
     "prec_total_mm": 211.7,
-    "wb_total_mm": -593.6,
+    "wb_total_mm": -594.1,
     "heat_days": 5,
     "frost_days_winter": null,
     "gdd_total": 3491.0
@@ -412,12 +420,12 @@
    "nuts_id": "HU311",
    "county_name": "Borsod-Abaúj-Zemplén",
    "predicted_yield_t_ha": 5.59,
-   "anomaly_pct": -22.3,
+   "anomaly_pct": -22.4,
    "low": 3.81,
    "high": 7.4,
    "weather_todate": {
     "prec_total_mm": 136.9,
-    "wb_total_mm": -678.0,
+    "wb_total_mm": -678.3,
     "heat_days": 6,
     "frost_days_winter": null,
     "gdd_total": 3470.0
@@ -451,7 +459,7 @@
    "high": 4.71,
    "weather_todate": {
     "prec_total_mm": 172.3,
-    "wb_total_mm": -630.0,
+    "wb_total_mm": -629.9,
     "heat_days": 6,
     "frost_days_winter": null,
     "gdd_total": 3311.0
@@ -468,19 +476,19 @@
    "high": 8.48,
    "weather_todate": {
     "prec_total_mm": 145.4,
-    "wb_total_mm": -659.2,
+    "wb_total_mm": -659.3,
     "heat_days": 5,
     "frost_days_winter": null,
     "gdd_total": 3445.0
    },
    "value_bn_huf": 41.1,
-   "trend_gap_bn_huf": -8.0
+   "trend_gap_bn_huf": -8.1
   },
   {
    "nuts_id": "HU322",
    "county_name": "Jász-Nagykun-Szolnok",
    "predicted_yield_t_ha": 3.64,
-   "anomaly_pct": -34.9,
+   "anomaly_pct": -34.8,
    "low": 2.04,
    "high": 5.29,
    "weather_todate": {
@@ -502,7 +510,7 @@
    "high": 7.0,
    "weather_todate": {
     "prec_total_mm": 155.0,
-    "wb_total_mm": -659.2,
+    "wb_total_mm": -659.4,
     "heat_days": 6,
     "frost_days_winter": null,
     "gdd_total": 3390.0
@@ -519,7 +527,7 @@
    "high": 5.79,
    "weather_todate": {
     "prec_total_mm": 157.4,
-    "wb_total_mm": -748.6,
+    "wb_total_mm": -748.5,
     "heat_days": 10,
     "frost_days_winter": null,
     "gdd_total": 3689.0
@@ -536,7 +544,7 @@
    "high": 6.65,
    "weather_todate": {
     "prec_total_mm": 153.3,
-    "wb_total_mm": -734.9,
+    "wb_total_mm": -735.0,
     "heat_days": 10,
     "frost_days_winter": null,
     "gdd_total": 3695.0
@@ -553,7 +561,7 @@
    "high": 6.79,
    "weather_todate": {
     "prec_total_mm": 158.8,
-    "wb_total_mm": -689.7,
+    "wb_total_mm": -689.8,
     "heat_days": 6,
     "frost_days_winter": null,
     "gdd_total": 3571.0

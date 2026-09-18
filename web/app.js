@@ -328,6 +328,8 @@ function renderNational(fc) {
       <div class="kpi-value">${hu(n.predicted_yield_t_ha)} <small>t/ha</small></div>
       <div class="kpi-sub">${chip(n.anomaly_pct, "%")} a szokásoshoz ${info("szokasos")} ·
         ${chip(n.yoy_pct, "%")} vs ${n.prev_year}</div>
+      ${n.official_estimate ? `<div class="kpi-sub">Európai Bizottság becslése:
+        <b>${hu(n.official_estimate.yield_t_ha)} t/ha</b> ${info("eubecsles")}</div>` : ""}
     </div>`);
   cards.push(`
     <div class="kpi">

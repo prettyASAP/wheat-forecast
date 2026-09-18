@@ -55,6 +55,17 @@ const GLOSSARY = {
       "Nagyságrendi, „körülbelül” szám, nem bevételi előrejelzés. A „kiesés/többlet a szokásoshoz” ugyanez " +
       "a számítás a szokásos szinttel vetve össze.",
   },
+  eubecsles: {
+    title: "Európai Bizottság becslése",
+    text: "Az Európai Bizottság (DG AGRI) aktuális hivatalos termésbecslése " +
+      "Magyarországra, tagállami adatokból; havonta frissül. Viszonyítási pontként " +
+      "közöljük a saját becslésünk mellett. Aratás után ez a szám már a tényleges " +
+      "betakarítási jelentéseket is tartalmazza, amelyeket egy időjárás-modell nem " +
+      "láthat, ezért a kettő eltérhet: 2026-ban az aszály és a kései hőség miatt a " +
+      "hivatalos becslés a modellekénél jóval alacsonyabb lett. Becslés, nem végleges " +
+      "adat: a végleges számot a KSH közli. Az őszi árpánál nincs összemérhető sor, " +
+      "mert a forrás csak az összes árpát közli.",
+  },
   hajtoerok: {
     title: "Mi húzza a becslést?",
     text: "A becslés időjárási részének pontos bontása: mennyit vett el (vagy adott " +

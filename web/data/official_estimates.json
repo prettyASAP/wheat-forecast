@@ -1,0 +1,30 @@
+{
+ "updated_at": "2026-09-18",
+ "source": "Európai Bizottság (DG AGRI) tagállami termésbecslése; havonta frissül, aratás után a betakarítási jelentéseket is tartalmazza",
+ "crops": {
+  "wheat": {
+   "year": 2026,
+   "yield_t_ha": 4.43,
+   "production_kt": 4762.2,
+   "area_kha": 1074.0
+  },
+  "corn": {
+   "year": 2026,
+   "yield_t_ha": 3.85,
+   "production_kt": 2306.8,
+   "area_kha": 599.2
+  },
+  "sunflower": {
+   "year": 2026,
+   "yield_t_ha": 1.94,
+   "production_kt": 1520.0,
+   "area_kha": 783.5
+  },
+  "rapeseed": {
+   "year": 2026,
+   "yield_t_ha": 2.49,
+   "production_kt": 386.1,
+   "area_kha": 155.0
+  }
+ }
+}
