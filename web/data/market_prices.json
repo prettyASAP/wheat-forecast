@@ -139,21 +139,6 @@
    "yoy_pct": -4.7
   },
   {
-   "label": "Szójadara",
-   "group": "Olajos termékek",
-   "scope": "4 tagállam átlaga (hazai jegyzés nincs)",
-   "freq": "heti",
-   "price": 436.9,
-   "unit": "EUR/t",
-   "period": "2026-09-07 – 2026-09-13",
-   "huf": 158800,
-   "huf_unit": "Ft/t",
-   "lo52": 328.47,
-   "hi52": 436.9,
-   "pos52": 1.0,
-   "yoy_pct": 26.8
-  },
-  {
    "label": "Vágósertés (hasított, S oszt.)",
    "scope": "hazai",
    "freq": "heti",
