@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-09-18",
+ "updated_at": "2026-09-19",
  "source": "Európai Bizottság (DG AGRI) agrifood API; a magyar adatok a tagállami jelentésből (AKI PÁIR) származnak",
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
@@ -139,17 +139,6 @@
    "yoy_pct": -4.7
   },
   {
-   "label": "Napraforgóolaj (nyers)",
-   "scope": "hazai",
-   "freq": "heti",
-   "price": 1211.66,
-   "unit": "EUR/t",
-   "period": "2026-08-24 – 2026-08-30",
-   "group": "Olajos termékek",
-   "huf": 440400,
-   "huf_unit": "Ft/t"
-  },
-  {
    "label": "Szójadara",
    "group": "Olajos termékek",
    "scope": "4 tagállam átlaga (hazai jegyzés nincs)",
@@ -253,21 +242,6 @@
    "hi52": 250.68,
    "pos52": 0.669,
    "yoy_pct": -2.9
-  },
-  {
-   "label": "Kristálycukor",
-   "group": "Feldolgozóipari termékek",
-   "scope": "EU-átlag (hazai bontás nincs)",
-   "freq": "havi",
-   "price": 501.4,
-   "unit": "EUR/t",
-   "period": "2026. 06. hó",
-   "huf": 182240,
-   "huf_unit": "Ft/t",
-   "lo52": 488.78,
-   "hi52": 566.13,
-   "pos52": 0.163,
-   "yoy_pct": -6.5
   }
  ],
  "valuation": {
@@ -338,13 +312,6 @@
      "week": "2026-08-24"
     },
     {
-     "ms": "SK",
-     "name": "Szlovákia",
-     "price": 219.15,
-     "parity": "termelőtől elszállítva",
-     "week": "2026-08-17"
-    },
-    {
      "ms": "RO",
      "name": "Románia",
      "price": 186.95,
@@ -378,13 +345,6 @@
      "week": "2026-09-07"
     },
     {
-     "ms": "AT",
-     "name": "Ausztria",
-     "price": 207.5,
-     "parity": "silóból kitárolva",
-     "week": "2026-08-17"
-    },
-    {
      "ms": "SK",
      "name": "Szlovákia",
      "price": 189.1,
@@ -415,7 +375,10 @@
    ]
   }
  ],
- "skipped_today": [],
+ "skipped_today": [
+  "Napraforgóolaj (nyers)",
+  "Kristálycukor"
+ ],
  "not_available": [
   "Bioetanol (nincs nyilvános hivatalos jegyzés)",
   "Izocukor (nincs nyilvános jegyzés)",

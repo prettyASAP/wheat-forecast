@@ -162,6 +162,45 @@ def _mean_by_week(rows: list) -> dict:
     return {wk: sum(v) / len(v) for wk, v in by_week.items()}
 
 
+# A jelentés NAPONTA, felügyelet nélkül készül, ezért csak MAGÁTÓL, RENDSZERESEN
+# frissülő jegyzés szerepelhet benne. Egy tétel akkor marad, ha:
+#   - heti rendszerű (a havi, több hónapos késéssel érkező adat eleve kimarad),
+#   - a legutolsó jegyzett hét vége legfeljebb FRESH_MAX_DAYS napos,
+#   - az utolsó REGULAR_WINDOW_DAYS napban legalább REGULAR_MIN_QUOTES jegyzés jött,
+#   - és az ár nem "befagyott": az utolsó FROZEN_WEEKS hétben legalább egyszer változott.
+FRESH_MAX_DAYS = 21
+REGULAR_WINDOW_DAYS = 42
+REGULAR_MIN_QUOTES = 3
+FROZEN_WEEKS = 8
+
+
+def _filter_regular(items: list, skipped: list, today: date) -> list:
+    kept = []
+    for it in items:
+        series = it.get("_series") or {}
+        reason = None
+        if it["freq"] != "heti":
+            reason = "nem heti rendszerű adat"
+        elif not series:
+            reason = "nincs idősor"
+        else:
+            newest = max(series)
+            recent = [k for k in series if 0 <= (newest - k).days < REGULAR_WINDOW_DAYS]
+            last = sorted(series)[-FROZEN_WEEKS:]
+            if (today - (newest + timedelta(days=6))).days > FRESH_MAX_DAYS:
+                reason = f"a legutolsó jegyzés {FRESH_MAX_DAYS} napnál régebbi"
+            elif len(recent) < REGULAR_MIN_QUOTES:
+                reason = "rendszertelenül érkező jegyzés"
+            elif len(last) == FROZEN_WEEKS and len({round(series[k], 2) for k in last}) == 1:
+                reason = f"{FROZEN_WEEKS} hete változatlan (befagyott) ár"
+        if reason:
+            print(f"  [kimarad] {it['label']}: {reason}")
+            skipped.append(it["label"])
+        else:
+            kept.append(it)
+    return kept
+
+
 def _attach_context(items: list, fx: dict | None) -> None:
     """Árkontextus tételenként a SAJÁT idősorából (nincs új forrás): forint-
     egyenérték, éves változás, és az ár helye az utolsó 52 hét sávjában.
@@ -224,7 +263,7 @@ def collect_regional(today: date) -> list:
             if not rs:
                 continue
             newest = max(_d(r["beginDate"]) for r in rs)
-            if (today - (newest + timedelta(days=6))).days > STALE_DAYS_WEEKLY:
+            if (today - (newest + timedelta(days=6))).days > FRESH_MAX_DAYS:
                 continue
             wk = [r for r in rs if _d(r["beginDate"]) == newest]
             nat = [r for r in wk if r.get("marketName") == "National Average"]
@@ -607,6 +646,7 @@ def main() -> None:
     today = date.today()
     print(f"Piaci árjegyzések letöltése (EU agrifood API), ma: {today}")
     items, skipped = collect(today)
+    items = _filter_regular(items, skipped, today)
     fx = _fx_rate()
     _attach_context(items, fx)
     if len(items) < 8:
