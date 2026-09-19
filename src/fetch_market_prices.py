@@ -134,25 +134,6 @@ def _cereal_item(rows: list, prods: tuple, label: str, lo: float, hi: float,
     }
 
 
-def _ms_balanced_series(rows: list) -> tuple[dict, dict]:
-    """hét -> tagállamok átlaga, ahol minden tagállam a SAJÁT piacainak átlagával
-    szerepel; plusz hét -> hány tagállam jelentett."""
-    by: dict = {}
-    for r in rows:
-        if r.get("beginDate") and r.get("memberStateCode"):
-            by.setdefault(_d(r["beginDate"]), {}).setdefault(
-                r["memberStateCode"], []).append(_num(r["price"]))
-    if not by:
-        return {}, {}
-    # RÖGZÍTETT KOSÁR: a legfrissebb héten jelentő tagállamok. A múltbeli hetekből
-    # csak azok számítanak, amikor a kosár MINDEN tagja jelentett — különben az
-    # éves változás és az 52 hetes sáv az összetétel-váltást is mérné.
-    basket = set(by[max(by)])
-    series = {wk: sum(sum(ms[m]) / len(ms[m]) for m in basket) / len(basket)
-              for wk, ms in by.items() if basket <= set(ms)}
-    return series, {wk: len(basket) for wk in series}
-
-
 def _mean_by_week(rows: list) -> dict:
     """hét kezdőnapja -> a heti sorok egyszerű átlaga (tagállamok / piacok)."""
     by_week: dict = {}
@@ -308,7 +289,7 @@ def collect(today: date) -> tuple[list, list]:
         print(f"  [hiba] gabona: {e}")
         skipped += ["Étkezési búza", "Takarmánybúza", "Takarmánykukorica", "Takarmányárpa"]
 
-    # -- Olajos magvak, darák, olaj (HU heti; szójadara: EU-tagállamok) ------ #
+    # -- Olajos magvak, darák, olaj (kizárólag hazai heti jegyzések) ---------- #
     try:
         rows = _get("oilseeds/prices", {"memberStateCodes": "HU",
                                         "marketingYears": f"{my_prev},{my}"})
@@ -335,33 +316,6 @@ def collect(today: date) -> tuple[list, list]:
         skipped += ["Napraforgómag (hagyományos)", "Napraforgómag (magas olajsavas)",
                     "Repcemag", "Napraforgódara", "Repcedara",
                     "Napraforgóolaj (nyers)"]
-
-    try:
-        rows = _get("oilseeds/prices", {"products": "soya meal",
-                                        "marketingYears": f"{my_prev},{my}"})
-        # nincs hazai jegyzés: a jelentő tagállamok átlaga. Egy tagállam több piacot
-        # is jelenthet, ezért ELŐBB tagállamon belül átlagolunk, aztán a tagállamok
-        # között (országonként egyenlő súllyal) — így egyetlen piac sem esetleges.
-        series, n_ms = _ms_balanced_series(rows)
-        if series:
-            newest = max(series)
-            avg = series[newest]
-            end = newest + timedelta(days=6)
-            if 150 <= avg <= 900 and (today - end).days <= STALE_DAYS_WEEKLY:
-                items.append({
-                    "label": "Szójadara", "group": "Olajos termékek",
-                    "scope": f"{n_ms[newest]} tagállam átlaga (hazai jegyzés nincs)",
-                    "freq": "heti", "price": round(avg, 2), "unit": "EUR/t",
-                    "period": f"{newest.isoformat()} – {end.isoformat()}",
-                    "_series": series,
-                })
-            else:
-                skipped.append("Szójadara")
-        else:
-            skipped.append("Szójadara")
-    except Exception as e:
-        print(f"  [hiba] szójadara: {e}")
-        skipped.append("Szójadara")
 
     # -- Sertés (HU, heti, hasított S és E osztály) -------------------------- #
     try:
@@ -636,6 +590,7 @@ NOT_AVAILABLE = [
     "Izocukor (nincs nyilvános jegyzés)",
     "Keményítő (nincs nyilvános jegyzés)",
     "Takarmánykeverékek (AKI-kiadványban létezik, gépi forrás nincs)",
+    "Szójadara (hazai jegyzés nincs; külföldi átlagot nem közlünk)",
     "Vágópulyka / pulykahús (nincs a nyilvános API-ban)",
     "Tenyészállat (nincs hivatalos árjegyzés)",
     "Víz (szabályozott díj, nincs piaci árjegyzés)",

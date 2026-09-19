@@ -574,20 +574,6 @@ def test_lead_sentence_is_sign_aware():
     assert "közelében" in flat and "kiesést jelent" not in flat and "marad el" not in flat
 
 
-def test_ms_balanced_series_fixed_basket():
-    """Tagállamon belül átlag, aztán tagállamok között; a múltból csak a teljes
-    kosarat tartalmazó hetek számítanak (összetétel-váltás ne torzítson)."""
-    from src.fetch_market_prices import _ms_balanced_series
-    now = {"beginDate": "07/09/2026"}; old = {"beginDate": "08/09/2025"}
-    rows = [{**now, "memberStateCode": "FR", "price": "€400"}, {**now, "memberStateCode": "FR", "price": "€420"},
-            {**now, "memberStateCode": "DE", "price": "€430"},
-            {**old, "memberStateCode": "FR", "price": "€300"},          # DE hiányzik: a hét kiesik
-            {**old, "memberStateCode": "PL", "price": "€100"}]
-    series, n = _ms_balanced_series(rows)
-    assert list(series.values()) == [420.0]      # (FR 410 + DE 430) / 2, nem a 3 sor átlaga
-    assert list(n.values()) == [2]
-
-
 # --------------------------------------------------------------------------- #
 # 15) Nyelvi őr: az ügyfélnek szóló szövegekben ne legyen idegen/gépi hatású elem
 # --------------------------------------------------------------------------- #

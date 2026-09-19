@@ -563,8 +563,8 @@ def market_price_page(market: dict, page_no: int, total: int, footer) -> str:
     fx = (market.get("valuation") or {}).get("fx")
     sk = market.get("skipped_today") or []
     skipped_note = (" (most: " + ", ".join(x[0].lower() + x[1:] for x in sk) + ")") if sk else ""
-    fx_note = (f" A forintérték a jegyzés és a hivatalos árfolyam szorzata "
-               f"({hu(fx['rate'], 2)} Ft/EUR, {fx['source']}, {fx['date'].replace('-', '. ')}.)." if fx else "")
+    fx_note = (f" Forintérték: {hu(fx['rate'], 2)} Ft/EUR ({fx['source']}, "
+               f"{fx['date'].replace('-', '. ')}.)." if fx else "")
     return f"""<section class="page">
   <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-bottom:12px">
     <div><p class="rep-kicker">Piaci árjegyzések</p>
@@ -576,7 +576,7 @@ def market_price_page(market: dict, page_no: int, total: int, footer) -> str:
     <tbody>{''.join(rows)}</tbody>
   </table>
   {_regional_block(market.get("regional") or [])}
-  <p style="font-size:10px;line-height:1.5;text-align:justify;color:color-mix(in srgb,var(--color-text) 52%,transparent);margin:10px 0 0;border-top:1px solid var(--color-divider);padding-top:7px"><strong>A jegyzésekről.</strong> Forrás: az Európai Bizottság (DG AGRI) agrárpiaci adatszolgáltatása; a magyar adatokat a tagállami jelentés (AKI PÁIR) adja. Hivatalos napi árjegyzés nem létezik: a jegyzések hetiek (a malacárat a forrás nagyjából havonta frissíti). Csak rendszeresen frissülő jegyzés szerepel: a három hétnél régebbi vagy rendszertelenül érkező árat a lap magától kihagyja{skipped_note}.{fx_note} Az 52 hetes sáv pontja az ár helye az elmúlt év mélypontja (bal) és csúcsa (jobb) között. A regionális körkép árai eltérő paritásúak (termelői, silóból kitárolt, szállított), ezért egymásból nem vonhatók ki. Megbízható nyilvános jegyzés híján nem szerepel: bioetanol, izocukor, keményítő, takarmánykeverék, pulyka, tenyészállat, víz.</p>
+  <p style="font-size:10px;line-height:1.5;text-align:justify;color:color-mix(in srgb,var(--color-text) 52%,transparent);margin:10px 0 0;border-top:1px solid var(--color-divider);padding-top:7px"><strong>A jegyzésekről.</strong> Hazai heti termelői és feldolgozói árak; forrás: az Európai Bizottság (DG AGRI) adatszolgáltatása, a magyar adat az AKI PÁIR jelentése. Hivatalos napi árjegyzés nem létezik. Csak rendszeresen frissülő jegyzés szerepel, a három hétnél régebbit a lap magától kihagyja{skipped_note}.{fx_note} Az 52 hetes sáv pontja az ár helye az elmúlt év mélypontja (bal) és csúcsa (jobb) között. A regionális körkép árai eltérő paritásúak, egymásból nem vonhatók ki. Részletek: <a href="https://prettyasap.github.io/wheat-forecast/magyarazat.html" style="color:var(--color-accent);text-decoration:underline;text-underline-offset:2px">prettyasap.github.io/wheat-forecast/magyarazat.html</a>.</p>
   {footer(page_no, total)}
 </section>"""
 
@@ -688,23 +688,16 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
         # kimondja, hogy a forint volumen-indikátor, nem bevétel. Kötőjel/
         # gondolatjel a prózában szándékosan nincs.
         methodology = (
-            "<strong>Módszertan.</strong> Vármegyei panel lineáris regresszió a KSH "
-            "2000 óta mért hozamaira és az ERA5 időjárásra: a fajta és technológiai "
-            "fejlődést közös trend, a vármegyei adottságokat rögzített hatás kezeli, "
-            "öntözést, talajtípust és fajtaszerkezetet nem. A 80%-os sáv a becslés "
-            "előrejelzési tartománya. A modell múltbeli tévedéseiből számoljuk úgy, "
-            "hogy minden évet csak a korábbi évek ismeretében becsültünk meg "
-            "(visszamérés 2011 és 2025 között); a tipikus "
-            "tévedés ennek szokásos nagysága a trendszinthez mérve (búza "
-            f"{hu(me.get('wheat',0),1)}%, kukorica {hu(me.get('corn',0),1)}%, árpa "
-            f"{hu(me.get('barley',0),1)}%), a sáv ennél nagyjából negyedével szélesebb. "
-            "A termelési érték a hozam, a legutóbbi lezárt évi terület és a jelölt termelői ár szorzata: "
-            "mennyiségi alapú tájékoztató mutató, nem bevételi előrejelzés. Nem hivatalos adat. Részletes "
-            "leírás és visszamérés: <a href=\"https://prettyasap.github.io/"
+            "<strong>Módszertan.</strong> Vármegyei statisztikai modell a KSH 2000 óta "
+            "mért hozamaiból és az ERA5 időjárásból. A 80%-os sáv és a tipikus tévedés "
+            f"(búza {hu(me.get('wheat',0),1)}%, kukorica {hu(me.get('corn',0),1)}%, árpa "
+            f"{hu(me.get('barley',0),1)}%) a modell 2011 és 2025 közötti visszaméréséből "
+            "származik. A termelési érték tájékoztató mutató, nem bevételi előrejelzés. "
+            "Nem hivatalos adat. Részletek: <a href=\"https://prettyasap.github.io/"
             "wheat-forecast/magyarazat.html\" style=\"color:var(--color-accent);"
             "text-decoration:underline;text-underline-offset:2px\">prettyasap."
-            "github.io/wheat-forecast/magyarazat.html</a>. Források: KSH, "
-            "Open-Meteo (ERA5), Európai Bizottság (DG AGRI), MNB, Eurostat."
+            "github.io/wheat-forecast/magyarazat.html</a>. Források: KSH, Open-Meteo "
+            "(ERA5), Európai Bizottság (DG AGRI), MNB."
         )
         page3 = f"""<section class="page">
   <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-bottom:16px">
