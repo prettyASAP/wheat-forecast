@@ -86,8 +86,17 @@ jobs:
             echo "Nincs változás, nincs commit."
           else
             git commit -m "napi forecast frissítés ($(date -u +%F))"
-            # ha közben más commit került a main-re, rebase-elünk push előtt
-            git pull --rebase origin main
+            # Ha közben más commit került a main-re, rebase-elünk push előtt. Ez a
+            # commit KIZÁRÓLAG generált fájlokat tartalmaz (lásd a fenti git add
+            # listát), ezért ütközésnél mindig a most generált, friss változat a
+            # helyes: rebase alatt a "theirs" az éppen alkalmazott (saját) commit.
+            if ! git pull --rebase origin main; then
+              git diff --name-only --diff-filter=U | while read -r f; do
+                git checkout --theirs -- "$f"
+                git add -- "$f"
+              done
+              GIT_EDITOR=true git rebase --continue
+            fi
             git push
           fi
 
