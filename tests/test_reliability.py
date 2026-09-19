@@ -613,3 +613,21 @@ def test_web_texts_use_hungarian_dash_and_no_year_suffix():
         src = (root / name).read_text(encoding="utf-8")
         assert "—" not in src, f"angol hosszú gondolatjel: {name}"
         assert "_year}-es" not in src and 'crop_year + "-es' not in src, f"évszám-toldalék: {name}"
+
+
+def test_filter_regular_keeps_only_self_updating_weekly_quotes():
+    """Felügyelet nélküli napi jelentés: csak friss, rendszeres, nem befagyott heti ár."""
+    from datetime import date as _date, timedelta as _td
+    from src.fetch_market_prices import _filter_regular
+    today = _date(2026, 9, 19); w0 = _date(2026, 9, 7)
+    weekly = {w0 - _td(weeks=k): 200.0 + k for k in range(10)}
+    mk = lambda label, series, freq="heti": {"label": label, "freq": freq, "_series": series}
+    items = [mk("friss", weekly),
+             mk("régi", {k - _td(weeks=5): v for k, v in weekly.items()}),
+             mk("rendszertelen", {w0: 1200.0, w0 - _td(weeks=9): 1100.0}),
+             mk("befagyott", {w0 - _td(weeks=k): 44.31 for k in range(10)}),
+             mk("havi", {_date(2026, 6, 1): 500.0}, freq="havi")]
+    skipped = []
+    kept = _filter_regular(items, skipped, today)
+    assert [i["label"] for i in kept] == ["friss"]
+    assert skipped == ["régi", "rendszertelen", "befagyott", "havi"]

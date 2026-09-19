@@ -483,11 +483,10 @@ def _regional_block(regional: list) -> str:
     nem számolunk, mert a paritások eltérnek."""
     if not regional:
         return ""
-    names = []
-    for r in regional:
-        for c in r["cells"]:
-            if c["name"] not in names:
-                names.append(c["name"])
+    # RÖGZÍTETT oszlopsorrend (ne függjön attól, melyik ország jelentett épp)
+    present = {c["name"] for r in regional for c in r["cells"]}
+    names = [n for n in ("Magyarország", "Ausztria", "Szlovákia", "Románia",
+                         "Lengyelország", "Németország") if n in present]
     # a közös (leggyakoribb) hét; ha egy ország jegyzése RÉGEBBI, a dátumot kiírjuk
     weeks = [c["week"] for r in regional for c in r["cells"]]
     common_week = max(set(weeks), key=weeks.count)
@@ -562,6 +561,8 @@ def market_price_page(market: dict, page_no: int, total: int, footer) -> str:
                 f'<td>{_range52_svg(it)}</td>'
                 f'<td style="{muted};font-size:11px">{scope_cell(it)}</td></tr>')
     fx = (market.get("valuation") or {}).get("fx")
+    sk = market.get("skipped_today") or []
+    skipped_note = (" (most: " + ", ".join(x[0].lower() + x[1:] for x in sk) + ")") if sk else ""
     fx_note = (f" A forintérték a jegyzés és a hivatalos árfolyam szorzata "
                f"({hu(fx['rate'], 2)} Ft/EUR, {fx['source']}, {fx['date'].replace('-', '. ')}.)." if fx else "")
     return f"""<section class="page">
@@ -575,7 +576,7 @@ def market_price_page(market: dict, page_no: int, total: int, footer) -> str:
     <tbody>{''.join(rows)}</tbody>
   </table>
   {_regional_block(market.get("regional") or [])}
-  <p style="font-size:10px;line-height:1.5;text-align:justify;color:color-mix(in srgb,var(--color-text) 52%,transparent);margin:10px 0 0;border-top:1px solid var(--color-divider);padding-top:7px"><strong>A jegyzésekről.</strong> Forrás: az Európai Bizottság (DG AGRI) agrárpiaci adatszolgáltatása; a magyar adatokat a tagállami jelentés (AKI PÁIR) adja. Hivatalos napi árjegyzés nem létezik: a jegyzések hetiek (a cukor havi, a malacárat a forrás nagyjából havonta frissíti).{fx_note} Az 52 hetes sáv pontja az ár helye az elmúlt év mélypontja (bal) és csúcsa (jobb) között. A regionális körkép árai eltérő paritásúak (termelői, silóból kitárolt, szállított), ezért egymásból nem vonhatók ki. Megbízható nyilvános jegyzés híján nem szerepel: bioetanol, izocukor, keményítő, takarmánykeverék, pulyka, tenyészállat, víz.</p>
+  <p style="font-size:10px;line-height:1.5;text-align:justify;color:color-mix(in srgb,var(--color-text) 52%,transparent);margin:10px 0 0;border-top:1px solid var(--color-divider);padding-top:7px"><strong>A jegyzésekről.</strong> Forrás: az Európai Bizottság (DG AGRI) agrárpiaci adatszolgáltatása; a magyar adatokat a tagállami jelentés (AKI PÁIR) adja. Hivatalos napi árjegyzés nem létezik: a jegyzések hetiek (a malacárat a forrás nagyjából havonta frissíti). Csak rendszeresen frissülő jegyzés szerepel: a három hétnél régebbi vagy rendszertelenül érkező árat a lap magától kihagyja{skipped_note}.{fx_note} Az 52 hetes sáv pontja az ár helye az elmúlt év mélypontja (bal) és csúcsa (jobb) között. A regionális körkép árai eltérő paritásúak (termelői, silóból kitárolt, szállított), ezért egymásból nem vonhatók ki. Megbízható nyilvános jegyzés híján nem szerepel: bioetanol, izocukor, keményítő, takarmánykeverék, pulyka, tenyészállat, víz.</p>
   {footer(page_no, total)}
 </section>"""
 
