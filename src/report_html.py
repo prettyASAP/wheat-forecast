@@ -354,8 +354,7 @@ def drivers_strip(fcs: dict) -> str:
                 env, key=lambda e: abs(e["value"] - e["hist_extreme"]) / (abs(e["hist_extreme"]) or 1))
             warn = (f'<p style="font-size:10px;line-height:1.4;margin:6px 0 0;color:{RUST}">'
                     f'<strong>Szélsőség:</strong> {worst["label"]} kívül esik a 2000 óta mért tartományon '
-                    f'(eddigi szélsőérték: {worst["hist_extreme_year"]}); a tévedés a szokásosnál '
-                    f'nagyobb lehet.</p>')
+                    f'(eddigi szélsőérték: {worst["hist_extreme_year"]}).</p>')
         cols.append(f'<div style="padding:0 15px">{rows}{warn}</div>')
     if not any_data:
         return ""
