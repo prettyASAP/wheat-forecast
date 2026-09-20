@@ -707,7 +707,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
   <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start">
     <div>
       {lead_sentence(live_fc)}
-      <p style="font-size:13px;line-height:1.6;color:color-mix(in srgb,var(--color-text) 62%,transparent);margin:0">A szezonból még {rem} nap van hátra; a végeredmény az időjárástól függően <strong>{hu(sc['p10'])}–{hu(sc['p90'])} t/ha</strong> között alakulhat. A becslés tipikus tévedése a múltbeli visszamérések alapján ±{hu(n['model_error_pct'],1)}%.</p>
+      <p style="font-size:13px;line-height:1.6;color:color-mix(in srgb,var(--color-text) 62%,transparent);margin:0">A szezonból még {rem} nap van hátra; a végeredmény az időjárástól függően <strong>{hu(sc['p10'])}–{hu(sc['p90'])} t/ha</strong> között alakulhat.</p>
     </div>
     <div class="blueprint" style="padding:14px;margin:0;break-inside:avoid">
       <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
