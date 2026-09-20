@@ -23,3 +23,4 @@ pytest==9.1.1
 # és a támadási felület csökkentésére. Ha később kellene, tedd vissza pinnelve:
 # statsmodels==0.14.6
 # scikit-learn==1.9.0
+pypdf==6.14.2          # a PDF dokumentum-tulajdonságainak semlegesítése (report_html)

@@ -567,7 +567,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
 
     # oldal-láblécek
     def footer(page_no, total):
-        return (f'<div class="page-footer"><span>Terméshozam-előrejelző · statisztikai modell</span>'
+        return (f'<div class="page-footer"><span>Terméshozam-előrejelzés · statisztikai modell</span>'
                 f'<span>{stamp} · {page_no} / {total} · nem hivatalos, tájékoztató adat</span></div>')
 
     # 2. oldal – térképek
@@ -707,7 +707,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
 
     return f"""<!DOCTYPE html>
 <html lang="hu"><head><meta charset="utf-8">
-<title>Napi vezetői jelentés – {today}</title>
+<title>Terméshozam-előrejelzés – {today}</title>
 <style>{CSS}</style></head><body>
 <section class="page">
   <div style="border-bottom:2px solid var(--color-text);padding-bottom:10px;margin-bottom:4px">
@@ -766,6 +766,24 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
 # ---------------------------------------------------------------------------- #
 # PDF renderelés (headless Chromium / Playwright)
 # ---------------------------------------------------------------------------- #
+def _neutral_metadata(pdf_path: Path) -> None:
+    """A dokumentum-tulajdonságok semlegesítése: a renderelő motor neve és a
+    másodpercre pontos létrehozási idő helyett cím + a nap (éjfél) szerepel."""
+    try:
+        from pypdf import PdfReader, PdfWriter
+    except ImportError:
+        print("  [info] pypdf nincs telepítve: a PDF-tulajdonságok változatlanok")
+        return
+    today = date.today()
+    w = PdfWriter(clone_from=PdfReader(str(pdf_path)))
+    stamp = today.strftime("D:%Y%m%d000000")
+    w.add_metadata({"/Title": f"Terméshozam-előrejelzés {today.strftime('%Y. %m. %d.')}",
+                    "/Creator": "", "/Producer": "", "/Author": "",
+                    "/CreationDate": stamp, "/ModDate": stamp})
+    with open(pdf_path, "wb") as fh:
+        w.write(fh)
+
+
 def render_pdf(html_path: Path, pdf_path: Path) -> None:
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
@@ -788,6 +806,7 @@ def render_pdf(html_path: Path, pdf_path: Path) -> None:
         print(f"  oldal-hézagok a lábléc fölött (px): {gaps}")
         page.pdf(path=str(pdf_path), prefer_css_page_size=True, print_background=True)
         browser.close()
+    _neutral_metadata(pdf_path)
 
 
 def main(make_pdf: bool = True, out_path: str | Path | None = None) -> Path | None:
@@ -795,7 +814,7 @@ def main(make_pdf: bool = True, out_path: str | Path | None = None) -> Path | No
     ha --no-pdf). Külső PDF-pipeline-hoz: add meg az `out_path`-t (tetszőleges
     cél .pdf), és a kész PDF oda is odamásolódik – lásd INTEGRACIO.md."""
     today = date.today().isoformat()
-    stamp = datetime.now().strftime("%Y. %m. %d. %H:%M")
+    stamp = datetime.now().strftime("%Y. %m. %d.")  # csak a nap, óra-perc nélkül
     JELENTES_DIR.mkdir(parents=True, exist_ok=True)
     ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 
