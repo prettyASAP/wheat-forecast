@@ -1,7 +1,7 @@
 {
  "crop": "búza",
  "crop_year": 2026,
- "updated_at": "2026-09-19",
+ "updated_at": "2026-09-20",
  "weather_known_until": "2026-06-30",
  "unit": "t/ha",
  "band": "80%",
@@ -36,7 +36,7 @@
    "production_kt": 4762.2,
    "area_kha": 1074.0,
    "source": "Európai Bizottság (DG AGRI)",
-   "as_of": "2026-09-19"
+   "as_of": "2026-09-20"
   },
   "drivers": {
    "groups": [
