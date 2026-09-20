@@ -607,13 +607,18 @@ def test_filter_regular_keeps_only_self_updating_weekly_quotes():
     from src.fetch_market_prices import _filter_regular
     today = _date(2026, 9, 19); w0 = _date(2026, 9, 7)
     weekly = {w0 - _td(weeks=k): 200.0 + k for k in range(10)}
-    mk = lambda label, series, freq="heti": {"label": label, "freq": freq, "_series": series}
+    def mk(label, series, freq="heti"):
+        nw = max(series)
+        return {"label": label, "freq": freq, "_series": series,
+                "period": f"{nw.isoformat()} – {(nw + _td(days=6)).isoformat()}"}
     items = [mk("friss", weekly),
              mk("régi", {k - _td(weeks=5): v for k, v in weekly.items()}),
              mk("rendszertelen", {w0: 1200.0, w0 - _td(weeks=9): 1100.0}),
              mk("befagyott", {w0 - _td(weeks=k): 44.31 for k in range(10)}),
+             mk("lemaradt", {k - _td(weeks=1): v for k, v in weekly.items()}),
              mk("havi", {_date(2026, 6, 1): 500.0}, freq="havi")]
     skipped = []
     kept = _filter_regular(items, skipped, today)
     assert [i["label"] for i in kept] == ["friss"]
-    assert skipped == ["régi", "rendszertelen", "befagyott", "havi"]
+    # a "lemaradt" friss és rendszeres, de NEM a legfrissebb hétről való: kiesik
+    assert skipped == ["régi", "rendszertelen", "befagyott", "havi", "lemaradt"]
