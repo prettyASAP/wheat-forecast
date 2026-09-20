@@ -472,50 +472,6 @@ def _range52_svg(it: dict) -> str:
             f'<circle cx="{x:.1f}" cy="5" r="3.2" fill="var(--color-accent-800)"></circle></svg>')
 
 
-_PARITY_SHORT = {"termelői ár": "termelői", "termelőtől elszállítva": "termelőtől",
-                 "silóból kitárolva": "silóból", "vevőhöz szállítva": "szállítva",
-                 "FOB kikötő": "FOB", "országos átlag": "orsz. átlag"}
-
-
-def _regional_block(regional: list) -> str:
-    """Regionális árkörkép: tagállamonként ár + PARITÁS. Különbözetet szándékosan
-    nem számolunk, mert a paritások eltérnek."""
-    if not regional:
-        return ""
-    # RÖGZÍTETT oszlopsorrend (ne függjön attól, melyik ország jelentett épp)
-    present = {c["name"] for r in regional for c in r["cells"]}
-    names = [n for n in ("Magyarország", "Ausztria", "Szlovákia", "Románia",
-                         "Lengyelország", "Németország") if n in present]
-    # a közös (leggyakoribb) hét; ha egy ország jegyzése RÉGEBBI, a dátumot kiírjuk
-    weeks = [c["week"] for r in regional for c in r["cells"]]
-    common_week = max(set(weeks), key=weeks.count)
-
-    def _older(c: dict) -> str:
-        if c["week"] == common_week:
-            return ""
-        mo, d = int(c["week"][5:7]), int(c["week"][8:10])
-        return f" · {_HU_MONTHS[mo]} {d}."
-    muted = "color:color-mix(in srgb,var(--color-text) 52%,transparent)"
-    head = "".join(f'<th style="text-align:right;font-size:9.5px;letter-spacing:0.04em">{n}</th>'
-                   for n in names)
-    body = ""
-    for r in regional:
-        by = {c["name"]: c for c in r["cells"]}
-        tds = ""
-        for n in names:
-            c = by.get(n)
-            tds += ('<td style="text-align:right;white-space:normal">'
-                    + (f'<span style="font-weight:600;font-variant-numeric:tabular-nums">{hu(c["price"], 0)}</span>'
-                       f'<br><span style="font-size:9.5px;{muted};white-space:nowrap">{_PARITY_SHORT.get(c["parity"], c["parity"])}{_older(c)}</span>' if c
-                       else f'<span style="{muted}">n. a.</span>') + '</td>')
-        body += f'<tr><td>{r["label"]}</td>{tds}</tr>'
-    return (f'<p class="rep-kicker" style="margin:14px 0 4px">Regionális árkörkép '
-            f'<span style="font-weight:400;letter-spacing:0;text-transform:none;font-size:10px;{muted}">'
-            f'EUR/t, a legutolsó jegyzett hét</span></p>'
-            f'<table class="table price-table" style="font-size:12px;table-layout:fixed;width:100%"><thead><tr>'
-            f'<th style="width:22%">Termék</th>{head}</tr></thead><tbody>{body}</tbody></table>')
-
-
 def market_price_page(market: dict, page_no: int, total: int, footer) -> str:
     """4. oldal: hivatalos piaci árjegyzések (EU agrifood API ← AKI PÁIR).
     Csak validált, friss tételek; a referencia-időszak tételenként jelölve.
@@ -546,7 +502,7 @@ def market_price_page(market: dict, page_no: int, total: int, footer) -> str:
         for it in groups[gname]:
             price = f"{it['price']:,.2f}".replace(",", " ").replace(".", ",")
             if it.get("huf") is not None:
-                huf = (f"{it['huf']:,.0f}".replace(",", " ") if it["huf_unit"] in ("Ft/t", "Ft/db")
+                huf = (f"{it['huf']:,.0f}".replace(",", " ") if it["huf_unit"] == "Ft/t"
                        else hu(it["huf"], 0)) + f' <span style="{muted}">{it["huf_unit"]}</span>'
             else:
                 huf = ""
@@ -560,8 +516,6 @@ def market_price_page(market: dict, page_no: int, total: int, footer) -> str:
                 f'<td>{_range52_svg(it)}</td>'
                 f'<td style="{muted};font-size:11px">{scope_cell(it)}</td></tr>')
     fx = (market.get("valuation") or {}).get("fx")
-    sk = market.get("skipped_today") or []
-    skipped_note = (" (most: " + ", ".join(x[0].lower() + x[1:] for x in sk) + ")") if sk else ""
     fx_note = (f" Forintérték: {hu(fx['rate'], 2)} Ft/EUR ({fx['source']}, "
                f"{fx['date'].replace('-', '. ')}.)." if fx else "")
     return f"""<section class="page">
@@ -574,8 +528,7 @@ def market_price_page(market: dict, page_no: int, total: int, footer) -> str:
     <thead><tr><th style="width:25%">Termék</th><th style="width:19%;text-align:right">Jegyzés</th><th style="width:13%;text-align:right">Forintban</th><th style="width:9%;text-align:right;white-space:nowrap">Egy év</th><th style="width:12%;white-space:nowrap">52 hetes sáv</th><th style="width:22%">Piac</th></tr></thead>
     <tbody>{''.join(rows)}</tbody>
   </table>
-  {_regional_block(market.get("regional") or [])}
-  <p style="font-size:10px;line-height:1.5;text-align:justify;color:color-mix(in srgb,var(--color-text) 52%,transparent);margin:10px 0 0;border-top:1px solid var(--color-divider);padding-top:7px"><strong>A jegyzésekről.</strong> Hazai heti termelői és feldolgozói árak; forrás: az Európai Bizottság (DG AGRI) adatszolgáltatása, a magyar adat az AKI PÁIR jelentése. Hivatalos napi árjegyzés nem létezik. Csak rendszeresen frissülő jegyzés szerepel, a három hétnél régebbit a lap magától kihagyja{skipped_note}.{fx_note} Az 52 hetes sáv pontja az ár helye az elmúlt év mélypontja (bal) és csúcsa (jobb) között. A regionális körkép árai eltérő paritásúak, egymásból nem vonhatók ki. Részletek: <a href="https://prettyasap.github.io/wheat-forecast/magyarazat.html" style="color:var(--color-accent);text-decoration:underline;text-underline-offset:2px">prettyasap.github.io/wheat-forecast/magyarazat.html</a>.</p>
+  <p style="font-size:10px;line-height:1.5;text-align:justify;color:color-mix(in srgb,var(--color-text) 52%,transparent);margin:10px 0 0;border-top:1px solid var(--color-divider);padding-top:7px"><strong>A jegyzésekről.</strong> Hazai heti termelői és feldolgozói árak; forrás: az Európai Bizottság (DG AGRI) adatszolgáltatása, a magyar adat az AKI PÁIR jelentése. Hivatalos napi árjegyzés nem létezik, minden sor a legutolsó kiadott hétről való.{fx_note} Az 52 hetes sáv pontja az ár helye az elmúlt év mélypontja (bal) és csúcsa (jobb) között. Részletek: <a href="https://prettyasap.github.io/wheat-forecast/magyarazat.html" style="color:var(--color-accent);text-decoration:underline;text-underline-offset:2px">prettyasap.github.io/wheat-forecast/magyarazat.html</a>.</p>
   {footer(page_no, total)}
 </section>"""
 

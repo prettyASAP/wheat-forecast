@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-09-20",
+ "updated_at": "2026-09-21",
  "source": "Európai Bizottság (DG AGRI) agrifood API; a magyar adatok a tagállami jelentésből (AKI PÁIR) származnak",
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
@@ -169,21 +169,6 @@
    "yoy_pct": -15.4
   },
   {
-   "label": "Malac",
-   "scope": "hazai, kb. havonta frissül",
-   "freq": "heti",
-   "price": 44.31,
-   "unit": "EUR/db",
-   "period": "2026-09-07 – 2026-09-13",
-   "group": "Sertés",
-   "huf": 16110,
-   "huf_unit": "Ft/db",
-   "lo52": 44.31,
-   "hi52": 61.07,
-   "pos52": 0.0,
-   "yoy_pct": -27.4
-  },
-  {
    "label": "Egész csirke (65%-os)",
    "scope": "hazai",
    "freq": "heti",
@@ -278,91 +263,8 @@
    }
   }
  },
- "regional": [
-  {
-   "label": "Takarmánykukorica",
-   "cells": [
-    {
-     "ms": "HU",
-     "name": "Magyarország",
-     "price": 245.34,
-     "parity": "termelői ár",
-     "week": "2026-09-07"
-    },
-    {
-     "ms": "AT",
-     "name": "Ausztria",
-     "price": 239.0,
-     "parity": "silóból kitárolva",
-     "week": "2026-08-24"
-    },
-    {
-     "ms": "RO",
-     "name": "Románia",
-     "price": 186.95,
-     "parity": "silóból kitárolva",
-     "week": "2026-09-07"
-    },
-    {
-     "ms": "PL",
-     "name": "Lengyelország",
-     "price": 230.97,
-     "parity": "vevőhöz szállítva",
-     "week": "2026-09-07"
-    },
-    {
-     "ms": "DE",
-     "name": "Németország",
-     "price": 268.5,
-     "parity": "silóból kitárolva",
-     "week": "2026-09-07"
-    }
-   ]
-  },
-  {
-   "label": "Takarmánybúza",
-   "cells": [
-    {
-     "ms": "HU",
-     "name": "Magyarország",
-     "price": 200.21,
-     "parity": "termelői ár",
-     "week": "2026-09-07"
-    },
-    {
-     "ms": "SK",
-     "name": "Szlovákia",
-     "price": 189.1,
-     "parity": "termelőtől elszállítva",
-     "week": "2026-09-07"
-    },
-    {
-     "ms": "RO",
-     "name": "Románia",
-     "price": 173.44,
-     "parity": "silóból kitárolva",
-     "week": "2026-09-07"
-    },
-    {
-     "ms": "PL",
-     "name": "Lengyelország",
-     "price": 200.87,
-     "parity": "vevőhöz szállítva",
-     "week": "2026-09-07"
-    },
-    {
-     "ms": "DE",
-     "name": "Németország",
-     "price": 202.5,
-     "parity": "silóból kitárolva",
-     "week": "2026-09-07"
-    }
-   ]
-  }
- ],
  "skipped_today": [
-  "Napraforgóolaj (nyers)",
-  "Kristálycukor"
+  "Napraforgóolaj (nyers)"
  ],
  "not_available": [
   "Bioetanol (nincs nyilvános hivatalos jegyzés)",
@@ -370,6 +272,8 @@
   "Keményítő (nincs nyilvános jegyzés)",
   "Takarmánykeverékek (AKI-kiadványban létezik, gépi forrás nincs)",
   "Szójadara (hazai jegyzés nincs; külföldi átlagot nem közlünk)",
+  "Malac (a forrás csak kb. havonta frissíti, közte az értéket továbbgörgeti)",
+  "Kristálycukor (csak havi EU-átlag létezik, több hónapos késéssel)",
   "Vágópulyka / pulykahús (nincs a nyilvános API-ban)",
   "Tenyészállat (nincs hivatalos árjegyzés)",
   "Víz (szabályozott díj, nincs piaci árjegyzés)"
