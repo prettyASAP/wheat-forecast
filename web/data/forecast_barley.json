@@ -20,15 +20,15 @@
   "weights": "2025. évi vármegyei betakarított területek, Budapest nélkül",
   "model_error_pct": 7.2,
   "value": {
-   "price_huf_per_t": 63870,
+   "price_huf_per_t": 63720,
    "price_year": 2026,
    "price_phrase": "2026. szeptemberi termelői áron",
    "area_ha": 270344,
    "area_year": 2025,
    "production_mt": 1.51,
-   "production_value_bn_huf": 96.6,
+   "production_value_bn_huf": 96.4,
    "trend_gap_bn_huf": -7.4,
-   "note": "ár: takarmányárpa termelői ára, 4 jegyzett hét átlaga (2026-08-17 – 2026-09-13), 175.72 EUR/t × 363.47 Ft/EUR (MNB hivatalos középárfolyam, 2026-09-18); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
+   "note": "ár: takarmányárpa termelői ára, 4 jegyzett hét átlaga (2026-08-17 – 2026-09-13), 175.72 EUR/t × 362.6 Ft/EUR (MNB hivatalos középárfolyam, 2026-09-21); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
   },
   "drivers": {
    "groups": [
@@ -337,7 +337,7 @@
     "frost_days_winter": 1,
     "gdd_total": 2663.0
    },
-   "value_bn_huf": 11.0,
+   "value_bn_huf": 10.9,
    "trend_gap_bn_huf": -1.1
   },
   {
