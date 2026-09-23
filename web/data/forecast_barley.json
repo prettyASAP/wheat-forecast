@@ -1,7 +1,7 @@
 {
  "crop": "őszi árpa",
  "crop_year": 2026,
- "updated_at": "2026-09-22",
+ "updated_at": "2026-09-23",
  "weather_known_until": "2026-06-30",
  "unit": "t/ha",
  "band": "80%",
@@ -20,15 +20,15 @@
   "weights": "2025. évi vármegyei betakarított területek, Budapest nélkül",
   "model_error_pct": 7.2,
   "value": {
-   "price_huf_per_t": 63720,
+   "price_huf_per_t": 63560,
    "price_year": 2026,
    "price_phrase": "2026. szeptemberi termelői áron",
    "area_ha": 270344,
    "area_year": 2025,
    "production_mt": 1.51,
-   "production_value_bn_huf": 96.4,
+   "production_value_bn_huf": 96.2,
    "trend_gap_bn_huf": -7.4,
-   "note": "ár: takarmányárpa termelői ára, 4 jegyzett hét átlaga (2026-08-17 – 2026-09-13), 175.72 EUR/t × 362.6 Ft/EUR (MNB hivatalos középárfolyam, 2026-09-21); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
+   "note": "ár: takarmányárpa termelői ára, 4 jegyzett hét átlaga (2026-08-17 – 2026-09-13), 175.72 EUR/t × 361.73 Ft/EUR (MNB hivatalos középárfolyam, 2026-09-22); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
   },
   "drivers": {
    "groups": [
@@ -269,7 +269,7 @@
     "frost_days_winter": 2,
     "gdd_total": 2499.0
    },
-   "value_bn_huf": 2.6,
+   "value_bn_huf": 2.5,
    "trend_gap_bn_huf": -0.1
   },
   {
@@ -371,7 +371,7 @@
     "frost_days_winter": 0,
     "gdd_total": 2704.0
    },
-   "value_bn_huf": 11.5,
+   "value_bn_huf": 11.4,
    "trend_gap_bn_huf": -1.5
   },
   {
@@ -388,7 +388,7 @@
     "frost_days_winter": 1,
     "gdd_total": 2736.0
    },
-   "value_bn_huf": 10.9,
+   "value_bn_huf": 10.8,
    "trend_gap_bn_huf": -1.6
   },
   {
