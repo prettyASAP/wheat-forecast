@@ -21,15 +21,15 @@
   "weights": "2025. évi vármegyei betakarított területek, Budapest nélkül",
   "model_error_pct": 7.0,
   "value": {
-   "price_huf_per_t": 66710,
+   "price_huf_per_t": 66280,
    "price_year": 2026,
    "price_phrase": "2026. szeptemberi termelői áron",
    "area_ha": 270344,
    "area_year": 2025,
    "production_mt": 1.6,
-   "production_value_bn_huf": 106.6,
+   "production_value_bn_huf": 105.9,
    "trend_gap_bn_huf": -4.0,
-   "note": "ár: takarmányárpa termelői ára, 4 jegyzett hét átlaga (2026-08-31 – 2026-09-27), 181.41 EUR/t × 367.73 Ft/EUR (MNB hivatalos középárfolyam, 2026-10-05); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
+   "note": "ár: takarmányárpa termelői ára, 4 jegyzett hét átlaga (2026-08-31 – 2026-09-27), 181.41 EUR/t × 365.38 Ft/EUR (MNB hivatalos középárfolyam, 2026-10-06); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
   },
   "sowing": {
    "since": "2026-10-01",
@@ -314,7 +314,7 @@
     "frost_days_winter": 0,
     "gdd_total": 174.0
    },
-   "value_bn_huf": 7.6,
+   "value_bn_huf": 7.5,
    "trend_gap_bn_huf": -0.3
   },
   {
@@ -331,7 +331,7 @@
     "frost_days_winter": 0,
     "gdd_total": 174.0
    },
-   "value_bn_huf": 4.7,
+   "value_bn_huf": 4.6,
    "trend_gap_bn_huf": -0.2
   },
   {
@@ -348,7 +348,7 @@
     "frost_days_winter": 0,
     "gdd_total": 161.0
    },
-   "value_bn_huf": 2.0,
+   "value_bn_huf": 1.9,
    "trend_gap_bn_huf": -0.1
   },
   {
@@ -365,7 +365,7 @@
     "frost_days_winter": 0,
     "gdd_total": 201.0
    },
-   "value_bn_huf": 6.2,
+   "value_bn_huf": 6.1,
    "trend_gap_bn_huf": -0.3
   },
   {
@@ -399,7 +399,7 @@
     "frost_days_winter": 0,
     "gdd_total": 178.0
    },
-   "value_bn_huf": 5.6,
+   "value_bn_huf": 5.5,
    "trend_gap_bn_huf": -0.3
   },
   {
@@ -484,7 +484,7 @@
     "frost_days_winter": 0,
     "gdd_total": 180.0
    },
-   "value_bn_huf": 12.3,
+   "value_bn_huf": 12.2,
    "trend_gap_bn_huf": -0.5
   },
   {
@@ -518,7 +518,7 @@
     "frost_days_winter": 0,
     "gdd_total": 178.0
    },
-   "value_bn_huf": 13.3,
+   "value_bn_huf": 13.2,
    "trend_gap_bn_huf": -0.6
   },
   {
@@ -535,7 +535,7 @@
     "frost_days_winter": 0,
     "gdd_total": 192.0
    },
-   "value_bn_huf": 12.9,
+   "value_bn_huf": 12.8,
    "trend_gap_bn_huf": -0.4
   },
   {
@@ -552,7 +552,7 @@
     "frost_days_winter": 0,
     "gdd_total": 179.0
    },
-   "value_bn_huf": 10.2,
+   "value_bn_huf": 10.1,
    "trend_gap_bn_huf": -0.4
   }
  ]

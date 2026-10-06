@@ -6,6 +6,7 @@
  "unit": "t/ha",
  "band": "80%",
  "method": "trend",
+ "season_phase": "trend",
  "national": {
   "predicted_yield_t_ha": 3.31,
   "pred_low_t_ha": 2.64,
@@ -20,15 +21,15 @@
   "weights": "2025. évi vármegyei betakarított területek, Budapest nélkül",
   "model_error_pct": 12.7,
   "value": {
-   "price_huf_per_t": 198520,
+   "price_huf_per_t": 197250,
    "price_year": 2026,
    "price_phrase": "2026. szeptemberi termelői áron",
    "area_ha": 143148,
    "area_year": 2025,
    "production_mt": 0.47,
-   "production_value_bn_huf": 93.9,
+   "production_value_bn_huf": 93.3,
    "trend_gap_bn_huf": -1.2,
-   "note": "ár: repcemag termelői ára, 4 jegyzett hét átlaga (2026-08-31 – 2026-09-27), 539.85 EUR/t × 367.73 Ft/EUR (MNB hivatalos középárfolyam, 2026-10-05); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
+   "note": "ár: repcemag termelői ára, 4 jegyzett hét átlaga (2026-08-31 – 2026-09-27), 539.85 EUR/t × 365.38 Ft/EUR (MNB hivatalos középárfolyam, 2026-10-06); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
   }
  },
  "scenarios": null,
@@ -91,11 +92,11 @@
    "low": 2.25,
    "high": 3.8,
    "weather_todate": {
-    "prec_total_mm": 47.1,
-    "wb_total_mm": -87.4,
+    "prec_total_mm": 54.9,
+    "wb_total_mm": -79.5,
     "heat_days": 0,
     "frost_days_winter": 0,
-    "gdd_total": 700.0
+    "gdd_total": 701.0
    },
    "value_bn_huf": 0.9,
    "trend_gap_bn_huf": 0.0
@@ -125,8 +126,8 @@
    "low": 2.61,
    "high": 3.92,
    "weather_todate": {
-    "prec_total_mm": 56.6,
-    "wb_total_mm": -78.8,
+    "prec_total_mm": 60.8,
+    "wb_total_mm": -74.6,
     "heat_days": 0,
     "frost_days_winter": 0,
     "gdd_total": 735.0
@@ -163,7 +164,7 @@
     "wb_total_mm": -64.3,
     "heat_days": 0,
     "frost_days_winter": 0,
-    "gdd_total": 690.0
+    "gdd_total": 691.0
    },
    "value_bn_huf": 6.2,
    "trend_gap_bn_huf": 0.0
@@ -369,7 +370,7 @@
     "frost_days_winter": 0,
     "gdd_total": 730.0
    },
-   "value_bn_huf": 5.8,
+   "value_bn_huf": 5.7,
    "trend_gap_bn_huf": 0.0
   }
  ]
