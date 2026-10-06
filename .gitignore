@@ -29,3 +29,6 @@ __pycache__/
 
 # A web/data/ alatti JSON-okat VERZIÓZZUK: a napi cron commitolja a friss
 # forecast.json-t és a history snapshotokat, a GitHub Pages onnan szolgálja.
+
+# Helyi szerkesztő-konfiguráció
+.claude/

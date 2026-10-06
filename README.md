@@ -1,43 +1,44 @@
 # Terméshozam-előrejelző (Magyarország, NUTS3)
 
-Interaktív térkép, amely Magyarország 20 NUTS3 egységére (19 vármegye + Budapest)
-mutatja az aktuális időjárást, és ebből folyamatosan frissülő búza- és
-kukoricahozam-előrejelzést ad. A modell a KSH tényleges vármegyei hozamait
-(2000-től) tanulja össze az ugyanezen területekre eső ERA5 időjárással; a két fő
-magyarázó a hőmérséklet és a csapadék (ablakos GDD, hőstressz, vízmérleg).
+[![daily-forecast](https://github.com/prettyASAP/wheat-forecast/actions/workflows/daily.yml/badge.svg)](https://github.com/prettyASAP/wheat-forecast/actions/workflows/daily.yml)
 
-## Állapot
+**Élő térkép:** https://prettyasap.github.io/wheat-forecast/ · [Módszertan](https://prettyasap.github.io/wheat-forecast/magyarazat.html)
 
-| Fázis | Tartalom | Állapot |
-|------|----------|---------|
-| 1 | Repó váz + letöltő scriptek | ✅ |
-| 2 | Panel + crosswalk | ✅ |
-| 3 | Származtatott mutatók | ✅ |
-| 4 | Modell + validáció (**mérési kapu**) | ✅ teljesült ([riport](reports/backtest_report.md)) |
-| 5 | Élő korrekciós motor | ✅ |
-| 6 | Térképes felület | ✅ |
-| 7 | Automatizálás (GitHub Actions) | ✅ (GitHub remote + Pages bekapcsolás kell) |
-| 8 | Kukorica bővítés | ✅ ([riport](reports/backtest_report_corn.md)) |
+Vármegyei szintű (19 vármegye, NUTS3) terméshozam-előrejelzés búzára, kukoricára,
+őszi árpára, napraforgóra és repcére. A modell a KSH 2000 óta közölt vármegyei
+hozamait tanulja össze az ugyanazokra a területekre aggregált ERA5 időjárással,
+és a szezon során naponta frissül. A futást GitHub Actions végzi minden reggel;
+az eredmény egy statikus térkép és egy napi PDF jelentés.
 
-**Terminál-bővítések** (a 8 fázis után):
-- **A** — vármegye-hozamgrafikon (2000–2025) + országos fejléc-mutatók (becslés,
-  trend-anomália, YoY, percentilis); a historikus országos idősor a KSH hivatalos
-  sora, szigorú parse-keresztellenőrzéssel
-- **B** — termelői árak (Eurostat apri_ap_crpouta, HUF) + forintosítás: termelési
-  érték és trend-rés mrd Ft-ban, az ár- és terület-évjárat explicit jelölésével
-- **C** — térképréteg-váltó: anomália / vízmérleg / csapadék / hőstressz / GDD
-  (az időjárási rétegek adatvezérelt, relatív skálával)
-- **D** — időjárás-forgatókönyvek: a szezon hátralévő napjai a 26 analóg év
-  tényleges időjárásával -> P10/P50/P90; szezon közben a fő becslés az együttes
-  átlaga (Jensen-korrekció a konvex aszályjelző miatt)
-- **E** — harmadik termény: **őszi árpa** (a KSH külön őszi árpa szekciójából,
-  keverés nélkül; mérési kapu: LOYO 0.548 vs naiv 0.693, sáv 81.4%)
+> *English summary:* county-level crop yield nowcasting for Hungary. A panel
+> regression with county fixed effects and a linear trend, fitted on official KSH
+> yields (2000–) and ERA5 weather features, re-run daily via GitHub Actions and
+> published as a static map. Validated out-of-sample (leave-one-year-out and
+> as-of backtests) against a naive trend baseline.
 
-**Modell-eredmények (leave-one-year-out, out-of-sample):**
-búza RMSE 0,53 t/ha (11,4%, R² 0,73), kukorica RMSE 1,40 t/ha (22,9%, R² 0,43) —
-mindkettő érdemben veri a naiv trend-alapot. A 2022-es aszály iránytartása:
-búza 14/19, kukorica 19/19 vármegye (a búza–kukorica kontraszt — a búza megúszta,
-a kukorica összeomlott — a modellben is látszik).
+## Eredmények (out-of-sample)
+
+Leave-one-year-out keresztvalidáció, vármegye-év szinten, a naiv trend-alaphoz mérve:
+
+| Termény | RMSE (t/ha) | RMSE (%) | R² | Naiv trend RMSE (t/ha) | 80%-os sáv lefedettsége | Riport |
+|---|---|---|---|---|---|---|
+| Búza | 0,529 | 11,4% | 0,73 | 0,682 | 82,6% | [backtest](reports/backtest_report.md) |
+| Kukorica | 1,396 | 22,9% | 0,43 | 1,725 | 85,0% | [backtest](reports/backtest_report_corn.md) |
+| Őszi árpa | 0,545 | 12,1% | 0,78 | 0,693 | 81,8% | [backtest](reports/backtest_report_barley.md) |
+
+A 2022-es aszályban a modell iránya búzánál 19-ből 14, kukoricánál 19-ből 19
+vármegyében stimmelt (a búza megúszta, a kukorica összeomlott, és ez a modellben
+is látszik). A szezon közbeni pontosságot a [walk-forward riport](reports/walkforward_report.md)
+méri. Napraforgóra és repcére ugyanez a pipeline fut, külön riport nélkül.
+
+## Mit tud
+
+- **Napi nowcast** a szezon hátralévő részére analóg évek tényleges időjárásával
+  (26 forgatókönyv, P10/P50/P90), a konvex aszályjelző miatt Jensen-korrekcióval
+- **Térképrétegek:** hozam-anomália, vízmérleg, csapadék, hőstressz, GDD
+- **Vármegyei idősor** 2000-től, országos mutatók (becslés, trend-eltérés, YoY, percentilis)
+- **Forintosítás:** Eurostat termelői árakkal termelési érték és trend-rés mrd Ft-ban
+- **Napi vezetői PDF** a `web/data/jelentes_latest.pdf` alatt
 
 ## Gyors indítás
 
