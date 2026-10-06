@@ -284,6 +284,14 @@ DEFAULT_CROP = "wheat"
 # kerülhetnek (jelenleg tudatosan a három fő terményre fókuszál a napi jelentés).
 REPORT_CROPS = ["wheat", "corn", "barley"]
 
+# Mettől közlünk hozamszámot a futó termésévre (hónap, nap). Előtte a termény
+# "vetési időszakban" van: a kiindulás a sokéves szint, a tartomány a 2000 óta
+# mért évek szélső kimenetei, és a vetés körülményeit mutatjuk. Az ok: néhány
+# napnyi őszi időjárásból számolt hozam hamis pontosságot sugallna (a modell
+# ilyenkor gyakorlatilag a trendet adja vissza). Őszi vetésűeknél a bokrosodás
+# kezdete (márc. 1.), kukoricánál az intenzív növekedés kezdete (jún. 1.).
+YIELD_FROM = {"wheat": (3, 1), "barley": (3, 1), "corn": (6, 1)}
+
 # --------------------------------------------------------------------------- #
 # Crosswalk: KSH vármegyenév -> NUTS3 kód (2. fázis tölti ki, kézzel ellenőrizve)
 # A KSH magyar vármegyeneveket használ ("... vármegye"), a GISCO NAME_LATN latin

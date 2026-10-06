@@ -340,7 +340,11 @@ def test_report_html_has_three_pages_and_all_crops():
     # a bizonytalansági sáv a szám mellett (agrárprofesszori elv) és a
     # forgatókönyv-tábla is jelen van
     assert "80%-os sáv" in html
-    assert "Terményben és forintban" in html
+    # a 3. oldal futó szezonban forgatókönyv-tábla, vetési időszakban vetési oldal
+    if any(fc.get("season_phase") == "running" for fc in fcs.values()):
+        assert "Terményben és forintban" in html
+    elif any(fc.get("season_phase") == "sowing" for fc in fcs.values()):
+        assert "Vetési időszak" in html
 
 
 # --------------------------------------------------------------------------- #
@@ -638,3 +642,37 @@ def test_history_series_filters_by_crop_year(tmp_path, monkeypatch):
         (h / f"{day}.json").write_text(_json.dumps({"crop_year": cy, "national": {"predicted_yield_t_ha": val}}))
     assert [x["pred"] for x in report_html.history_series("wheat", 30)] == [5.18, 5.18, 5.63]
     assert [x["pred"] for x in report_html.history_series("wheat", 30, crop_year=2027)] == [5.63]
+
+
+# --------------------------------------------------------------------------- #
+# 16) Szezonfázis: vetési időszakban nincs hozamszám (hamis pontosság)
+# --------------------------------------------------------------------------- #
+def test_season_phase_transitions():
+    from src.predict_live import season_phase
+    assert season_phase("wheat", 2027, date(2026, 10, 6), True, False) == "sowing"
+    assert season_phase("wheat", 2027, date(2027, 3, 1), True, False) == "running"
+    assert season_phase("wheat", 2027, date(2027, 7, 15), False, False) == "final"
+    assert season_phase("corn", 2027, date(2027, 4, 20), True, False) == "sowing"
+    assert season_phase("corn", 2027, date(2027, 6, 1), True, False) == "running"
+    assert season_phase("rapeseed", 2027, date(2026, 10, 6), False, True) == "trend"
+
+
+def test_autumn_layout_uses_previous_year_finals_and_no_yield_for_sowing():
+    """Ősszel: lezárt 2026-os blokk (a búza/árpa záró pillanatképéből) + induló
+    2027-es vetési kártyák hozamszám nélkül; a 3. oldal a vetési oldal."""
+    import copy, re as _re
+    from src import report_html
+    fcs = {c: report_html.load_fc(c) for c in config.REPORT_CROPS}
+    if not any(f.get("season_phase") == "sowing" for f in fcs.values()):
+        pytest.skip("csak vetési időszakban értelmezhető (élő JSON-okból)")
+    prev = [copy.deepcopy(f) for f in fcs.values() if f.get("season_phase") == "sowing"]
+    for f in prev:  # egy lezárt előző év szimulálása a friss fájlból
+        f["crop_year"] -= 1; f["scenarios"] = None; f["season_phase"] = "final"
+    html = report_html.build_html(fcs, "2026-10-06", "2026. 10. 06.", final_prev=prev)
+    text = _re.sub(r"<[^>]+>", " ", html)
+    assert html.count('<section class="page">') == 3
+    assert "évi betakarítás · lezárt szezonok" in text and "vetési időszak" in text
+    assert "Kevés csapadékkal indul" in text or "csapadékkal indul az új termésév" in text
+    # a vetési kártyán nincs "a szokásoshoz" eltérés és nincs forint-kiesés
+    sow_part = html.split("évi termésév ·")[1].split("Trendalapú")[0]
+    assert "a szokásoshoz" not in sow_part and "mrd Ft" not in sow_part

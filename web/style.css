@@ -78,6 +78,7 @@ header h1 { font-size: 1.15rem; }
 .badge.final { background: #e8f6ee; color: #17693a; border: 1px solid #bfe3cd; }
 .badge.open  { background: #fdf3e0; color: #9a6a12; border: 1px solid #f0dcb0; }
 .badge.trend { background: #eef3f8; color: #3a5a7a; border: 1px solid #cdddeb; }
+.badge.sowing { background: #f1f5ea; color: #4b6b2a; border: 1px solid #d3e0bd; }
 .badge.extreme { background: #fbeae6; color: #8f3323; border: 1px solid #ecc3b9; }
 .headline-sub.envelope { margin-top: 4px; }
 .kpi-drivers { min-width: 300px; }

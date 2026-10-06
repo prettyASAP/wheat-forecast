@@ -6,6 +6,7 @@
  "unit": "t/ha",
  "band": "80%",
  "method": "weather",
+ "season_phase": "final",
  "national": {
   "predicted_yield_t_ha": 5.35,
   "pred_low_t_ha": 3.68,

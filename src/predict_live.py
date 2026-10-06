@@ -370,6 +370,56 @@ def national_block(crop: str, crop_year: int, rows: list[dict],
     return out
 
 
+def season_phase(crop: str, crop_year: int, today: date, has_scenarios: bool,
+                 is_trend: bool) -> str:
+    """trend / final / sowing / running – a megjelenítés közös forrása (PDF + web)."""
+    if is_trend:
+        return "trend"
+    if not has_scenarios:
+        return "final"
+    yf = config.YIELD_FROM.get(crop)
+    if yf and today < date(crop_year, *yf):
+        return "sowing"
+    return "running"
+
+
+def sowing_stats(known_only: pd.DataFrame, crop: str, crop_year: int,
+                 known_until, county_area: pd.Series) -> dict:
+    """Országos (terület-súlyozott) időjárás a vetés óta, a sokéves (2000 óta mért)
+    azonos naptári ablak átlagához mérve. Csak a ténylegesen ismert napokból."""
+    start, _ = season_window(crop_year, crop)
+    w = county_area.astype(float)
+
+    def nat_sum(df: pd.DataFrame, col: str) -> float:
+        s = df.groupby("nuts_id")[col].sum().reindex(w.index).dropna()
+        return float((s * w[s.index]).sum() / w[s.index].sum())
+
+    cur = known_only[known_only["nuts_id"].isin(w.index)]
+    prec = nat_sum(cur, "precipitation_sum")
+    et0 = nat_sum(cur, "et0_fao_evapotranspiration")
+    md = {(d.month, d.day) for d in pd.date_range(start, known_until, freq="D")}
+    hist = pd.read_parquet(config.weather_daily_parquet(crop))
+    hist = hist[hist["crop_year"] != crop_year]
+    dt = pd.to_datetime(hist["date"])
+    hist = hist[[m in md for m in zip(dt.dt.month, dt.dt.day)]]
+    hist = hist[hist["nuts_id"].isin(w.index)]
+    yearly = (hist.groupby(["crop_year", "nuts_id"])[["precipitation_sum",
+              "et0_fao_evapotranspiration"]].sum().reset_index())
+    yearly["w"] = yearly["nuts_id"].map(w)
+    agg = yearly.groupby("crop_year").apply(
+        lambda g: pd.Series({"p": (g["precipitation_sum"] * g["w"]).sum() / g["w"].sum(),
+                             "e": (g["et0_fao_evapotranspiration"] * g["w"]).sum() / g["w"].sum()}))
+    p_norm, e_norm = float(agg["p"].mean()), float(agg["e"].mean())
+    return {
+        "since": start.isoformat(), "until": str(known_until),
+        "days": int((known_until - start).days + 1),
+        "prec_mm": round(prec, 1), "prec_normal_mm": round(p_norm, 1),
+        "prec_pct_of_normal": round(100 * prec / p_norm) if p_norm > 0 else None,
+        "wb_mm": round(prec - et0, 1), "wb_normal_mm": round(p_norm - e_norm, 1),
+        "years_in_normal": int(agg.shape[0]),
+    }
+
+
 def main(crop: str = config.DEFAULT_CROP) -> None:
     spec = config.CROPS[crop]
     # TREND-alapú termények (napraforgó, repce): a mérési kapu elutasította az
@@ -504,10 +554,15 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
         "unit": "t/ha",
         "band": "80%",
         "method": spec.get("method", "weather"),
+        "season_phase": season_phase(crop, crop_year, today, sc is not None, is_trend),
         "national": national_block(crop, crop_year, rows, df),
         "scenarios": sc,
         "counties": rows,
     }
+    if payload["season_phase"] == "sowing":
+        payload["national"]["sowing"] = sowing_stats(known_only, crop, crop_year,
+                                                     known_until, county_area)
+
     # Hivatalos EU-becslés viszonyítási pontként (ha friss és erre a termésévre szól)
     off_path = config.WEB_DATA / "official_estimates.json"
     if off_path.exists():

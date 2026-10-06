@@ -32,6 +32,7 @@ const LAYERS = {
           colors: ["#fdf2d0", "#f5b041", "#dc7633", "#a04000"] },
 };
 let currentLayer = "anomaly";
+let layerAutoSet = false;  // a réteget a vetési időszak miatt mi váltottuk
 
 let map, geojson, historyDates = [], currentForecast = null;
 let selectedId = null;
@@ -146,6 +147,17 @@ let mapReady = false;
 
 function applyForecast(fc) {
   currentForecast = fc;
+  // Vetési időszakban a hozam-eltérés réteg még nem mond semmit: a vízmérlegre
+  // váltunk, és ha a réteget mi váltottuk (nem a felhasználó), nem vetési
+  // terménynél visszaállunk az eltérésre.
+  const sel = document.getElementById("layer-select");
+  if (fc.season_phase === "sowing" && currentLayer === "anomaly") {
+    currentLayer = "wb"; layerAutoSet = true;
+    if (sel) sel.value = "wb";
+  } else if (fc.season_phase !== "sowing" && layerAutoSet) {
+    currentLayer = "anomaly"; layerAutoSet = false;
+    if (sel) sel.value = "anomaly";
+  }
   if (mapReady) paintMap(fc);  // különben a térkép "load" eseménye festi ki
   const wxNote = fc.scenarios
     ? `időjárási adat (mért + 7 napos előrejelzés): ${huDate(fc.weather_known_until).slice(0, -1)}-ig`
@@ -210,6 +222,25 @@ function renderHeadline(fc) {
          ±${hu(n.model_error_pct, 1)}%. ${info("tevedes")}` : "";
     el.innerHTML = `<div class="headline-main">${mainT}</div>
       <div class="headline-sub">${certT}${errT}</div>`;
+    return;
+  }
+
+  // VETÉSI IDŐSZAK: néhány napnyi időjárásból számolt hozam hamis pontosságot
+  // sugallna; a kiindulás a sokéves szint, a tartomány a mért évek szélső kimenetei.
+  if (fc.season_phase === "sowing") {
+    const sw = n.sowing || {};
+    const an = (sc && sc.analogs) || null;
+    const rng = an ? ` A 2000 óta mért évek szélső kimenetei innen indulva
+      <b>${hu(an.worst[0].t_ha)}</b> (${an.worst[0].year}) és <b>${hu(an.best[0].t_ha)}</b>
+      (${an.best[0].year}) t/ha.` : "";
+    const rain = sw.prec_pct_of_normal != null
+      ? ` A vetés óta a csapadék a sokéves átlag <b>${sw.prec_pct_of_normal}%-a</b>
+         (${hu(sw.prec_mm, 0)} mm), a vízmérleg ${hu(sw.wb_mm, 0)} mm.` : "";
+    el.innerHTML = `<div class="headline-main">${cropSubject(fc)} termése: vetési időszak.
+        A kiindulás a sokéves szint, <b>${hu(n.trend_t_ha)} t/ha</b>.${rng}${rain}</div>
+      <div class="headline-sub"><span class="badge sowing">VETÉSI IDŐSZAK</span> Hozambecslést a
+        tavaszi fejlődés ismeretében közlünk; még ${sc ? sc.remaining_days : ""} nap van a
+        betakarításig. ${info("vetesi")}</div>`;
     return;
   }
 
@@ -343,6 +374,25 @@ function renderNational(fc) {
   const v = n.value;
 
   const cards = [];
+  if (fc.season_phase === "sowing") {
+    const sw = n.sowing || {};
+    cards.push(`
+      <div class="kpi">
+        <div class="kpi-label">Kiindulás · ${fc.crop_year} ${info("vetesi")}</div>
+        <div class="kpi-value">${hu(n.trend_t_ha)} <small>t/ha</small></div>
+        <div class="kpi-sub">sokéves szint · ${n.prev_year}. évi tény: ${hu(n.prev_year_yield_t_ha)} t/ha</div>
+      </div>`);
+    if (sw.prec_mm != null) cards.push(`
+      <div class="kpi">
+        <div class="kpi-label">A vetés óta ${info("vizmerleg")}</div>
+        <div class="kpi-value">${sw.prec_pct_of_normal != null ? sw.prec_pct_of_normal + "%" : hu(sw.prec_mm, 0) + " mm"}
+          <small>${sw.prec_pct_of_normal != null ? "a sokéves csapadék" : "csapadék"}</small></div>
+        <div class="kpi-sub">${hu(sw.prec_mm, 0)} mm csapadék (sokéves ${hu(sw.prec_normal_mm, 0)} mm) ·
+          vízmérleg ${hu(sw.wb_mm, 0)} mm (sokéves ${hu(sw.wb_normal_mm, 0)} mm)</div>
+      </div>`);
+    el.innerHTML = cards.join("");
+    return;
+  }
   cards.push(`
     <div class="kpi">
       <div class="kpi-label">Országos becslés · ${fc.crop_year} ${info("becsles")}</div>
@@ -586,6 +636,7 @@ document.querySelectorAll("#crop-switch button").forEach(b =>
 
 document.getElementById("layer-select").addEventListener("change", e => {
   currentLayer = e.target.value;
+  layerAutoSet = false;  // a felhasználó választott: azt nem írjuk felül
   if (currentForecast && mapReady) {
     map.setPaintProperty("counties-fill", "fill-color",
       paintForLayer(currentLayer, currentForecast));
