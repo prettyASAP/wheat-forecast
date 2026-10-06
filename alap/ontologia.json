@@ -1,0 +1,251 @@
+{
+  "projekt": "Terméshozam-előrejelző",
+  "leiras": "Napi búza, kukorica, őszi árpa, napraforgó és repce hozambecslés vármegyénként, webes térképen és vezetői PDF-ben.",
+  "objektumok": [
+    {
+      "id": "varmegye",
+      "nev": "Vármegye",
+      "leiras": "A 20 magyar NUTS3 egység: 19 vármegye és Budapest. Budapestre nincs becslés.",
+      "kulcs": "NUTS3 kód (HU110 ... HU333)",
+      "adatok": [
+        "név",
+        "határ",
+        "reprezentatív pont",
+        "betakarított terület"
+      ],
+      "eredet": "Eurostat GISCO NUTS 2024 határfájl, a KSH vármegyenevekkel kézi megfeleltetésben (config.KSH_TO_NUTS3)",
+      "tar": "terulet"
+    },
+    {
+      "id": "termeny",
+      "nev": "Termény",
+      "leiras": "Az öt termény a saját szezonjával, fenológiai ablakaival és módszerével (időjárásmodell vagy trend).",
+      "kulcs": "terménykód (wheat, corn, barley, sunflower, rapeseed)",
+      "adatok": [
+        "szezon",
+        "fenológiai ablakok",
+        "hőküszöb",
+        "változókészlet",
+        "módszer"
+      ],
+      "eredet": "src/config.py CROPS regiszter"
+    },
+    {
+      "id": "termesev",
+      "nev": "Termésév",
+      "tar": "idoszak",
+      "leiras": "A betakarítás éve a hozzá tartozó időjárási ablakkal. Őszi vetésnél az előző év őszén kezdődik.",
+      "kulcs": "termény + termésév",
+      "adatok": [
+        "szezon kezdete és vége",
+        "évhatár-eltolás",
+        "időzóna: Europe/Budapest"
+      ],
+      "eredet": "src/build_panel.py assign_crop_year a config szezonjaiból"
+    },
+    {
+      "id": "forrasfajl",
+      "nev": "Forrásfájl",
+      "tar": "forrasfajl",
+      "leiras": "Egy letöltött nyers fájl a data/raw alatt: KSH tábla, határfájl, vármegyei időjárás, Eurostat ár.",
+      "kulcs": "útvonal a data/raw alatt",
+      "adatok": [
+        "útvonal",
+        "lefedett évek vagy napok",
+        "sorok száma",
+        "formátum"
+      ],
+      "eredet": "a négy letöltő szkript (fetch_ksh, fetch_boundaries, fetch_weather, fetch_prices)"
+    },
+    {
+      "id": "hozam",
+      "nev": "Tényhozam",
+      "tar": "meroszam",
+      "leiras": "Egy vármegye egy évi betakarított területe, termése és termésátlaga egy terményre.",
+      "kulcs": "termény + NUTS3 kód + termésév",
+      "adatok": [
+        "termésátlag t/ha",
+        "terület ha",
+        "termés t"
+      ],
+      "eredet": "KSH stadat táblák (mez0071, mez0072, mez0073, mez0078, mez0079), 2000-től"
+    },
+    {
+      "id": "idojaras",
+      "nev": "Napi időjárás",
+      "tar": "meroszam",
+      "leiras": "Egy vármegye reprezentatív pontjának napi értékei.",
+      "kulcs": "NUTS3 kód + nap + változó",
+      "adatok": [
+        "Tmax",
+        "Tmin",
+        "Tátlag",
+        "csapadék",
+        "ET0"
+      ],
+      "eredet": "Open-Meteo: ERA5 archívum 1999-10-01-től, a futó szezonra archívum és előrejelzés"
+    },
+    {
+      "id": "mutato",
+      "nev": "Időjárási mutató",
+      "tar": "meroszam",
+      "leiras": "Termésévre és fenológiai ablakra összesített mutató: GDD, hőstressznap, csapadék, fagynap, vízmérleg.",
+      "kulcs": "termény + NUTS3 kód + termésév + mutató neve",
+      "adatok": [
+        "érték",
+        "ablak",
+        "definíció"
+      ],
+      "eredet": "src/features.py a napi időjárásból"
+    },
+    {
+      "id": "modell",
+      "nev": "Modellváltozat",
+      "leiras": "Terményenként a kapun átment módszer: panelmodell v1 vagy v2 változókészlettel, vagy trend.",
+      "kulcs": "termény + változat (v1, v2, trend)",
+      "adatok": [
+        "walk-forward RMSE",
+        "naiv trend RMSE",
+        "q10 és q90",
+        "vármegyei szórás",
+        "lefedettség"
+      ],
+      "eredet": "src/walkforward.py és src/trend_baseline.py, data/processed/walkforward_summary_*.json"
+    },
+    {
+      "id": "becsles",
+      "nev": "Becslés",
+      "leiras": "Egy napon kiadott hozambecslés egy vármegyére vagy országosan, 80%-os sávval.",
+      "kulcs": "termény + termésév + NUTS3 kód vagy ország + a futás napja",
+      "adatok": [
+        "becsült hozam t/ha",
+        "alsó és felső sáv",
+        "eltérés a trendtől",
+        "forgatókönyvek P10, P50, P90",
+        "termelési érték Ft"
+      ],
+      "eredet": "src/predict_live.py, web/data/forecast_*.json és web/data/history/<termény>/<nap>.json",
+      "tar": "becsles"
+    },
+    {
+      "id": "ar",
+      "nev": "Ár",
+      "tar": "meroszam",
+      "leiras": "Termelői vagy piaci ár egy termékre: éves Eurostat ár és heti jegyzés, forintra váltva.",
+      "kulcs": "termék + időszak + forrás",
+      "adatok": [
+        "ár",
+        "egység",
+        "időszak",
+        "árfolyam és napja"
+      ],
+      "eredet": "Eurostat apri_ap_crpouta (éves), EU agrifood API heti jegyzései, MNB középárfolyam"
+    },
+    {
+      "id": "jelentes",
+      "nev": "Napi jelentés",
+      "tar": "kimenet",
+      "leiras": "A napi vezetői PDF, 2 és 4 oldal között.",
+      "kulcs": "jelentes_<nap>.pdf",
+      "adatok": [
+        "oldalszám",
+        "nap"
+      ],
+      "eredet": "src/report_html.py a becslésfájlokból, HTML-ből Chromiummal"
+    },
+    {
+      "id": "ellenorzes",
+      "nev": "Ellenőrzés",
+      "tar": "ellenorzes",
+      "leiras": "Fáziszáró ellenőrzés, tesztöv, keresztvalidáció, walk-forward kapu.",
+      "kulcs": "az ellenőrzés neve + termény + futás",
+      "adatok": [
+        "eredmény",
+        "átment és elbukott pontok"
+      ],
+      "eredet": "a lépések végi ellenőrzések a kódban, tests/test_reliability.py, a validációs riportok"
+    }
+  ],
+  "kapcsolatok": [
+    {
+      "honnan": "forrasfajl",
+      "hova": "hozam",
+      "nev": "tartalmazza"
+    },
+    {
+      "honnan": "forrasfajl",
+      "hova": "idojaras",
+      "nev": "tartalmazza"
+    },
+    {
+      "honnan": "varmegye",
+      "hova": "hozam",
+      "nev": "hozama"
+    },
+    {
+      "honnan": "varmegye",
+      "hova": "idojaras",
+      "nev": "időjárása"
+    },
+    {
+      "honnan": "termeny",
+      "hova": "termesev",
+      "nev": "szezonja"
+    },
+    {
+      "honnan": "hozam",
+      "hova": "termesev",
+      "nev": "évébe esik"
+    },
+    {
+      "honnan": "idojaras",
+      "hova": "mutato",
+      "nev": "összesítve"
+    },
+    {
+      "honnan": "mutato",
+      "hova": "termesev",
+      "nev": "évébe esik"
+    },
+    {
+      "honnan": "mutato",
+      "hova": "modell",
+      "nev": "magyarázza"
+    },
+    {
+      "honnan": "hozam",
+      "hova": "modell",
+      "nev": "tanítja"
+    },
+    {
+      "honnan": "modell",
+      "hova": "becsles",
+      "nev": "adja"
+    },
+    {
+      "honnan": "varmegye",
+      "hova": "becsles",
+      "nev": "becslése"
+    },
+    {
+      "honnan": "ar",
+      "hova": "becsles",
+      "nev": "forintosítja"
+    },
+    {
+      "honnan": "becsles",
+      "hova": "jelentes",
+      "nev": "szerepel benne"
+    },
+    {
+      "honnan": "ellenorzes",
+      "hova": "modell",
+      "nev": "ellenőrzi"
+    },
+    {
+      "honnan": "ellenorzes",
+      "hova": "becsles",
+      "nev": "ellenőrzi"
+    }
+  ]
+}

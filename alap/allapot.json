@@ -1,0 +1,112 @@
+{
+  "frissitve": "2026-10-04T13:34",
+  "idoszak": "2026-09-21 napi futás, helyi másolat",
+  "csomopontok": {
+    "ksh": {
+      "allapot": "kesz",
+      "uzenet": "5 tábla, 2000 és 2025 között; nincs verziózva, csak ezen a gépen van meg",
+      "bizonyitek": "data/raw/ksh: mez0071, mez0072, mez0073, mez0078, mez0079 csv és xlsx megvan, az évek a csv fejlécéből; git ls-files data/raw/ksh"
+    },
+    "hatarok": {
+      "allapot": "kesz",
+      "uzenet": "20 egység, a webes másolat azonos; nincs verziózva, csak ezen a gépen van meg",
+      "bizonyitek": "data/raw/boundaries/nuts3_hu_20M_2024.geojson NUTS_ID-i összevetve a config.KSH_TO_NUTS3 kódjaival és a web/data/nuts3_hu.geojson tartalmával"
+    },
+    "era5": {
+      "allapot": "kesz",
+      "uzenet": "20 vármegye, 1999-10-01 és 2025-12-31 között; a parquet fájlok nincsenek verziózva",
+      "bizonyitek": "data/raw/weather/HU*.parquet: fájlok megszámolva, oszlopok és első, utolsó nap fájlonként kiolvasva"
+    },
+    "eurostat_ar": {
+      "allapot": "kesz",
+      "uzenet": "5 termény, legutóbbi árév: 2024",
+      "bizonyitek": "data/raw/prices/eurostat_apri_ap_crpouta_hu.json megvan, a web/data/prices.json terményei és latest_year mezője kiolvasva"
+    },
+    "letoltes": {
+      "allapot": "kesz",
+      "uzenet": "minden nyers fájl megvan",
+      "bizonyitek": "a négy forrás fenti mérése: 5 KSH tábla két formátumban, 20 egységes határfájl, 20 időjárásfájl, Eurostat árfájl"
+    },
+    "panel": {
+      "allapot": "hiba",
+      "uzenet": "repce: a build_panel záróellenőrzésének feltétele nem teljesül a 2000. termésévre (274 nap a 303-ból); ez az év a panelen kívül van, a panel évei teljesek",
+      "bizonyitek": "data/processed/panel_*.parquet és weather_daily_*.parquet: egységek száma, duplikátum, hiányzó érték, és a termésévenkénti napszám a szezon hosszához mérve (src/build_panel.py season_days, tűrés 2 nap), a build_panel futtatása nélkül újraszámolva"
+    },
+    "mutatok": {
+      "allapot": "kesz",
+      "uzenet": "5 termény, 2580 sor",
+      "bizonyitek": "data/processed/features_*.parquet: sorok száma a panel éveihez mérve, hiányzó érték és duplikált kulcs újramérve"
+    },
+    "validacio": {
+      "allapot": "kesz",
+      "uzenet": "RMSE t/ha: búza 0.529 a naiv 0.682 ellen; kukorica 1.396 a naiv 1.725 ellen; őszi árpa 0.545 a naiv 0.693 ellen",
+      "bizonyitek": "data/processed/loyo_results_*.parquet actual, pred és naive_trend oszlopából újraszámolva; backtest_results_*.parquet megvan. A trendalapú terményekre nincs ilyen fájl"
+    },
+    "meresi_kapu": {
+      "allapot": "kesz",
+      "uzenet": "búza v2 0.573 a naiv 0.621 ellen; kukorica v1 1.512 a naiv 1.948 ellen; őszi árpa v2 0.574 a naiv 0.669 ellen; napraforgó trend 0.409; repce trend 0.528",
+      "bizonyitek": "data/processed/walkforward_summary_*.json rmse_wf, rmse_naive_wf, winner és method mezője összevetve a src/config.py CROPS módszerével és változókészletével"
+    },
+    "riportok": {
+      "allapot": "kesz",
+      "uzenet": "4 riport, 9 ábra",
+      "bizonyitek": "reports/*.md és reports/figures/*.png megszámolva"
+    },
+    "idosor": {
+      "allapot": "kesz",
+      "uzenet": "5 termény, 129 év egyezik",
+      "bizonyitek": "panel_*.parquet vármegyei összegei összevetve a data/raw/ksh csv Ország összesen sorával (a projekt ksh_national_official olvasójával), tűrés 25 egység"
+    },
+    "tesztek": {
+      "allapot": "kesz",
+      "uzenet": "49 teszt átment",
+      "bizonyitek": "lefuttatva: .venv/bin/python -m pytest tests/ -q -p no:cacheprovider (gyorsítótár és bájtkód írása nélkül)"
+    },
+    "elo_idojaras": {
+      "allapot": "nyom",
+      "uzenet": "az utolsó ismert nap terményenként: 2026-06-30 és 2026-09-27 között",
+      "bizonyitek": "a nyers napi lekérés nincs elmentve; csak a web/data/forecast_*.json weather_known_until mezője látszik"
+    },
+    "piaci_ar": {
+      "allapot": "nyom",
+      "uzenet": "feldolgozva: 2026-09-21",
+      "bizonyitek": "a nyers API-válasz nincs elmentve; csak a feldolgozott web/data/market_prices.json látszik"
+    },
+    "arak": {
+      "allapot": "kesz",
+      "uzenet": "14 tétel, árfolyam 363.47 (2026-09-18)",
+      "bizonyitek": "web/data/market_prices.json: items száma, updated_at, valuation.crops és valuation.fx kiolvasva"
+    },
+    "elo_becsles": {
+      "allapot": "kesz",
+      "uzenet": "5 termény, 19 vármegyei becslés mindegyikben; a fájlok két napra szóródnak: wheat 2026-09-20, corn 2026-09-20, barley 2026-09-21, sunflower 2026-09-21, rapeseed 2026-09-21",
+      "bizonyitek": "web/data/forecast_*.json: sorok, becslések száma, országos érték a vármegyei tartományban, percentilisek sorrendje; a hozam- és eltéréshatár az időjárásmodelles terményekre mérve"
+    },
+    "pdf_jelentes": {
+      "allapot": "kesz",
+      "uzenet": "jelentes_2026-09-21.pdf, 4 oldal",
+      "bizonyitek": "web/data/jelentes alatt a futás napi PDF megvan, az oldalszám pypdf-fel kiolvasva; a lábléc-hézag mérése csak a futás naplójában van"
+    },
+    "kiadas": {
+      "allapot": "kesz",
+      "uzenet": "5 becslés és a PDF azonos a másolatával, minden commitolva",
+      "bizonyitek": "forecast_*.json összevetve a web/data/history/<termény>/<nap>.json tartalmával, a két PDF sha256-ja, git status --porcelain web/data"
+    },
+    "web": {
+      "allapot": "nyom",
+      "uzenet": "a helyi másolat 2026-09-21 napi, 13 napja; az origin/main utolsó ismert állapota 2 committal előrébb jár",
+      "bizonyitek": "web/ alatt 4 oldalfájl megvan; az élő GitHub Pages oldal nincs megmérve (hálózat nélkül), git rev-list HEAD..origin/main a legutóbbi fetch szerint"
+    },
+    "pdf": {
+      "allapot": "kesz",
+      "uzenet": "jelentes_2026-09-21.pdf, 4 oldal",
+      "bizonyitek": "a fájl megvan és commitolva van, a jelentes_latest.pdf vele bitre azonos"
+    },
+    "tanulsagok": {
+      "allapot": "hiany",
+      "uzenet": "a memória utoljára 2026-09-19, a legutóbbi kézi commit 2026-09-21, azóta 5 kézi commit",
+      "bizonyitek": "3 md fájl módosítási napja a projekt memóriamappájában, összevetve a git log legutóbbi nem napi-frissítés commitjával; a tartalom nincs vizsgálva"
+    }
+  },
+  "idoszak_kulcs": "2026-09-21"
+}

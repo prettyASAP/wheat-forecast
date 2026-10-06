@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adatfolyam</title>
+<style>
+  :root { --bg:#ffffff; --panel:#f6f8fa; --line:#d0d7de; --fg:#1f2328; --dim:#656d76; --ok:#1a7f37; --warn:#9a6700; --err:#cf222e; --run:#0969da; --wait:#8c959f; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0d1117; --panel:#161b22; --line:#30363d; --fg:#e6edf3; --dim:#8b949e; --ok:#3fb950; --warn:#d29922; --err:#f85149; --run:#58a6ff; --wait:#6e7681; }
+  }
+  body { margin:0; padding:28px 32px; background:var(--bg); color:var(--fg); font:14px/1.5 -apple-system, "Segoe UI", sans-serif; }
+  header h1 { font-size:20px; margin:0; }
+  header .meta { color:var(--dim); margin-top:2px; }
+  header .olvasat { margin-top:10px; font-size:15px; }
+  h2 { font-size:15px; margin:30px 0 8px; }
+  .box { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px; overflow-x:auto; }
+  .ketto { display:flex; gap:14px; align-items:flex-start; }
+  .ketto > .box { flex:1; min-width:0; }
+  .kartya { width:320px; flex:none; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px; position:sticky; top:16px; }
+  .kartya h3 { margin:0; font-size:14px; }
+  .kartya .tipus { color:var(--dim); font-size:12px; margin-bottom:8px; }
+  .kartya dl { margin:0; }
+  .kartya dt { color:var(--dim); font-size:12px; margin-top:8px; }
+  .kartya dd { margin:0; overflow-wrap:anywhere; }
+  .kartya dd.kis { font-size:12px; }
+  .ures { color:var(--dim); }
+  table { border-collapse:collapse; width:100%; }
+  th, td { padding:7px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  th { color:var(--dim); font-weight:500; font-size:12px; }
+  tbody tr { cursor:pointer; }
+  tbody tr:hover, tbody tr.on { background:color-mix(in srgb, var(--run) 10%, transparent); }
+  td.nev { white-space:nowrap; font-weight:600; }
+  td.tip { color:var(--dim); white-space:nowrap; }
+  .all { white-space:nowrap; }
+  .erintett { color:var(--dim); font-size:12px; }
+  .pont { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; box-sizing:border-box; }
+  svg text { fill:var(--fg); font:12px -apple-system, "Segoe UI", sans-serif; }
+  svg .sub { fill:var(--dim); font-size:11px; }
+  svg .doboz { fill:var(--bg); stroke:var(--line); }
+  svg g.cs { cursor:pointer; }
+  svg g.cs.on .doboz { stroke:var(--run); stroke-width:2; }
+  svg .el { fill:none; stroke:var(--line); stroke-width:1.5; }
+  svg .el.warn { stroke:var(--warn); }
+  svg .el.err { stroke:var(--err); }
+  svg .el.on { stroke:var(--run); stroke-width:2; }
+  svg .cimke { fill:var(--dim); font-size:11px; }
+  .jel { display:flex; gap:16px; flex-wrap:wrap; margin-top:10px; color:var(--dim); font-size:12px; }
+  ul.lista { margin:0; padding-left:18px; }
+  ul.lista li { margin:3px 0; }
+  ul.lista span { color:var(--dim); }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="cim"></h1>
+  <div class="meta" id="meta"></div>
+  <div class="olvasat" id="olvasat"></div>
+</header>
+
+<div id="figyelem"></div>
+
+<h2>Állapot</h2>
+<div class="ketto">
+  <div class="box"><table><thead><tr><th>Lépés</th><th>Fajta</th><th>Állapot</th><th>Üzenet</th></tr></thead><tbody id="tabla"></tbody></table></div>
+  <div class="kartya" id="reszlet"><span class="ures">Kattints egy sorra vagy dobozra a részletekért.</span></div>
+</div>
+
+<h2>Folyam</h2>
+<div class="box"><svg id="folyam"></svg>
+  <div class="jel" id="jel"></div>
+</div>
+
+<div id="vedelem"></div>
+
+<h2>Objektumok</h2>
+<div class="ketto">
+  <div class="box"><svg id="onto"></svg></div>
+  <div class="kartya" id="objektum"><span class="ures">Kattints egy objektumra az adataiért és a kapcsolataiért.</span></div>
+</div>
+
+<script>
+const D = {"projekt": "Terméshozam-előrejelző", "leiras": "Napi búza, kukorica, őszi árpa, napraforgó és repce hozambecslés vármegyénként, webes térképen és vezetői PDF-ben.", "idoszak": "2026-09-21 napi futás, helyi másolat", "frissitve": "2026-10-04T13:34", "kor_nap": 1, "mert_lepesek": 12, "lepesek": 12, "csomopontok": [{"id": "ksh", "tipus": "forras", "nev": "KSH hozamtáblák", "leiras": "öt stadat tábla vármegyénként: terület, termés, termésátlag 2000-től", "objektumok": ["forrasfajl", "hozam", "varmegye"], "allapot": "kesz", "uzenet": "5 tábla, 2000 és 2025 között; nincs verziózva, csak ezen a gépen van meg", "bizonyitek": "data/raw/ksh: mez0071, mez0072, mez0073, mez0078, mez0079 csv és xlsx megvan, az évek a csv fejlécéből; git ls-files data/raw/ksh", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "hatarok", "tipus": "forras", "nev": "Vármegyehatárok", "leiras": "Eurostat GISCO NUTS3 2024, a 20 magyar egység", "objektumok": ["forrasfajl", "varmegye"], "allapot": "kesz", "uzenet": "20 egység, a webes másolat azonos; nincs verziózva, csak ezen a gépen van meg", "bizonyitek": "data/raw/boundaries/nuts3_hu_20M_2024.geojson NUTS_ID-i összevetve a config.KSH_TO_NUTS3 kódjaival és a web/data/nuts3_hu.geojson tartalmával", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "era5", "tipus": "forras", "nev": "ERA5 időjárás", "leiras": "Open-Meteo archívum, vármegyénként napi idősor 1999-10-01-től a legutóbbi teljes évig", "objektumok": ["forrasfajl", "idojaras"], "allapot": "kesz", "uzenet": "20 vármegye, 1999-10-01 és 2025-12-31 között; a parquet fájlok nincsenek verziózva", "bizonyitek": "data/raw/weather/HU*.parquet: fájlok megszámolva, oszlopok és első, utolsó nap fájlonként kiolvasva", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "eurostat_ar", "tipus": "forras", "nev": "Eurostat termelői árak", "leiras": "éves termelői ár forintban, kb. egyéves késéssel", "objektumok": ["forrasfajl", "ar"], "allapot": "kesz", "uzenet": "5 termény, legutóbbi árév: 2024", "bizonyitek": "data/raw/prices/eurostat_apri_ap_crpouta_hu.json megvan, a web/data/prices.json terményei és latest_year mezője kiolvasva", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "elo_idojaras", "tipus": "forras", "nev": "Élő időjárás", "leiras": "Open-Meteo archívum és előrejelzés a futó szezonra, naponta lekérve", "objektumok": ["idojaras"], "allapot": "nyom", "uzenet": "az utolsó ismert nap terményenként: 2026-06-30 és 2026-09-27 között", "bizonyitek": "a nyers napi lekérés nincs elmentve; csak a web/data/forecast_*.json weather_known_until mezője látszik", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "piaci_ar", "tipus": "forras", "nev": "Piaci jegyzések", "leiras": "EU agrifood API heti jegyzései és hivatalos termésbecslése, MNB árfolyam, naponta lekérve", "objektumok": ["ar"], "allapot": "nyom", "uzenet": "feldolgozva: 2026-09-21", "bizonyitek": "a nyers API-válasz nincs elmentve; csak a feldolgozott web/data/market_prices.json látszik", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "letoltes", "tipus": "lepes", "nev": "Letöltés", "bemenet": ["ksh", "hatarok", "era5", "eurostat_ar"], "objektumok": ["forrasfajl"], "leiras": "a négy letöltő a data/raw alá menti a nyers fájlokat, meglévőt csak --force kapcsolóval tölt újra", "eszkoz": "src/fetch_ksh.py, src/fetch_boundaries.py, src/fetch_weather.py, src/fetch_prices.py", "kapu": "megvan az 5 KSH tábla (csv és xlsx), a 20 egységes határfájl, a 20 vármegye időjárásfájlja és az Eurostat árfájl", "allapot": "kesz", "uzenet": "minden nyers fájl megvan", "bizonyitek": "a négy forrás fenti mérése: 5 KSH tábla két formátumban, 20 egységes határfájl, 20 időjárásfájl, Eurostat árfájl", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "panel", "tipus": "lepes", "nev": "Panel", "bemenet": ["letoltes"], "objektumok": ["hozam", "idojaras", "termesev", "varmegye", "termeny"], "leiras": "a KSH hozam és a napi időjárás összefésülése terményenként, termésév-hozzárendeléssel; ismeretlen területi egységnél megáll", "eszkoz": "src/build_panel.py", "kapu": "terményenként 20 egység, nincs duplikált (egység, év) sor, teljes termésév-ablakok, nincs hiányzó érték a szezonon belüli időjárásban", "allapot": "hiba", "uzenet": "repce: a build_panel záróellenőrzésének feltétele nem teljesül a 2000. termésévre (274 nap a 303-ból); ez az év a panelen kívül van, a panel évei teljesek", "bizonyitek": "data/processed/panel_*.parquet és weather_daily_*.parquet: egységek száma, duplikátum, hiányzó érték, és a termésévenkénti napszám a szezon hosszához mérve (src/build_panel.py season_days, tűrés 2 nap), a build_panel futtatása nélkül újraszámolva", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "mutatok", "tipus": "lepes", "minta": "szamitas", "nev": "Időjárási mutatók", "bemenet": ["panel"], "objektumok": ["mutato"], "leiras": "GDD, hőstressznap, csapadék, fagynap és vízmérleg fenológiai ablakonként", "eszkoz": "src/features.py", "kapu": "terményenként 20 sor minden termésévre, nincs hiányzó érték, nincs duplikált kulcs", "allapot": "kesz", "uzenet": "5 termény, 2580 sor", "bizonyitek": "data/processed/features_*.parquet: sorok száma a panel éveihez mérve, hiányzó érték és duplikált kulcs újramérve", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "validacio", "tipus": "lepes", "nev": "Keresztvalidáció és visszateszt", "bemenet": ["mutatok"], "objektumok": ["modell", "ellenorzes"], "leiras": "évenként kihagyásos keresztvalidáció a naiv alapokkal összevetve, és visszateszt a kiemelt aszályévekre", "eszkoz": "src/validate.py, src/backtest.py, src/model.py", "kapu": "a három időjárásmodelles terménynél a modell mintán kívüli RMSE-je kisebb a naiv trendénél, és a visszateszt eredménye megvan", "allapot": "kesz", "uzenet": "RMSE t/ha: búza 0.529 a naiv 0.682 ellen; kukorica 1.396 a naiv 1.725 ellen; őszi árpa 0.545 a naiv 0.693 ellen", "bizonyitek": "data/processed/loyo_results_*.parquet actual, pred és naive_trend oszlopából újraszámolva; backtest_results_*.parquet megvan. A trendalapú terményekre nincs ilyen fájl", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "meresi_kapu", "tipus": "lepes", "nev": "Walk-forward mérési kapu", "bemenet": ["mutatok", "validacio"], "objektumok": ["modell", "ellenorzes"], "leiras": "csak a múltból tanítva 2011-től évenként előre jósol; ez dönti el a változókészletet, a sávot, és hogy a termény időjárásmodellel vagy trenddel megy ki", "eszkoz": "src/walkforward.py, src/trend_baseline.py", "kapu": "időjárásmodell csak ott megy ki, ahol a walk-forward RMSE kisebb a naiv trendénél; a config módszere és változókészlete egyezik a kapu döntésével", "minta": "meresi_kapu", "allapot": "kesz", "uzenet": "búza v2 0.573 a naiv 0.621 ellen; kukorica v1 1.512 a naiv 1.948 ellen; őszi árpa v2 0.574 a naiv 0.669 ellen; napraforgó trend 0.409; repce trend 0.528", "bizonyitek": "data/processed/walkforward_summary_*.json rmse_wf, rmse_naive_wf, winner és method mezője összevetve a src/config.py CROPS módszerével és változókészletével", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "idosor", "tipus": "lepes", "nev": "Tényidősor a webre", "bemenet": ["panel"], "objektumok": ["hozam", "ellenorzes"], "leiras": "vármegyei és országos hozamidősor a grafikonokhoz, a KSH saját országos sorával keresztellenőrizve", "eszkoz": "src/export_history.py", "kapu": "a vármegyei terület- és termésösszeg minden évben 25 egységen belül egyezik a KSH Ország összesen sorával", "minta": "kontrollosszeg", "allapot": "kesz", "uzenet": "5 termény, 129 év egyezik", "bizonyitek": "panel_*.parquet vármegyei összegei összevetve a data/raw/ksh csv Ország összesen sorával (a projekt ksh_national_official olvasójával), tűrés 25 egység", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "tesztek", "tipus": "lepes", "nev": "Tesztöv", "bemenet": ["meresi_kapu"], "objektumok": ["ellenorzes"], "leiras": "a napi futás első lépése: dátum, ablak, kalibráció, árszűrő és nyelvi tesztek; ha bukik, a becslés el sem indul", "eszkoz": "tests/test_reliability.py (pytest)", "kapu": "minden teszt átmegy", "minta": "tesztov", "allapot": "kesz", "uzenet": "49 teszt átment", "bizonyitek": "lefuttatva: .venv/bin/python -m pytest tests/ -q -p no:cacheprovider (gyorsítótár és bájtkód írása nélkül)", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "arak", "tipus": "lepes", "nev": "Piaci árak", "bemenet": ["piaci_ar"], "objektumok": ["ar"], "leiras": "heti jegyzések nagyságrendi szűrővel, forintosítás MNB árfolyamon; ami kilóg vagy elavult, kimarad", "eszkoz": "src/fetch_market_prices.py", "kapu": "legalább 8 tétel átment a szűrőn, a fájl a futás napján frissült, mind az öt terményre van forintosítási ár", "allapot": "kesz", "uzenet": "14 tétel, árfolyam 363.47 (2026-09-18)", "bizonyitek": "web/data/market_prices.json: items száma, updated_at, valuation.crops és valuation.fx kiolvasva", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "elo_becsles", "tipus": "lepes", "nev": "Élő becslés", "bemenet": ["tesztek", "mutatok", "meresi_kapu", "idosor", "arak", "elo_idojaras"], "objektumok": ["becsles", "termesev"], "leiras": "a futó termésév időjárásából mutatók, becslés vármegyénként és országosan sávval, forgatókönyvekkel és forintértékkel", "eszkoz": "src/predict_live.py, src/drivers.py", "kapu": "mind az öt terményre 20 sor és 19 becslés, a hozam és az eltérés a józansági határon belül, az országos becslés a vármegyei tartományban, a forgatókönyv percentilisei sorrendben", "allapot": "kesz", "uzenet": "5 termény, 19 vármegyei becslés mindegyikben; a fájlok két napra szóródnak: wheat 2026-09-20, corn 2026-09-20, barley 2026-09-21, sunflower 2026-09-21, rapeseed 2026-09-21", "bizonyitek": "web/data/forecast_*.json: sorok, becslések száma, országos érték a vármegyei tartományban, percentilisek sorrendje; a hozam- és eltéréshatár az időjárásmodelles terményekre mérve", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "pdf_jelentes", "tipus": "lepes", "minta": "megjelenites", "nev": "PDF jelentés", "bemenet": ["elo_becsles", "arak"], "objektumok": ["jelentes"], "leiras": "HTML-ből Chromiummal A4 PDF; a láblécre futó tartalmat csak figyelmeztetés jelzi a futás naplójában", "eszkoz": "src/report_html.py", "kapu": "a futás napjára van PDF, és 2 és 4 oldal közötti", "allapot": "kesz", "uzenet": "jelentes_2026-09-21.pdf, 4 oldal", "bizonyitek": "web/data/jelentes alatt a futás napi PDF megvan, az oldalszám pypdf-fel kiolvasva; a lábléc-hézag mérése csak a futás naplójában van", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "kiadas", "tipus": "lepes", "minta": "kezbesites", "nev": "Kiadás", "bemenet": ["elo_becsles", "pdf_jelentes"], "objektumok": ["becsles", "jelentes"], "leiras": "a napi futás commitolja a becslést, a napi pillanatképet és a PDF-et, majd a web mappa a GitHub Pages oldalra kerül", "eszkoz": ".github/workflows/daily.yml", "kapu": "a becslésfájl és a napi pillanatképe azonos, a legutóbbi és a dátumozott PDF bitre azonos, és a web/data alatt nincs commitolatlan változás", "allapot": "kesz", "uzenet": "5 becslés és a PDF azonos a másolatával, minden commitolva", "bizonyitek": "forecast_*.json összevetve a web/data/history/<termény>/<nap>.json tartalmával, a két PDF sha256-ja, git status --porcelain web/data", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "tanulsagok", "tipus": "lepes", "minta": "visszairas", "nev": "Tanulságok", "bemenet": ["kiadas"], "leiras": "kulcsdöntések és tanulságok a projekt Claude-memóriájában", "eszkoz": "~/.claude/projects/<projekt>/memory", "kapu": "a memória a legutóbbi kézi kódváltozás napján vagy utána frissült", "allapot": "hiany", "uzenet": "a memória utoljára 2026-09-19, a legutóbbi kézi commit 2026-09-21, azóta 5 kézi commit", "bizonyitek": "3 md fájl módosítási napja a projekt memóriamappájában, összevetve a git log legutóbbi nem napi-frissítés commitjával; a tartalom nincs vizsgálva", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "web", "tipus": "kimenet", "nev": "Webes térkép", "bemenet": ["kiadas"], "objektumok": ["becsles"], "leiras": "statikus oldal a GitHub Pages-en: térkép, tábla, fogalomtár", "allapot": "nyom", "uzenet": "a helyi másolat 2026-09-21 napi, 13 napja; az origin/main utolsó ismert állapota 2 committal előrébb jár", "bizonyitek": "web/ alatt 4 oldalfájl megvan; az élő GitHub Pages oldal nincs megmérve (hálózat nélkül), git rev-list HEAD..origin/main a legutóbbi fetch szerint", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "pdf", "tipus": "kimenet", "nev": "Napi vezetői PDF", "bemenet": ["kiadas"], "objektumok": ["jelentes"], "leiras": "más szoftver PDF-jébe is beolvasztható (INTEGRACIO.md)", "allapot": "kesz", "uzenet": "jelentes_2026-09-21.pdf, 4 oldal", "bizonyitek": "a fájl megvan és commitolva van, a jelentes_latest.pdf vele bitre azonos", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}, {"id": "riportok", "tipus": "kimenet", "nev": "Validációs riportok", "bemenet": ["validacio", "meresi_kapu"], "objektumok": ["modell"], "leiras": "visszateszt és walk-forward riport a reports mappában", "allapot": "kesz", "uzenet": "4 riport, 9 ábra", "bizonyitek": "reports/*.md és reports/figures/*.png megszámolva", "vonatkozik": "", "mod": "mert", "jelentve": "", "elozmeny": []}], "objektumok": [{"id": "varmegye", "nev": "Vármegye", "leiras": "A 20 magyar NUTS3 egység: 19 vármegye és Budapest. Budapestre nincs becslés.", "kulcs": "NUTS3 kód (HU110 ... HU333)", "adatok": ["név", "határ", "reprezentatív pont", "betakarított terület"], "eredet": "Eurostat GISCO NUTS 2024 határfájl, a KSH vármegyenevekkel kézi megfeleltetésben (config.KSH_TO_NUTS3)", "tar": "terulet"}, {"id": "termeny", "nev": "Termény", "leiras": "Az öt termény a saját szezonjával, fenológiai ablakaival és módszerével (időjárásmodell vagy trend).", "kulcs": "terménykód (wheat, corn, barley, sunflower, rapeseed)", "adatok": ["szezon", "fenológiai ablakok", "hőküszöb", "változókészlet", "módszer"], "eredet": "src/config.py CROPS regiszter"}, {"id": "termesev", "nev": "Termésév", "tar": "idoszak", "leiras": "A betakarítás éve a hozzá tartozó időjárási ablakkal. Őszi vetésnél az előző év őszén kezdődik.", "kulcs": "termény + termésév", "adatok": ["szezon kezdete és vége", "évhatár-eltolás", "időzóna: Europe/Budapest"], "eredet": "src/build_panel.py assign_crop_year a config szezonjaiból"}, {"id": "forrasfajl", "nev": "Forrásfájl", "tar": "forrasfajl", "leiras": "Egy letöltött nyers fájl a data/raw alatt: KSH tábla, határfájl, vármegyei időjárás, Eurostat ár.", "kulcs": "útvonal a data/raw alatt", "adatok": ["útvonal", "lefedett évek vagy napok", "sorok száma", "formátum"], "eredet": "a négy letöltő szkript (fetch_ksh, fetch_boundaries, fetch_weather, fetch_prices)"}, {"id": "hozam", "nev": "Tényhozam", "tar": "meroszam", "leiras": "Egy vármegye egy évi betakarított területe, termése és termésátlaga egy terményre.", "kulcs": "termény + NUTS3 kód + termésév", "adatok": ["termésátlag t/ha", "terület ha", "termés t"], "eredet": "KSH stadat táblák (mez0071, mez0072, mez0073, mez0078, mez0079), 2000-től"}, {"id": "idojaras", "nev": "Napi időjárás", "tar": "meroszam", "leiras": "Egy vármegye reprezentatív pontjának napi értékei.", "kulcs": "NUTS3 kód + nap + változó", "adatok": ["Tmax", "Tmin", "Tátlag", "csapadék", "ET0"], "eredet": "Open-Meteo: ERA5 archívum 1999-10-01-től, a futó szezonra archívum és előrejelzés"}, {"id": "mutato", "nev": "Időjárási mutató", "tar": "meroszam", "leiras": "Termésévre és fenológiai ablakra összesített mutató: GDD, hőstressznap, csapadék, fagynap, vízmérleg.", "kulcs": "termény + NUTS3 kód + termésév + mutató neve", "adatok": ["érték", "ablak", "definíció"], "eredet": "src/features.py a napi időjárásból"}, {"id": "modell", "nev": "Modellváltozat", "leiras": "Terményenként a kapun átment módszer: panelmodell v1 vagy v2 változókészlettel, vagy trend.", "kulcs": "termény + változat (v1, v2, trend)", "adatok": ["walk-forward RMSE", "naiv trend RMSE", "q10 és q90", "vármegyei szórás", "lefedettség"], "eredet": "src/walkforward.py és src/trend_baseline.py, data/processed/walkforward_summary_*.json"}, {"id": "becsles", "nev": "Becslés", "leiras": "Egy napon kiadott hozambecslés egy vármegyére vagy országosan, 80%-os sávval.", "kulcs": "termény + termésév + NUTS3 kód vagy ország + a futás napja", "adatok": ["becsült hozam t/ha", "alsó és felső sáv", "eltérés a trendtől", "forgatókönyvek P10, P50, P90", "termelési érték Ft"], "eredet": "src/predict_live.py, web/data/forecast_*.json és web/data/history/<termény>/<nap>.json", "tar": "becsles"}, {"id": "ar", "nev": "Ár", "tar": "meroszam", "leiras": "Termelői vagy piaci ár egy termékre: éves Eurostat ár és heti jegyzés, forintra váltva.", "kulcs": "termék + időszak + forrás", "adatok": ["ár", "egység", "időszak", "árfolyam és napja"], "eredet": "Eurostat apri_ap_crpouta (éves), EU agrifood API heti jegyzései, MNB középárfolyam"}, {"id": "jelentes", "nev": "Napi jelentés", "tar": "kimenet", "leiras": "A napi vezetői PDF, 2 és 4 oldal között.", "kulcs": "jelentes_<nap>.pdf", "adatok": ["oldalszám", "nap"], "eredet": "src/report_html.py a becslésfájlokból, HTML-ből Chromiummal"}, {"id": "ellenorzes", "nev": "Ellenőrzés", "tar": "ellenorzes", "leiras": "Fáziszáró ellenőrzés, tesztöv, keresztvalidáció, walk-forward kapu.", "kulcs": "az ellenőrzés neve + termény + futás", "adatok": ["eredmény", "átment és elbukott pontok"], "eredet": "a lépések végi ellenőrzések a kódban, tests/test_reliability.py, a validációs riportok"}], "kapcsolatok": [{"honnan": "forrasfajl", "hova": "hozam", "nev": "tartalmazza"}, {"honnan": "forrasfajl", "hova": "idojaras", "nev": "tartalmazza"}, {"honnan": "varmegye", "hova": "hozam", "nev": "hozama"}, {"honnan": "varmegye", "hova": "idojaras", "nev": "időjárása"}, {"honnan": "termeny", "hova": "termesev", "nev": "szezonja"}, {"honnan": "hozam", "hova": "termesev", "nev": "évébe esik"}, {"honnan": "idojaras", "hova": "mutato", "nev": "összesítve"}, {"honnan": "mutato", "hova": "termesev", "nev": "évébe esik"}, {"honnan": "mutato", "hova": "modell", "nev": "magyarázza"}, {"honnan": "hozam", "hova": "modell", "nev": "tanítja"}, {"honnan": "modell", "hova": "becsles", "nev": "adja"}, {"honnan": "varmegye", "hova": "becsles", "nev": "becslése"}, {"honnan": "ar", "hova": "becsles", "nev": "forintosítja"}, {"honnan": "becsles", "hova": "jelentes", "nev": "szerepel benne"}, {"honnan": "ellenorzes", "hova": "modell", "nev": "ellenőrzi"}, {"honnan": "ellenorzes", "hova": "becsles", "nev": "ellenőrzi"}], "hianyzo_mintak": [{"nev": "Archívum", "miert": "Így a kimenet később bitre újraépíthető, és egy vitatott szám visszakereshető."}, {"nev": "Egyeztetés az előző időszakkal", "miert": "Ha a múlt heti szám ma mást mutat, az vagy forráshiba, vagy számítási hiba, és kiadás előtt kell kiderülnie."}, {"nev": "Független ellenőrzés", "miert": "A saját kód a saját hibáját nem veszi észre."}, {"nev": "Frissességőr", "miert": "A forrás csendes leromlása érvényes formájú, de elavult választ ad, és ez magától nem tűnik fel."}], "nem_mert_mintak": [{"nev": "Visszaírás", "lepes": "Tanulságok"}], "kihagyott_mintak": [], "figyelmeztetesek": [], "esemenyek": [], "megallasok": 0};
+const NS = 'http://www.w3.org/2000/svg';
+// csak a mért kész zöld: a nyom és a jelentés nem mérés, ezért szürke
+const ST = { kesz:['kész','ok'], nyom:['nyoma van, nem mért','wait'], hiany:['hiány','warn'], hiba:['hiba','err'], fut:['fut','run'], var:['vár','wait'], nincs:['nincs adat','wait'] };
+const TIP = { forras:'forrás', lepes:'lépés', kimenet:'kimenet' };
+const cs = Object.fromEntries(D.csomopontok.map(c => [c.id, c]));
+const ob = Object.fromEntries(D.objektumok.map(o => [o.id, o]));
+const be = Object.fromEntries(D.csomopontok.map(c => [c.id, c.bemenet || []]));
+const $ = id => document.getElementById(id);
+const rov = (s, n) => s.length > n ? s.slice(0, n - 1) + '…' : s;
+function h(tag, attrs, text) { const e = document.createElement(tag); for (const k in attrs || {}) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; }
+function s(parent, tag, attrs, text) { const e = document.createElementNS(NS, tag); for (const k in attrs || {}) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; parent.appendChild(e); return e; }
+const jelentett = c => c.mod === 'jelentett';
+const nev = c => jelentett(c) ? ST[c.allapot][0] + ', jelentve' : ST[c.allapot][0];
+const szin = c => `var(--${jelentett(c) && c.allapot === 'kesz' ? 'wait' : ST[c.allapot][1]})`;
+const ures = c => c.allapot === 'nyom' || c.allapot === 'nincs' || jelentett(c);
+function pont(c) { const p = h('i', { class: 'pont' }); if (ures(c)) p.style.border = `2px solid ${szin(c)}`; else p.style.background = szin(c); return p; }
+
+// a baj lefelé öröklődik: ami hibás vagy hiányos lépésre épül, az érintett, akkor is, ha a saját mérése rendben van
+const osok = {}, os = id => id in osok ? osok[id] : (osok[id] = [...new Set(be[id].flatMap(b => [b, ...os(b)]))]);
+const bajos = id => os(id).filter(b => cs[b].allapot === 'hiba' || cs[b].allapot === 'hiany');
+const szint = id => Math.max({ hiba: 2, hiany: 1 }[cs[id].allapot] || 0, ...os(id).map(b => ({ hiba: 2, hiany: 1 }[cs[b].allapot] || 0)));
+
+// fejléc és egy mondatos olvasat
+$('cim').textContent = D.projekt; document.title = D.projekt + ' · adatfolyam';
+$('meta').textContent = [D.leiras, D.idoszak, D.frissitve && 'állapot: ' + D.frissitve.replace('T', ' ') + (D.kor_nap ? `, ${D.kor_nap} napos` : '')].filter(Boolean).join(' · ');
+(() => {
+  const baj = D.csomopontok.filter(c => c.allapot === 'hiba' || c.allapot === 'hiany');
+  const meretlen = D.csomopontok.filter(c => c.tipus === 'lepes' && !(c.mod === 'mert' && ['kesz', 'hiba', 'hiany'].includes(c.allapot)));
+  const kesz = D.csomopontok.filter(c => c.tipus === 'lepes' && c.mod === 'mert' && c.allapot === 'kesz').length;
+  $('olvasat').textContent = `A ${D.lepesek} lépésből ${kesz} mérten kész.`
+    + (baj.length ? ` Figyelni kell: ${baj.map(c => c.nev).join(', ')}.` : ' Mért hiba vagy hiány nincs.')
+    + (meretlen.length ? ` Mérés nélkül: ${meretlen.map(c => c.nev).join(', ')}.` : '')
+    + (D.kor_nap > 7 ? ` Az állapot ${D.kor_nap} napos, frissíteni kell.` : '');
+})();
+
+// figyelmeztetések a futásnaplóból és a mérésből
+if (D.figyelmeztetesek.length) {
+  const f = $('figyelem'); f.append(h('h2', {}, 'Figyelmeztetések'));
+  const ul = h('ul', { class: 'lista' }); D.figyelmeztetesek.forEach(x => ul.append(h('li', {}, x)));
+  const b = h('div', { class: 'box' }); b.append(ul); f.append(b);
+}
+
+// az időszak eseményei: emberi döntések és magától kezelt esetek, hogy a zöld állapot ne takarja el, mi történt közben
+if (D.esemenyek.length || D.megallasok) {
+  const f = $('figyelem'); f.append(h('h2', {}, 'Ami az időszakban történt'));
+  const ul = h('ul', { class: 'lista' });
+  if (D.megallasok) ul.append(h('li', {}, `${D.megallasok} alkalommal állt meg a futás egy kapunál, mielőtt végigment`));
+  D.esemenyek.forEach(e => { const li = h('li', {}, `${e.fajta} (${e.lepes}): ${e.mi} `); if (e.indok) li.append(h('span', {}, 'indok: ' + e.indok)); ul.append(li); });
+  const b = h('div', { class: 'box' }); b.append(ul); f.append(b);
+}
+
+// részletek
+function mutat(id) {
+  const c = cs[id], k = $('reszlet'); k.textContent = '';
+  k.append(h('h3', {}, c.nev), h('div', { class: 'tipus' }, TIP[c.tipus] + (c.minta ? ' · minta: ' + c.minta : '')));
+  const dl = h('dl'); k.append(dl);
+  const sor = (t, v, kis) => { if (v) dl.append(h('dt', {}, t), h('dd', kis ? { class: 'kis' } : {}, v)); };
+  sor('Állapot', nev(c) + (c.uzenet ? ': ' + c.uzenet : ''));
+  sor('Érintett', bajos(id).length ? 'olyanra épül, ami hibás vagy hiányos: ' + bajos(id).map(b => cs[b].nev).join(', ') : '');
+  sor('Jelentve', c.jelentve && c.jelentve.replace('T', ' ') + ' (a lépés saját jelentése, nem mérés)');
+  sor('Mire vonatkozik', c.vonatkozik);
+  sor('Bizonyíték', c.bizonyitek);
+  sor('Mit csinál', c.leiras);
+  sor('Mitől kész', c.kapu);
+  sor('Eszköz', c.eszkoz);
+  sor('Bemenet', (c.bemenet || []).map(b => cs[b].nev).join(', '));
+  sor('Objektumok', (c.objektumok || []).map(o => ob[o].nev).join(', '));
+  if (c.elozmeny.length) {
+    dl.append(h('dt', {}, 'Előzmény'));
+    c.elozmeny.forEach(e => dl.append(h('dd', { class: 'kis' }, `${e.mikor.replace('T', ' ')} · ${e.idoszak} · ${ST[e.allapot] ? ST[e.allapot][0] : e.allapot}${e.mod === 'jelentett' ? ', jelentve' : ''}${e.uzenet ? ': ' + e.uzenet : ''}`)));
+  }
+  document.querySelectorAll('[data-cs]').forEach(e => e.classList.toggle('on', e.dataset.cs === id));
+}
+
+// állapottábla: a figyelmet kérő sorok elöl
+const SULY = { hiba:0, hiany:1, nincs:2, nyom:3, fut:4, var:5, kesz:6 };
+const suly = c => SULY[c.allapot] + (c.allapot === 'kesz' ? (jelentett(c) ? -0.6 : bajos(c.id).length ? -0.3 : 0) : 0);
+[...D.csomopontok].sort((a, b) => suly(a) - suly(b)).forEach(c => {
+  const tr = h('tr', { 'data-cs': c.id, title: 'Megmutatja a lépés részleteit, bizonyítékát és előzményét' });
+  const all = h('td', { class: 'all' }); all.append(pont(c), nev(c)); all.style.color = szin(c);
+  if (bajos(c.id).length) all.append(h('div', { class: 'erintett' }, 'érintett: ' + bajos(c.id).map(b => cs[b].nev).join(', ')));
+  tr.append(h('td', { class: 'nev' }, c.nev), h('td', { class: 'tip' }, TIP[c.tipus]), all, h('td', {}, c.uzenet));
+  tr.onclick = () => mutat(c.id); $('tabla').append(tr);
+});
+
+// réteges elrendezés: mélység = a leghosszabb út a bemenetek felől
+function elrendez(elemek, be, W, H, gx, gy, kozel) {
+  const mely = {}, uton = new Set(), van = new Set(elemek.map(e => e.id));
+  const m = id => { if (id in mely) return mely[id]; if (uton.has(id)) return 0; uton.add(id);
+    const v = (be[id] || []).filter(b => van.has(b)).reduce((x, b) => Math.max(x, m(b) + 1), 0); uton.delete(id); return mely[id] = v; };
+  elemek.forEach(e => m(e.id));
+  // a forrás az első felhasználója elé kerül, a kimenet a jobb szélre
+  if (kozel) elemek.forEach(e => { if (!(be[e.id] || []).length) { const f = elemek.filter(x => (be[x.id] || []).includes(e.id)).map(x => mely[x.id]); if (f.length) mely[e.id] = Math.max(0, Math.min(...f) - 1); } });
+  if (kozel) { const veg = Math.max(...Object.values(mely)); elemek.forEach(e => { if (e.tipus === 'kimenet') mely[e.id] = veg; }); }
+  const oszl = []; elemek.forEach(e => { e.oszlop = mely[e.id]; (oszl[e.oszlop] = oszl[e.oszlop] || []).push(e); });
+  const maxN = Math.max(...oszl.filter(Boolean).map(o => o.length)), mag = maxN * H + (maxN - 1) * gy + 56;
+  oszl.forEach((o, i) => { const tot = o.length * H + (o.length - 1) * gy; o.forEach((e, j) => { e.x = 12 + i * (W + gx); e.y = (mag - tot) / 2 + j * (H + gy); }); });
+  return [24 + oszl.length * (W + gx) - gx, mag];
+}
+function gorbe(svg, a, b, W, H, osztaly, cimke, gx, mind) {
+  let d, cx, cy;
+  if (a.oszlop === b.oszlop) { const fel = a.y < b.y ? a : b, le = a.y < b.y ? b : a, x = a.x + W / 2; d = `M${x},${fel.y + H} L${x},${le.y}`; cx = x + 6; cy = (fel.y + H + le.y) / 2 + 4; }
+  else { const bal = a.oszlop < b.oszlop ? a : b, jobb = a.oszlop < b.oszlop ? b : a, x1 = bal.x + W, y1 = bal.y + H / 2, x2 = jobb.x, y2 = jobb.y + H / 2, k = (x1 + x2) / 2;
+    const koz = mind.filter(e => e.oszlop > bal.oszlop && e.oszlop < jobb.oszlop);
+    // a több oszlopot átugró vonal a közbeeső dobozok fölött vagy alatt fut
+    if (koz.length) { const g = gx / 2, fent = y2 < y1, L = fent ? Math.min(...koz.map(e => e.y)) - 12 : Math.max(...koz.map(e => e.y + H)) + 12;
+      d = `M${x1},${y1} C${x1 + g},${y1} ${x1 + g},${L} ${x1 + gx},${L} L${x2 - gx},${L} C${x2 - g},${L} ${x2 - g},${y2} ${x2},${y2}`; cx = k; cy = fent ? L - 5 : L + 14; }
+    else { d = `M${x1},${y1} C${k},${y1} ${k},${y2} ${x2},${y2}`; cx = k; cy = (y1 + y2) / 2 - 5; } }
+  const ut = s(svg, 'path', { class: 'el' + (osztaly ? ' ' + osztaly : ''), d });
+  const felirat = cimke ? s(svg, 'text', { class: 'cimke', x: cx, y: cy, 'text-anchor': a.oszlop === b.oszlop ? 'start' : 'middle' }, cimke) : null;
+  return [ut, felirat];
+}
+
+// folyam
+(() => {
+  const svg = $('folyam'), W = 150, H = 50;
+  const [sz, mag] = elrendez(D.csomopontok, be, W, H, 30, 16, true);
+  svg.setAttribute('width', sz); svg.setAttribute('height', mag);
+  D.csomopontok.forEach(c => c.bemenet && c.bemenet.forEach(b => gorbe(svg, cs[b], c, W, H, ['', 'warn', 'err'][szint(b)], null, 30, D.csomopontok)));
+  D.csomopontok.forEach(c => {
+    const g = s(svg, 'g', { class: 'cs', 'data-cs': c.id });
+    s(g, 'title', {}, 'Megmutatja a lépés részleteit, bizonyítékát és előzményét');
+    s(g, 'rect', { class: 'doboz', x: c.x, y: c.y, width: W, height: H, rx: 7 });
+    s(g, 'circle', { cx: c.x + 13, cy: c.y + 17, r: ures(c) ? 3.5 : 4, fill: ures(c) ? 'none' : szin(c), stroke: szin(c), 'stroke-width': ures(c) ? 2 : 0 });
+    s(g, 'text', { x: c.x + 24, y: c.y + 21, 'font-weight': 600 }, rov(c.nev, 19));
+    s(g, 'text', { class: 'sub', x: c.x + 12, y: c.y + 38 }, rov(c.uzenet || nev(c), 25));
+    g.onclick = () => mutat(c.id);
+  });
+  const jel = $('jel');
+  ['kesz', 'nyom', 'hiany', 'hiba', 'fut', 'var', 'nincs'].filter(k => D.csomopontok.some(c => c.allapot === k && !jelentett(c))).forEach(k => { const e = h('span'); e.append(pont({ allapot: k }), ST[k][0]); jel.append(e); });
+  if (D.csomopontok.some(jelentett)) { const e = h('span'); e.append(pont({ allapot: 'kesz', mod: 'jelentett' }), 'a lépés jelentette, nem mérés'); jel.append(e); }
+  if (D.csomopontok.some(c => szint(c.id) && !['hiba', 'hiany'].includes(c.allapot))) jel.append(h('span', {}, 'színes vonal: hibás vagy hiányos lépésre épül'));
+})();
+
+// védelem
+(() => {
+  const v = $('vedelem');
+  const resz = (cim, elemek, f) => { if (!elemek.length) return; v.append(h('h2', {}, cim));
+    const ul = h('ul', { class: 'lista' }); elemek.forEach(m => { const li = h('li', {}, m.nev + ' '); li.append(h('span', {}, f(m))); ul.append(li); });
+    const b = h('div', { class: 'box' }); b.append(ul); v.append(b); };
+  resz('Hiányzó védelem', D.hianyzo_mintak, m => m.miert);
+  resz('Van, de nem mért védelem', D.nem_mert_mintak, m => `a „${m.lepes}” lépés végzi, de az eredménye nincs megmérve, ezért nem számít védelemnek`);
+  resz('Tudatosan kihagyva', D.kihagyott_mintak, m => m.ok);
+})();
+
+// objektumok
+(() => {
+  const svg = $('onto'), W = 160, H = 50;
+  const obe = {}; D.objektumok.forEach(o => obe[o.id] = []);
+  D.kapcsolatok.forEach(k => { if (k.honnan !== k.hova) obe[k.hova].push(k.honnan); });
+  const [sz, mag] = elrendez(D.objektumok, obe, W, H, 70, 26);
+  svg.setAttribute('width', sz); svg.setAttribute('height', mag);
+  const elek = D.kapcsolatok.filter(k => k.honnan !== k.hova).map(k => { const [ut, felirat] = gorbe(svg, ob[k.honnan], ob[k.hova], W, H, '', k.nev, 70, D.objektumok); felirat.style.display = 'none'; return { k, ut, felirat }; });
+  function mutatObj(id) {
+    const o = ob[id], k = $('objektum'); k.textContent = '';
+    k.append(h('h3', {}, o.nev), h('div', { class: 'tipus' }, o.tar ? 'közös tárból: ' + o.tar : 'a projekt saját objektuma'));
+    const dl = h('dl'); k.append(dl);
+    const sor = (t, v) => { if (v) dl.append(h('dt', {}, t), h('dd', {}, v)); };
+    sor('Mi ez', o.leiras); sor('Mi azonosítja', o.kulcs); sor('Adatai', (o.adatok || []).join(', ')); sor('Eredete', o.eredet);
+    sor('Kapcsolatai', D.kapcsolatok.filter(x => x.honnan === id || x.hova === id).map(x => `${ob[x.honnan].nev} ${x.nev} ${ob[x.hova].nev}`).join('; '));
+    sor('Hol szerepel a folyamban', D.csomopontok.filter(c => (c.objektumok || []).includes(id)).map(c => c.nev).join(', '));
+    svg.querySelectorAll('g.cs').forEach(e => e.classList.toggle('on', e.dataset.ob === id));
+    elek.forEach(e => { const az = e.k.honnan === id || e.k.hova === id; e.ut.classList.toggle('on', az); e.felirat.style.display = az ? '' : 'none'; });
+  }
+  D.objektumok.forEach(o => {
+    const g = s(svg, 'g', { class: 'cs', 'data-ob': o.id });
+    s(g, 'title', {}, 'Megmutatja az objektum adatait, kapcsolatait és eredetét');
+    s(g, 'rect', { class: 'doboz', x: o.x, y: o.y, width: W, height: H, rx: 7 });
+    s(g, 'text', { x: o.x + 12, y: o.y + 21, 'font-weight': 600 }, rov(o.nev, 22));
+    s(g, 'text', { class: 'sub', x: o.x + 12, y: o.y + 38 }, rov(o.kulcs || '', 27));
+    g.onclick = () => mutatObj(o.id);
+  });
+})();
+</script>
+</body>
+</html>

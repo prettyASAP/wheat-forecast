@@ -1,0 +1,294 @@
+{
+  "projekt": "Terméshozam-előrejelző",
+  "jelleg": "automata",
+  "csomopontok": [
+    {
+      "id": "ksh",
+      "tipus": "forras",
+      "nev": "KSH hozamtáblák",
+      "leiras": "öt stadat tábla vármegyénként: terület, termés, termésátlag 2000-től",
+      "objektumok": [
+        "forrasfajl",
+        "hozam",
+        "varmegye"
+      ]
+    },
+    {
+      "id": "hatarok",
+      "tipus": "forras",
+      "nev": "Vármegyehatárok",
+      "leiras": "Eurostat GISCO NUTS3 2024, a 20 magyar egység",
+      "objektumok": [
+        "forrasfajl",
+        "varmegye"
+      ]
+    },
+    {
+      "id": "era5",
+      "tipus": "forras",
+      "nev": "ERA5 időjárás",
+      "leiras": "Open-Meteo archívum, vármegyénként napi idősor 1999-10-01-től a legutóbbi teljes évig",
+      "objektumok": [
+        "forrasfajl",
+        "idojaras"
+      ]
+    },
+    {
+      "id": "eurostat_ar",
+      "tipus": "forras",
+      "nev": "Eurostat termelői árak",
+      "leiras": "éves termelői ár forintban, kb. egyéves késéssel",
+      "objektumok": [
+        "forrasfajl",
+        "ar"
+      ]
+    },
+    {
+      "id": "elo_idojaras",
+      "tipus": "forras",
+      "nev": "Élő időjárás",
+      "leiras": "Open-Meteo archívum és előrejelzés a futó szezonra, naponta lekérve",
+      "objektumok": [
+        "idojaras"
+      ]
+    },
+    {
+      "id": "piaci_ar",
+      "tipus": "forras",
+      "nev": "Piaci jegyzések",
+      "leiras": "EU agrifood API heti jegyzései és hivatalos termésbecslése, MNB árfolyam, naponta lekérve",
+      "objektumok": [
+        "ar"
+      ]
+    },
+    {
+      "id": "letoltes",
+      "tipus": "lepes",
+      "nev": "Letöltés",
+      "bemenet": [
+        "ksh",
+        "hatarok",
+        "era5",
+        "eurostat_ar"
+      ],
+      "objektumok": [
+        "forrasfajl"
+      ],
+      "leiras": "a négy letöltő a data/raw alá menti a nyers fájlokat, meglévőt csak --force kapcsolóval tölt újra",
+      "eszkoz": "src/fetch_ksh.py, src/fetch_boundaries.py, src/fetch_weather.py, src/fetch_prices.py",
+      "kapu": "megvan az 5 KSH tábla (csv és xlsx), a 20 egységes határfájl, a 20 vármegye időjárásfájlja és az Eurostat árfájl"
+    },
+    {
+      "id": "panel",
+      "tipus": "lepes",
+      "nev": "Panel",
+      "bemenet": [
+        "letoltes"
+      ],
+      "objektumok": [
+        "hozam",
+        "idojaras",
+        "termesev",
+        "varmegye",
+        "termeny"
+      ],
+      "leiras": "a KSH hozam és a napi időjárás összefésülése terményenként, termésév-hozzárendeléssel; ismeretlen területi egységnél megáll",
+      "eszkoz": "src/build_panel.py",
+      "kapu": "terményenként 20 egység, nincs duplikált (egység, év) sor, teljes termésév-ablakok, nincs hiányzó érték a szezonon belüli időjárásban"
+    },
+    {
+      "id": "mutatok",
+      "tipus": "lepes",
+      "minta": "szamitas",
+      "nev": "Időjárási mutatók",
+      "bemenet": [
+        "panel"
+      ],
+      "objektumok": [
+        "mutato"
+      ],
+      "leiras": "GDD, hőstressznap, csapadék, fagynap és vízmérleg fenológiai ablakonként",
+      "eszkoz": "src/features.py",
+      "kapu": "terményenként 20 sor minden termésévre, nincs hiányzó érték, nincs duplikált kulcs"
+    },
+    {
+      "id": "validacio",
+      "tipus": "lepes",
+      "nev": "Keresztvalidáció és visszateszt",
+      "bemenet": [
+        "mutatok"
+      ],
+      "objektumok": [
+        "modell",
+        "ellenorzes"
+      ],
+      "leiras": "évenként kihagyásos keresztvalidáció a naiv alapokkal összevetve, és visszateszt a kiemelt aszályévekre",
+      "eszkoz": "src/validate.py, src/backtest.py, src/model.py",
+      "kapu": "a három időjárásmodelles terménynél a modell mintán kívüli RMSE-je kisebb a naiv trendénél, és a visszateszt eredménye megvan"
+    },
+    {
+      "id": "meresi_kapu",
+      "tipus": "lepes",
+      "nev": "Walk-forward mérési kapu",
+      "bemenet": [
+        "mutatok",
+        "validacio"
+      ],
+      "objektumok": [
+        "modell",
+        "ellenorzes"
+      ],
+      "leiras": "csak a múltból tanítva 2011-től évenként előre jósol; ez dönti el a változókészletet, a sávot, és hogy a termény időjárásmodellel vagy trenddel megy ki",
+      "eszkoz": "src/walkforward.py, src/trend_baseline.py",
+      "kapu": "időjárásmodell csak ott megy ki, ahol a walk-forward RMSE kisebb a naiv trendénél; a config módszere és változókészlete egyezik a kapu döntésével",
+      "minta": "meresi_kapu"
+    },
+    {
+      "id": "idosor",
+      "tipus": "lepes",
+      "nev": "Tényidősor a webre",
+      "bemenet": [
+        "panel"
+      ],
+      "objektumok": [
+        "hozam",
+        "ellenorzes"
+      ],
+      "leiras": "vármegyei és országos hozamidősor a grafikonokhoz, a KSH saját országos sorával keresztellenőrizve",
+      "eszkoz": "src/export_history.py",
+      "kapu": "a vármegyei terület- és termésösszeg minden évben 25 egységen belül egyezik a KSH Ország összesen sorával",
+      "minta": "kontrollosszeg"
+    },
+    {
+      "id": "tesztek",
+      "tipus": "lepes",
+      "nev": "Tesztöv",
+      "bemenet": [
+        "meresi_kapu"
+      ],
+      "objektumok": [
+        "ellenorzes"
+      ],
+      "leiras": "a napi futás első lépése: dátum, ablak, kalibráció, árszűrő és nyelvi tesztek; ha bukik, a becslés el sem indul",
+      "eszkoz": "tests/test_reliability.py (pytest)",
+      "kapu": "minden teszt átmegy",
+      "minta": "tesztov"
+    },
+    {
+      "id": "arak",
+      "tipus": "lepes",
+      "nev": "Piaci árak",
+      "bemenet": [
+        "piaci_ar"
+      ],
+      "objektumok": [
+        "ar"
+      ],
+      "leiras": "heti jegyzések nagyságrendi szűrővel, forintosítás MNB árfolyamon; ami kilóg vagy elavult, kimarad",
+      "eszkoz": "src/fetch_market_prices.py",
+      "kapu": "legalább 8 tétel átment a szűrőn, a fájl a futás napján frissült, mind az öt terményre van forintosítási ár"
+    },
+    {
+      "id": "elo_becsles",
+      "tipus": "lepes",
+      "nev": "Élő becslés",
+      "bemenet": [
+        "tesztek",
+        "mutatok",
+        "meresi_kapu",
+        "idosor",
+        "arak",
+        "elo_idojaras"
+      ],
+      "objektumok": [
+        "becsles",
+        "termesev"
+      ],
+      "leiras": "a futó termésév időjárásából mutatók, becslés vármegyénként és országosan sávval, forgatókönyvekkel és forintértékkel",
+      "eszkoz": "src/predict_live.py, src/drivers.py",
+      "kapu": "mind az öt terményre 20 sor és 19 becslés, a hozam és az eltérés a józansági határon belül, az országos becslés a vármegyei tartományban, a forgatókönyv percentilisei sorrendben"
+    },
+    {
+      "id": "pdf_jelentes",
+      "tipus": "lepes",
+      "minta": "megjelenites",
+      "nev": "PDF jelentés",
+      "bemenet": [
+        "elo_becsles",
+        "arak"
+      ],
+      "objektumok": [
+        "jelentes"
+      ],
+      "leiras": "HTML-ből Chromiummal A4 PDF; a láblécre futó tartalmat csak figyelmeztetés jelzi a futás naplójában",
+      "eszkoz": "src/report_html.py",
+      "kapu": "a futás napjára van PDF, és 2 és 4 oldal közötti"
+    },
+    {
+      "id": "kiadas",
+      "tipus": "lepes",
+      "minta": "kezbesites",
+      "nev": "Kiadás",
+      "bemenet": [
+        "elo_becsles",
+        "pdf_jelentes"
+      ],
+      "objektumok": [
+        "becsles",
+        "jelentes"
+      ],
+      "leiras": "a napi futás commitolja a becslést, a napi pillanatképet és a PDF-et, majd a web mappa a GitHub Pages oldalra kerül",
+      "eszkoz": ".github/workflows/daily.yml",
+      "kapu": "a becslésfájl és a napi pillanatképe azonos, a legutóbbi és a dátumozott PDF bitre azonos, és a web/data alatt nincs commitolatlan változás"
+    },
+    {
+      "id": "tanulsagok",
+      "tipus": "lepes",
+      "minta": "visszairas",
+      "nev": "Tanulságok",
+      "bemenet": [
+        "kiadas"
+      ],
+      "leiras": "kulcsdöntések és tanulságok a projekt Claude-memóriájában",
+      "eszkoz": "~/.claude/projects/<projekt>/memory",
+      "kapu": "a memória a legutóbbi kézi kódváltozás napján vagy utána frissült"
+    },
+    {
+      "id": "web",
+      "tipus": "kimenet",
+      "nev": "Webes térkép",
+      "bemenet": [
+        "kiadas"
+      ],
+      "objektumok": [
+        "becsles"
+      ],
+      "leiras": "statikus oldal a GitHub Pages-en: térkép, tábla, fogalomtár"
+    },
+    {
+      "id": "pdf",
+      "tipus": "kimenet",
+      "nev": "Napi vezetői PDF",
+      "bemenet": [
+        "kiadas"
+      ],
+      "objektumok": [
+        "jelentes"
+      ],
+      "leiras": "más szoftver PDF-jébe is beolvasztható (INTEGRACIO.md)"
+    },
+    {
+      "id": "riportok",
+      "tipus": "kimenet",
+      "nev": "Validációs riportok",
+      "bemenet": [
+        "validacio",
+        "meresi_kapu"
+      ],
+      "objektumok": [
+        "modell"
+      ],
+      "leiras": "visszateszt és walk-forward riport a reports mappában"
+    }
+  ]
+}

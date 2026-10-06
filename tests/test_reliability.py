@@ -331,7 +331,10 @@ def test_report_html_has_three_pages_and_all_crops():
     from src import report_html
     fcs = {c: report_html.load_fc(c) for c in config.REPORT_CROPS}
     html = report_html.build_html(fcs, "2026-07-15", "2026-07-15 12:00")
-    assert html.count('<section class="page">') == 3
+    # két alapoldal + egy szezonközi oldal, ha van futó szezonú termény
+    # (szezonon kívül 2 oldal: a kapu 2026 szeptemberében ezen bukott el)
+    expected = 2 + (1 if any(fc.get("scenarios") for fc in fcs.values()) else 0)
+    assert html.count('<section class="page">') == expected
     for fc in fcs.values():
         assert fc["crop"].capitalize() in html
     # a bizonytalansági sáv a szám mellett (agrárprofesszori elv) és a
@@ -622,3 +625,16 @@ def test_filter_regular_keeps_only_self_updating_weekly_quotes():
     assert [i["label"] for i in kept] == ["friss"]
     # a "lemaradt" friss és rendszeres, de NEM a legfrissebb hétről való: kiesik
     assert skipped == ["régi", "rendszertelen", "befagyott", "havi", "lemaradt"]
+
+
+def test_history_series_filters_by_crop_year(tmp_path, monkeypatch):
+    """Október 1-jén új termésév: az ábra nem keverheti a régi szezon záróértékeit
+    az új szezon első napjaival (2026 októberében ezen bukott el a 3. oldal)."""
+    import json as _json
+    from src import report_html
+    monkeypatch.setattr(config, "WEB_DATA", tmp_path)
+    h = tmp_path / "history" / "wheat"; h.mkdir(parents=True)
+    for day, cy, val in (("2026-09-23", 2026, 5.18), ("2026-09-24", 2026, 5.18), ("2026-10-06", 2027, 5.63)):
+        (h / f"{day}.json").write_text(_json.dumps({"crop_year": cy, "national": {"predicted_yield_t_ha": val}}))
+    assert [x["pred"] for x in report_html.history_series("wheat", 30)] == [5.18, 5.18, 5.63]
+    assert [x["pred"] for x in report_html.history_series("wheat", 30, crop_year=2027)] == [5.63]

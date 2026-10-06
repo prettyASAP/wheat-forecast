@@ -67,13 +67,18 @@ def crop_key(fc: dict) -> str:
     raise KeyError(fc["crop"])
 
 
-def history_series(crop: str, max_days: int = 30) -> list[dict]:
+def history_series(crop: str, max_days: int = 30, crop_year: int | None = None) -> list[dict]:
+    """A becslés napi pillanatképei az ábrához. Csak az ADOTT termésév napjai:
+    az őszi vetésűeknél október 1-jén új termésév indul, és a régi szezon
+    záróértékei nem keveredhetnek az új szezon első napjaival."""
     hdir = config.WEB_DATA / "history" / crop
     out = []
     for p in sorted(hdir.glob("????-??-??.json"))[-max_days:]:
         d = json.loads(p.read_text(encoding="utf-8"))
         nat = d.get("national") or {}
         if nat.get("predicted_yield_t_ha") is None:
+            continue
+        if crop_year is not None and d.get("crop_year") != crop_year:
             continue
         sc = (d.get("scenarios") or {}).get("national") or {}
         out.append({"date": p.stem, "pred": nat["predicted_yield_t_ha"],
@@ -610,8 +615,10 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
             f'{hu(an["worst"][0]["t_ha"])} t/ha; mint <strong>{an["best"][0]["year"]}</strong> '
             f'azonos időszakában: {hu(an["best"][0]["t_ha"])} t/ha.</p>'
             if an else "")
-        hs = history_series(crop_key(live_fc), 30)
-        fan = fan_chart_svg(hs) if len(hs) >= 2 else ""
+        hs = history_series(crop_key(live_fc), 30, crop_year=live_fc["crop_year"])
+        # szezon elején még nincs mit ábrázolni: az egész ábra-doboz kimarad
+        fan = fan_chart_svg(hs) if len(hs) >= 5 else ""
+        fan_block = ('<figure class="blueprint" style="padding:12px 14px 8px;margin:14px 0 0;break-inside:avoid">\n    <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>\n    <div style="font-family:var(--font-heading);font-weight:600;font-size:14px;margin-bottom:8px">A becslés alakulása a szezonban <span style="font-weight:400;color:color-mix(in srgb,var(--color-text) 55%,transparent);font-size:12px">(az időjárástól függő sávval, t/ha)</span></div>\n    ' + fan + '\n  </figure>') if fan else ""
         # fókusz-vármegyék időjárás-tábla
         wrows = []
         sc_c = live_fc["scenarios"].get("counties") or {}
@@ -686,11 +693,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
       <div style="font-family:var(--font-heading);font-weight:600;font-size:20px;line-height:1.15">A két szélső kimenet között kb. <span style="color:var(--color-accent-700)">{risk:.0f} mrd Ft</span> a különbség.</div>
     </div>
   </div>
-  <figure class="blueprint" style="padding:12px 14px 8px;margin:14px 0 0;break-inside:avoid">
-    <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
-    <div style="font-family:var(--font-heading);font-weight:600;font-size:14px;margin-bottom:8px">A becslés alakulása a szezonban <span style="font-weight:400;color:color-mix(in srgb,var(--color-text) 55%,transparent);font-size:12px">(az időjárástól függő sávval, t/ha)</span></div>
-    {fan}
-  </figure>
+  {fan_block}
   <div style="margin-top:14px;break-inside:avoid">
     <p class="rep-kicker" style="margin-bottom:6px">Fókusz-vármegyék – kilátás és időjárás</p>
     <table class="table">
