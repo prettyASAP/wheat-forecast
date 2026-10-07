@@ -1,6 +1,6 @@
 # Terméshozam-előrejelző (Magyarország, NUTS3)
 
-[![daily-forecast](https://github.com/prettyASAP/wheat-forecast/actions/workflows/daily.yml/badge.svg)](https://github.com/prettyASAP/wheat-forecast/actions/workflows/daily.yml)
+[![tests](https://github.com/prettyASAP/wheat-forecast/actions/workflows/tests.yml/badge.svg)](https://github.com/prettyASAP/wheat-forecast/actions/workflows/tests.yml) [![daily-forecast](https://github.com/prettyASAP/wheat-forecast/actions/workflows/daily.yml/badge.svg)](https://github.com/prettyASAP/wheat-forecast/actions/workflows/daily.yml)
 
 **Élő térkép:** https://prettyasap.github.io/wheat-forecast/ · [Módszertan](https://prettyasap.github.io/wheat-forecast/magyarazat.html)
 
