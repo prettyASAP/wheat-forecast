@@ -44,7 +44,7 @@ report:           ## as-of backtest + magyar riport mindkét terményre
 walkforward:      ## testületi mérési kapu (expanding-window backtest)
 	$(PY) -m src.walkforward
 
-pdf:              ## napi vezetői PDF-jelentés — HTML→PDF (Claude Design szedés)
+pdf:              ## napi vezetői PDF-jelentés (HTML→PDF)
 	$(PY) -m src.report_html
 
 live:             ## élő előrejelzés mindkét terményre (forecast_*.json)

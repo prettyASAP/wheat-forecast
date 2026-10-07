@@ -1,7 +1,6 @@
-"""Napi vezetői PDF-jelentés – HTML→PDF (Claude Design-alapú szedés).
+"""Napi vezetői PDF-jelentés – HTML→PDF.
 
-A vizuális tervet a felhasználó a Claude Designban készítette
-(„Napi jelentés.dc.html"); ez a modul azt reprodukálja ÖNÁLLÓ, szabványos
+A modul a jelentés vizuális tervét reprodukálja ÖNÁLLÓ, szabványos
 nyomtatási HTML-ként, ÉLŐ adatra kötve, és headless Chromiummal (Playwright)
 rendereli A4 PDF-fé. Ez váltja le a korábbi matplotlib-generátort.
 
@@ -239,7 +238,7 @@ figure{margin:0}
 .rep-stat-row > span:first-child{color:color-mix(in srgb,var(--color-text) 55%,transparent)}
 .rep-stat-row > span:last-child{font-variant-numeric:tabular-nums;font-weight:500}
 .blueprint{position:relative;border:1px solid var(--color-divider);border-radius:0}
-/* A sarok-regisztrációs jelek a Claude Design szerkesztőjében csak igazítási/
+/* A sarok-regisztrációs jelek a tervezőfelületen csak igazítási/
    padding-segédek voltak – a kész jelentésen NEM látszanak. */
 .blueprint > .corner{display:none}
 .tag{display:inline-flex;align-items:center;font-size:11px;letter-spacing:0.02em;padding:3px 10px;border-radius:0}

@@ -1,0 +1,5 @@
+# Generált kimenetek: ne torzítsák a GitHub nyelvi statisztikáját
+web/data/** linguist-generated
+reports/** linguist-generated
+data/** linguist-generated
+alap/** linguist-generated

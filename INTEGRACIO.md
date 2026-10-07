@@ -4,8 +4,8 @@ Ez a dokumentum mindent tartalmaz ahhoz, hogy ez a projekt egy **másik szoftver
 PDF-generáló folyamatába illeszkedjen: a másik program lefuttatja ezt, megkapja a
 kész **2–4 oldalas A4 PDF-et**, és beolvasztja a saját kimenetébe.
 
-A jelentés HTML→PDF technológiával készül (headless Chromium / Playwright), a
-Claude Designban tervezett szedéssel, **élő adatból**.
+A jelentés HTML→PDF technológiával készül (headless Chromium / Playwright),
+**élő adatból**.
 
 ---
 

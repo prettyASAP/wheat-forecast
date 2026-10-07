@@ -322,7 +322,7 @@ def test_wb_windows_reference_existing_phenology():
 
 
 # --------------------------------------------------------------------------- #
-# 9) HTML-jelentés (Claude Design szedés) — szerkezeti füst-teszt
+# 9) HTML-jelentés — szerkezeti füst-teszt
 # --------------------------------------------------------------------------- #
 def test_report_html_has_three_pages_and_all_crops():
     """A HTML-generátor 3 A4-oldalt ad, mindhárom terménnyel; a Playwright

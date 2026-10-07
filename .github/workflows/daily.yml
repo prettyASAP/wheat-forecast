@@ -68,7 +68,7 @@ jobs:
           python -m src.predict_live --crop sunflower
           python -m src.predict_live --crop rapeseed
 
-      - name: Napi PDF-jelentés generálása (HTML→PDF, Claude Design szedés)
+      - name: Napi PDF-jelentés generálása (HTML→PDF)
         run: |
           set -euo pipefail
           python -m src.report_html
