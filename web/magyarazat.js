@@ -166,9 +166,9 @@ const GLOSSARY = {
     text: "A kiírt mutatók (csapadék, vízmérleg, hőösszeg, hőstressz) csak a szezon " +
       "eltelt napjaiból számolódnak, tegnapig. A becslés ezen felül a következő 7 nap " +
       "előrejelzését is felhasználja, a szezon hátralévő részét pedig a korábbi évek " +
-      "időjárása képviseli; ez a „még változhat” rész. A modellből számolt csapadék " +
-      "mellett, ahol elérhető, a HungaroMet automata állomásainak mért átlaga is " +
-      "szerepel, ugyanarra az időszakra.",
+      "időjárása képviseli; ez a „még változhat” rész. A napi jelentés a fókuszmegyékre " +
+      "a modell napi csapadékát a legközelebbi HungaroMet automata állomás közölt napi " +
+      "értéke mellé teszi, változtatás nélkül.",
   },
 
   frissites: {

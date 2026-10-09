@@ -649,8 +649,37 @@ def season_end_hu(fc: dict) -> str:
 
 
 def station_note(fc: dict) -> str:
-    st = fc["national"].get("stations")
-    return f" Mért csapadék: {st['source']}." if st else ""
+    dc = fc["national"].get("daily_check")
+    if not dc:
+        return ""
+    src = dc["source"]
+    return f" Mért csapadék: {src}" + ("" if src.endswith(".") else ".")
+
+
+def daily_check_block(fc: dict) -> str:
+    """Napi csapadék: a modell (megyeközéppont) és a legközelebbi HungaroMet állomás
+    közölt napi értéke egymás alatt, változtatás nélkül (nincs átlag, nincs összeg)."""
+    dc = fc["national"].get("daily_check")
+    if not dc:
+        return ""
+    head = "".join(f'<th style="text-align:right;white-space:nowrap">{_HU_MONTHS[int(d[5:7])]} {int(d[8:10])}.</th>'
+                   for d in dc["days"])
+
+    def cells(vals):
+        return "".join(f'<td style="text-align:right;font-variant-numeric:tabular-nums">'
+                       + (f'<span style="{MUTED}">n. a.</span>' if v is None else hu(v, 1)) + "</td>"
+                       for v in vals)
+    body = ""
+    for row in dc["rows"]:
+        body += (f'<tr><td style="font-weight:600;white-space:nowrap">{row["county"]} · modell</td>{cells(row["model_mm"])}</tr>'
+                 f'<tr><td style="white-space:nowrap;{MUTED}">mért: {row["station"]} ({hu(row["distance_km"],0)} km)</td>{cells(row["station_mm"])}</tr>')
+    return (f'<div style="margin-top:14px;break-inside:avoid">'
+            f'<p class="rep-kicker" style="margin-bottom:6px">Napi csapadék – modell és mért '
+            f'<span style="font-weight:400;letter-spacing:0;text-transform:none;font-size:10px;{MUTED}">mm</span></p>'
+            f'<table class="table" style="font-size:11px"><thead><tr><th></th>{head}</tr></thead><tbody>{body}</tbody></table>'
+            f'<p style="font-size:10px;{MUTED};margin:6px 0 0">Modell: a megye középpontjára, naptári napra. Mért: a megye '
+            f'középpontjához legközelebbi HungaroMet automata állomás közölt napi értéke, változtatás nélkül; '
+            f'az állomási nap 06 UTC-től másnap 06 UTC-ig tart. n. a.: az állomás nem közölt adatot.</p></div>')
 
 
 def _names(fs: list) -> str:
@@ -706,10 +735,8 @@ def sowing_page(sowing: list, page_no: int, total: int, footer, methodology: str
              else "Megkezdődött az új termésév")
     rem = days_left(fc)
     focus = [next(c for c in fc["counties"] if c["county_name"] == k) for k in FOCUS]
-    st = fc["national"].get("stations")
     period = _period_hu(f"{sw.get('since', '')} – {sw.get('until', '')}") if sw else ""
-    st_txt = (f" A HungaroMet {st['n']} automata állomásának átlaga ugyanerre a napokra "
-              f"{hu(st['mm'],0)} mm." if st and st.get("n") else "")
+    st_txt = ""
     if sw and dry:
         lead = (f"<strong>A vetés óta ({period}) nem esett csapadék:</strong> a modell szerint országosan "
                 f"{hu(sw['prec_mm'],0)} mm, a sokéves átlag ugyanerre az időszakra {hu(sw['prec_normal_mm'],0)} mm."
@@ -718,22 +745,14 @@ def sowing_page(sowing: list, page_no: int, total: int, footer, methodology: str
         lead = (f"<strong>A vetés óta ({period}) országosan {hu(sw['prec_mm'],0)} mm csapadék esett a modell szerint, "
                 f"a sokéves átlag {pct}%-a.</strong>{st_txt} A vízmérleg {hu(sw['wb_mm'],0)} mm "
                 f"(a sokéves átlag {hu(sw['wb_normal_mm'],0)} mm)." if sw else "")
-    has_st = any(c["weather_todate"].get("station_prec_mm") is not None for c in focus)
-
-    def st_cell(c):
-        w = c["weather_todate"]
-        if w.get("station_prec_mm") is None:
-            return f'<td style="text-align:right;{MUTED}">n. a.</td>' if has_st else ""
-        return (f'<td style="text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap">{hu(w["station_prec_mm"],0)} mm '
-                f'<span style="font-size:10px;{MUTED}">({w["station_n"]})</span></td>')
+    has_st = False
     frows = "".join(
         f'<tr><td style="font-weight:600;white-space:nowrap">{c["county_name"]}</td>'
         f'<td style="text-align:right;font-variant-numeric:tabular-nums">{mm(c["weather_todate"]["prec_total_mm"])}</td>'
-        f'{st_cell(c)}'
         f'<td style="text-align:right;color:{RUST if (c["weather_todate"]["wb_total_mm"] or 0) < 0 else GREEN};font-variant-numeric:tabular-nums">{mm(c["weather_todate"]["wb_total_mm"])}</td>'
         f'<td style="text-align:right;font-variant-numeric:tabular-nums">{mm(c["weather_todate"]["gdd_total"], unit="")}</td></tr>' for c in focus)
-    st_head = '<th style="text-align:right">Mért</th>' if has_st else ""
-    st_foot = (" Mért: a megye HungaroMet automata állomásainak átlaga (zárójelben az állomások száma); az állomási nap 06 UTC-től másnap 06 UTC-ig tart." if has_st else "")
+    st_head = ""
+    st_foot = ""
     head = "".join(f'<th style="text-align:right;white-space:nowrap">{f["crop"].capitalize()}</th>' for f in sowing)
     def cell(f, key, idx=0):
         an = (f.get("scenarios") or {}).get("analogs") or {}
@@ -747,7 +766,7 @@ def sowing_page(sowing: list, page_no: int, total: int, footer, methodology: str
            if c["predicted_yield_t_ha"] is not None and c["weather_todate"]["wb_total_mm"] is not None]
     map_block = (f"""  <div style="margin-top:16px;break-inside:avoid">
     <p class="rep-kicker" style="margin-bottom:6px">Vízmérleg a vetés óta – vármegyénként <span style="font-weight:400;letter-spacing:0;text-transform:none;font-size:10px;{MUTED}">−{WB_SCALE_MM} mm (piros) és +{WB_SCALE_MM} mm (kék) közötti skálán; most {hu(min(wbs),0)} és {hu(max(wbs),0)} mm között · vastag keret: fókusz-vármegye</span></p>
-    <img src="assets/map_sowing_wb.png" alt="vízmérleg-térkép" style="width:100%;max-height:300px;object-fit:contain;display:block">
+    <img src="assets/map_sowing_wb.png" alt="vízmérleg-térkép" style="width:100%;max-height:170px;object-fit:contain;display:block">
   </div>""" if wbs else "")
     return f"""<section class="page">
   <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-bottom:14px">
@@ -764,6 +783,7 @@ def sowing_page(sowing: list, page_no: int, total: int, footer, methodology: str
       <table class="table" style="font-size:12px"><thead><tr><th></th>{head}</tr></thead><tbody>{rows}</tbody></table>
       <p style="font-size:10.5px;{MUTED};margin:8px 0 0">Hozambecslést a tavaszi fejlődés (bokrosodás) ismeretében közlünk; addig a tartomány a tájékozódást szolgálja.</p></div>
   </div>
+{daily_check_block(fc)}
 {map_block}
   <p style="font-size:10px;line-height:1.5;text-align:justify;{MUTED};margin:14px 0 0;border-top:1px solid var(--color-divider);padding-top:7px">{methodology}{station_note(fc)}</p>
   {footer(page_no, total)}
@@ -880,7 +900,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
         # fókusz-vármegyék időjárás-tábla
         wrows = []
         sc_c = live_fc["scenarios"].get("counties") or {}
-        live_st = live_fc["national"].get("stations")
+        live_st = None  # átlagot nem közlünk; a mért ellenpróba napi táblaként szerepel
         obs = live_fc.get("weather_observed_until")
         obs_hu = (f"{_HU_MONTHS[int(obs[5:7])]} {int(obs[8:10])}." if obs else "")
         for county in FOCUS:
@@ -893,9 +913,6 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
             # mint az 1. oldalon; a csak-időjárás sáv itt hamis pontosságot sugallna
             rng = f'{hu(rec["low"])}–{hu(rec["high"])}'
             st_td = ""
-            if live_st:
-                st_td = (f'<td style="text-align:right;font-variant-numeric:tabular-nums">{hu(wx["station_prec_mm"],0)} mm</td>'
-                         if wx.get("station_prec_mm") is not None else f'<td style="text-align:right;{MUTED}">n. a.</td>')
             wrows.append(
                 f'<tr><td style="font-weight:600">{county}</td>'
                 f'<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">{hu(rec["predicted_yield_t_ha"])} t/ha</td>'
@@ -952,7 +969,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
       <thead><tr><th>Vármegye</th><th style="text-align:right">Becslés</th><th style="text-align:right">80%-os sáv</th><th style="text-align:right">Hőstressz</th><th style="text-align:right">Vízmérleg</th><th style="text-align:right">Csapadék</th>{'<th style="text-align:right">Mért</th>' if live_st else ''}</tr></thead>
       <tbody>{''.join(wrows)}</tbody>
     </table>
-    <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:8px 0 0">A szezon kezdetétől {obs_hu}-ig. Hőstressz, vízmérleg, csapadék: modell (Open-Meteo: ERA5, a legutóbbi napokra időjárási modellek), a megye középpontjára, naptári napokra{'; mért: a megye HungaroMet automata állomásainak átlaga, az állomási nap 06 UTC-től másnap 06 UTC-ig tart' if live_st else ''}. Vízmérleg: csapadék mínusz párolgás.</p>
+    <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:8px 0 0">A szezon kezdetétől {obs_hu}-ig. Hőstressz, vízmérleg, csapadék: modell (Open-Meteo: ERA5, a legutóbbi napokra időjárási modellek), a megye középpontjára, naptári napokra. Vízmérleg: csapadék mínusz párolgás.</p>
   </div>
   <p style="font-size:10px;line-height:1.5;text-align:justify;color:color-mix(in srgb,var(--color-text) 52%,transparent);margin:10px 0 0;border-top:1px solid var(--color-divider);padding-top:8px">{methodology}{station_note(live_fc)}</p>
   {footer(3, total)}

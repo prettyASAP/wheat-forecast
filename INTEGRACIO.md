@@ -154,10 +154,11 @@ python -m src.report_html --out /kimenet/termeshozam.pdf
 
 A kiírt időjárási számok (csapadék, vízmérleg, hőösszeg) csak eltelt napokat
 tartalmaznak. A becslés maga a 7 napos előrejelzést is felhasználja, de ezt a PDF
-nem írja ki tényként. A HungaroMet állomási csapadék (`web/data/stations.json`)
-ugyanarra a napokra jelenik meg ellenpróbaként; forrásjelölése kötelező, a PDF
-kiírja („Adatbázis: Meteorológiai Adattár, HungaroMet Nonprofit Zrt. átlagolva az
-egyes értékekre”).
+nem írja ki tényként. A HungaroMet állomási csapadék (`web/data/stations.json`) a fókuszmegyékre a
+megye középpontjához legközelebbi automata állomás közölt napi értékeit tartalmazza,
+változtatás nélkül (a felhasználási feltétel szerint átlag és összeg nem közölhető
+írásbeli hozzájárulás nélkül). Forrásjelölése kötelező, a PDF kiírja („Adatbázis:
+Meteorológiai Adattár, HungaroMet Nonprofit Zrt.”).
 
 Ha csak „a jelentést, ahogy van" akarod beilleszteni, a 7. pont kihagyható — a
 `report_html` a meglévő adatból dolgozik.

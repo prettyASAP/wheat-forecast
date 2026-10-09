@@ -33,6 +33,93 @@
    "trend_gap_bn_huf": 1.5,
    "note": "ár: hagyományos napraforgómag termelői ára, 4 jegyzett hét átlaga (2026-09-07 – 2026-10-04), 519.84 EUR/t × 366.45 Ft/EUR (MNB hivatalos középárfolyam, 2026-10-08); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
   },
+  "daily_check": {
+   "days": [
+    "2026-09-24",
+    "2026-09-25",
+    "2026-09-26",
+    "2026-09-27",
+    "2026-09-28",
+    "2026-09-29",
+    "2026-09-30"
+   ],
+   "rows": [
+    {
+     "county": "Békés",
+     "station": "Békéscsaba repülőtér",
+     "station_number": 66522,
+     "distance_km": 10.6,
+     "model_mm": [
+      1.0,
+      0.4,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "station_mm": [
+      0.9,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "county": "Hajdú-Bihar",
+     "station": "Derecske Petőfi major",
+     "station_number": 64713,
+     "distance_km": 5.5,
+     "model_mm": [
+      1.7,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "station_mm": [
+      3.7,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "county": "Fejér",
+     "station": "Agárd",
+     "station_number": 35315,
+     "distance_km": 4.1,
+     "model_mm": [
+      2.4,
+      0.1,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "station_mm": [
+      2.3,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "source": "Adatbázis: Meteorológiai Adattár, HungaroMet Nonprofit Zrt.",
+   "station_day": "06 UTC-től másnap 06 UTC-ig"
+  },
   "official_estimate": {
    "year": 2026,
    "yield_t_ha": 1.91,

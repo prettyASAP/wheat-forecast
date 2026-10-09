@@ -409,12 +409,36 @@ def observed_cutoff(today: date, known_until: date, stations: dict | None,
     return cut
 
 
-def station_window(stations: dict | None, start: date, until: date) -> dict | None:
-    """Az állomási ablak, ha pontosan a [start, until] időszakra szól."""
-    if not stations:
+DAILY_CHECK_DAYS = 7
+
+
+def daily_check(stations: dict | None, season_daily: pd.DataFrame, nuts_by_name: dict,
+                start: date, until: date) -> dict | None:
+    """Napi összevetés a fókuszmegyékre: a modell napi csapadéka a megye pontjára és a
+    legközelebbi HungaroMet állomás KÖZÖLT napi értéke, változtatás nélkül (nincs
+    átlag, nincs összeg). Csak eltelt napok: legfeljebb `until`-ig, a szezonon belül."""
+    if not stations or until < start:
         return None
-    w = stations.get("windows", {}).get(start.isoformat())
-    return w if w and w.get("to") == until.isoformat() else None
+    first = max(start, until - timedelta(days=DAILY_CHECK_DAYS - 1))
+    days = [first + timedelta(days=i) for i in range((until - first).days + 1)]
+    rows = []
+    for st in stations.get("stations", []):
+        nid = nuts_by_name.get(st["county"])
+        if nid is None:
+            continue
+        sub = season_daily[(season_daily["nuts_id"] == nid) & season_daily["date"].isin(days)]
+        model = dict(zip(sub["date"], sub["precipitation_sum"]))
+        meas = [st["rau"].get(d.isoformat()) for d in days]
+        if all(v is None for v in meas):
+            continue
+        rows.append({"county": st["county"], "station": st["name"],
+                     "station_number": st["number"], "distance_km": st["distance_km"],
+                     "model_mm": [None if model.get(d) is None else round(float(model[d]), 1) for d in days],
+                     "station_mm": meas})
+    if not rows:
+        return None
+    return {"days": [d.isoformat() for d in days], "rows": rows,
+            "source": stations["source"], "station_day": stations.get("day_definition")}
 
 
 def season_phase(crop: str, crop_year: int, today: date, has_scenarios: bool,
@@ -626,16 +650,10 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
         "scenarios": sc,
         "counties": rows,
     }
-    sw_win = station_window(stations, start, observed_until)
-    if sw_win and sw_win.get("national"):  # pl. januártól a 'recent' fájl okt. 1-jét már nem fedi  # mért ellenpróba a vármegyei sorokhoz és az országos blokkhoz
-        for r in rows:
-            c = sw_win["counties"].get(r["county_name"])
-            if c:
-                r["weather_todate"]["station_prec_mm"] = c["mm"]
-                r["weather_todate"]["station_n"] = c["n"]
-        payload["national"]["stations"] = {**(sw_win.get("national") or {}),
-                                           "from": sw_win["from"], "to": sw_win["to"],
-                                           "source": stations["source"]}
+    dc = daily_check(stations, season_daily, {r["county_name"]: r["nuts_id"] for r in rows},
+                     start, observed_until)
+    if dc:  # mért ellenpróba: a modell és a HungaroMet állomás napi értékei egymás mellett
+        payload["national"]["daily_check"] = dc
     if payload["season_phase"] == "sowing" and observed_until >= start:
         payload["national"]["sowing"] = sowing_stats(known_only, crop, crop_year,
                                                      observed_until, county_area)

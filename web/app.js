@@ -264,8 +264,7 @@ function renderHeadline(fc) {
     const rng = an ? ` A 2000 óta mért évek szélső kimenetei innen indulva
       <b>${hu(an.worst[0].t_ha)}</b> (${an.worst[0].year}) és <b>${hu(an.best[0].t_ha)}</b>
       (${an.best[0].year}) t/ha.` : "";
-    const st = n.stations;
-    const stTxt = st && st.n ? ` A HungaroMet ${st.n} állomásának átlaga ugyanerre a napokra ${hu(st.mm, 0)} mm.` : "";
+    const stTxt = "";  // HungaroMet-adatból átlagot nem közlünk (felhasználási feltétel)
     // régi pillanatkép (nincs weather_observed_until): ott a vetési összeg még az
     // előrejelzett napokat is tartalmazza, ezért nem írjuk ki tényként
     const rain = !fc.weather_observed_until ? ""
