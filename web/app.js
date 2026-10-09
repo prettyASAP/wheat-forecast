@@ -22,7 +22,7 @@ const LAYERS = {
              unit: "%", fixed: [-20, 20],
              // piros–kék divergens: színtévesztő-biztos (a piros–zöld nem az)
              colors: ["#b03a2e", "#e67e22", "#f5e8c8", "#7fb3d5", "#2874a6"] },
-  wb:   { note: "vízmérleg (csapadék − párolgás), termésév eddig", unit: " mm",
+  wb:   { note: "vízmérleg (csapadék − potenciális párolgás), termésév eddig", unit: " mm",
           colors: ["#b03a2e", "#e8c78f", "#7fb3d5", "#2874a6"] },
   prec: { note: "csapadékösszeg, termésév eddig", unit: " mm",
           colors: ["#e8c78f", "#a9cce3", "#5499c7", "#1a5276"] },
@@ -272,7 +272,7 @@ function renderHeadline(fc) {
       esetben <b>${hu(an.worst[0].t_ha)}</b> (${an.worst[0].year}), legjobb esetben
       <b>${hu(an.best[0].t_ha)}</b> (${an.best[0].year}) t/ha.` : "";
     const st = n.stations;
-    const stTxt = st && st.n ? ` A HungaroMet ${st.n} állomásának átlaga ugyanerre a napokra ${hu(st.mm, 0)} mm (${esc(st.source)}).` : "";
+    const stTxt = st && st.n ? ` A HungaroMet ${st.n} állomásának átlaga ugyanezekre a napokra ${hu(st.mm, 0)} mm (${esc(st.source)}).` : "";
     // régi pillanatkép (nincs weather_observed_until): ott a vetési összeg még az
     // előrejelzett napokat is tartalmazza, ezért nem írjuk ki tényként
     const rain = !fc.weather_observed_until ? ""
@@ -284,8 +284,7 @@ function renderHeadline(fc) {
     el.innerHTML = `<div class="headline-main">${cropSubject(fc)} termésére még nincs hozamszám.
         A kiindulás a sokéves szint, <b>${hu(n.trend_t_ha)} t/ha</b>.${rng}${rain}</div>
       <div class="headline-sub"><span class="badge sowing">A TERMÉSÉV ELEJE</span> Hozambecslést
-        ${yieldFromHu(fc)} közlünk; még ${daysLeft(fc)} nap van a
-        szezon végéig. ${info("vetesi")}</div>`;
+        ${yieldFromHu(fc)} közlünk. ${info("vetesi")}</div>`;
     return;
   }
 

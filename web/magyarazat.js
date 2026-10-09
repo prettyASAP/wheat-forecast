@@ -130,9 +130,11 @@ const GLOSSARY = {
   },
   vizmerleg: {
     title: "Vízmérleg (mm)",
-    text: "Csapadék mínusz párolgás (a növényzet és a talaj vízigénye, FAO-módszerrel " +
-      "számolva). A −250 mm azt jelenti: negyed méternyi vízoszloppal több párolgott " +
-      "el, mint amennyi eső esett – ekkora a hiány. Magyarországon nyáron szinte " +
+    text: "Csapadék mínusz potenciális párolgás (ET₀: a légkör párologtató igénye " +
+      "egy jól ellátott referencia-gyepen, FAO-módszerrel számolva). A −250 mm azt " +
+      "jelenti: a párologtató igény negyed méternyi vízoszloppal haladta meg a " +
+      "csapadékot. A ténylegesen elpárolgott víz ennél kevesebb, mert száraz talajból " +
+      "a növény nem tud ennyit párologtatni; a szám a hiány mértékét jelzi. Magyarországon nyáron szinte " +
       "mindig negatív; a kérdés a hiány mértéke. Ez a modell legfontosabb " +
       "aszályjelzője.",
   },

@@ -566,7 +566,7 @@ WB_SCALE_MM = 50  # rögzített skála: −50 mm (piros) … 0 … +50 mm (kék)
 
 
 def save_wb_map(fc: dict, gdf, out_path: Path) -> None:
-    """Vízmérleg (csapadék mínusz párolgás) a termésév kezdete óta, vármegyénként, RÖGZÍTETT,
+    """Vízmérleg (csapadék mínusz potenciális párolgás) a termésév kezdete óta, vármegyénként, RÖGZÍTETT,
     nullára szimmetrikus skálán: a megyék közti néhány mm-es különbség ne tűnjön
     nagynak (relatív skálán −24 és −19 mm piros és kék lenne)."""
     vals = {c["nuts_id"]: c["weather_todate"]["wb_total_mm"] for c in fc["counties"]}
@@ -660,11 +660,6 @@ def yield_from_hu(fc: dict) -> str:
     return _HU_MONTHS_FROM[yf[0]] if yf else "később"
 
 
-def season_end_hu(fc: dict) -> str:
-    import calendar
-    m = config.CROPS[crop_key(fc)]["season"][1]
-    return f"{_HU_MONTHS[m]} {calendar.monthrange(fc['crop_year'], m)[1]}."
-
 
 def station_note(fc: dict) -> str:
     st = fc["national"].get("stations")
@@ -727,13 +722,12 @@ def sowing_page(sowing: list, page_no: int, total: int, footer, methodology: str
              {"kevés": "Kevés csapadékkal indul az új termésév", "bő": "Bő csapadékkal indul az új termésév"}.get(
                  _rain_word(pct), "Átlagos csapadékkal indul az új termésév") if pct is not None
              else "Megkezdődött az új termésév")
-    rem = days_left(fc)
     focus = [next(c for c in fc["counties"] if c["county_name"] == k) for k in FOCUS]
     st = fc["national"].get("stations")
     period = _period_hu(f"{sw.get('since', '')} – {sw.get('until', '')}") if sw else ""
     # a számítás kezdőnapja; az első napokban még nincs sowing-statisztika, ott a configból
     start_hu = _day_hu(sw.get("since")) or f"{_HU_MONTHS[config.CROPS[crop_key(fc)]['season'][0]]} 1."
-    st_txt = (f" A HungaroMet {st['n']} automata állomásának átlaga ugyanerre a napokra "
+    st_txt = (f" A HungaroMet {st['n']} automata állomásának átlaga ugyanezekre a napokra "
               f"{hu(st['mm'],0)} mm." if st and st.get("n") else "")
     if sw and dry:
         lead = (f"<strong>A termésév kezdete óta ({period}) nem esett csapadék:</strong> a modell szerint országosan "
@@ -777,13 +771,13 @@ def sowing_page(sowing: list, page_no: int, total: int, footer, methodology: str
     return f"""<section class="page">
   <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-bottom:14px">
     <div><p class="rep-kicker">A termésév eleje – {_names(sowing)}</p><h2 style="margin:0;font-size:30px;line-height:1">{title}</h2></div>
-    <div style="font-size:11px;{MUTED};text-align:right;white-space:nowrap">{rem} nap a szezon végéig ({season_end_hu(fc)}) · {page_no} / {total}</div>
+    <div style="font-size:11px;{MUTED};text-align:right;white-space:nowrap">{page_no} / {total}</div>
   </div>
   <p style="font-size:15px;line-height:1.6;margin:0 0 12px">{lead}</p>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start">
     <div><p class="rep-kicker" style="margin-bottom:6px">Fókusz-vármegyék – a termésév kezdete óta</p>
       <table class="table" style="font-size:11.5px"><thead><tr><th>Vármegye</th><th style="text-align:right">Csapadék</th>{st_head}<th style="text-align:right">Vízmérleg</th><th style="text-align:right">Hőösszeg</th></tr></thead><tbody>{frows}</tbody></table>
-      <p style="font-size:10px;{MUTED};margin:6px 0 0">{period} A kezdőnap rögzített ({start_hu}), nem a tényleges vetés napja. Csapadék, vízmérleg, hőösszeg: modell (Open-Meteo: ERA5, a legutóbbi napokra időjárási modellek), a megye középpontjára, naptári napokra.{st_foot} Vízmérleg: csapadék mínusz párolgás.</p></div>
+      <p style="font-size:10px;{MUTED};margin:6px 0 0">{period} A kezdőnap rögzített ({start_hu}), nem a tényleges vetés napja. Csapadék, vízmérleg, hőösszeg: modell (Open-Meteo: ERA5, a legutóbbi napokra időjárási modellek), a megye középpontjára, naptári napokra.{st_foot} Hőösszeg: °C·nap, 0 °C felett. Vízmérleg: csapadék mínusz potenciális párolgás (ET₀).</p></div>
     <div class="blueprint" style="padding:14px;margin:0"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
       <div style="font-family:var(--font-heading);font-weight:600;font-size:13px;margin-bottom:8px">Mit hozhat az év? <span style="font-weight:400;font-size:11px;{MUTED}">t/ha, modellszámítás a 2000 óta mért évek időjárásával</span></div>
       <table class="table" style="font-size:12px"><thead><tr><th></th>{head}</tr></thead><tbody>{rows}</tbody></table>
@@ -977,7 +971,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
       <thead><tr><th>Vármegye</th><th style="text-align:right">Becslés</th><th style="text-align:right">80%-os sáv</th><th style="text-align:right">Hőstressz</th><th style="text-align:right">Vízmérleg</th><th style="text-align:right">Csapadék</th>{'<th style="text-align:right">Mért</th>' if live_st else ''}</tr></thead>
       <tbody>{''.join(wrows)}</tbody>
     </table>
-    <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:8px 0 0">A szezon kezdetétől {obs_hu}-ig. Hőstressz, vízmérleg, csapadék: modell (Open-Meteo: ERA5, a legutóbbi napokra időjárási modellek), a megye középpontjára, naptári napokra{'; mért: a megye HungaroMet automata állomásainak átlaga, az állomási nap 06 UTC-től másnap 06 UTC-ig tart' if live_st else ''}. Vízmérleg: csapadék mínusz párolgás.</p>
+    <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:8px 0 0">A szezon kezdetétől {obs_hu}-ig. Hőstressz, vízmérleg, csapadék: modell (Open-Meteo: ERA5, a legutóbbi napokra időjárási modellek), a megye középpontjára, naptári napokra{'; mért: a megye HungaroMet automata állomásainak átlaga, az állomási nap 06 UTC-től másnap 06 UTC-ig tart' if live_st else ''}. Vízmérleg: csapadék mínusz potenciális párolgás (ET₀).</p>
   </div>
   <p style="font-size:10px;line-height:1.5;text-align:justify;color:color-mix(in srgb,var(--color-text) 52%,transparent);margin:10px 0 0;border-top:1px solid var(--color-divider);padding-top:8px">{methodology}{station_note(live_fc)}</p>
   {footer(3, total)}
