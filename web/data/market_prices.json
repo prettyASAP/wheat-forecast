@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-10-08",
+ "updated_at": "2026-10-09",
  "source": "Európai Bizottság (DG AGRI) agrifood API; a magyar adatok a tagállami jelentésből (AKI PÁIR) származnak",
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
@@ -157,31 +157,31 @@
    "label": "Csirkemell-filé",
    "scope": "hazai",
    "freq": "heti",
-   "price": 509.69,
+   "price": 506.16,
    "unit": "EUR/100 kg",
    "period": "2026-09-28 – 2026-10-04",
    "group": "Baromfi",
-   "huf": 1867.8,
+   "huf": 1854.8,
    "huf_unit": "Ft/kg",
    "lo52": 478.32,
    "hi52": 550.31,
-   "pos52": 0.436,
-   "yoy_pct": -4.4
+   "pos52": 0.387,
+   "yoy_pct": -5.1
   },
   {
    "label": "Csirkecomb",
    "scope": "hazai",
    "freq": "heti",
-   "price": 215.18,
+   "price": 216.5,
    "unit": "EUR/100 kg",
    "period": "2026-09-28 – 2026-10-04",
    "group": "Baromfi",
-   "huf": 788.5,
+   "huf": 793.4,
    "huf_unit": "Ft/kg",
    "lo52": 206.09,
    "hi52": 250.34,
-   "pos52": 0.205,
-   "yoy_pct": -5.3
+   "pos52": 0.235,
+   "yoy_pct": -4.7
   }
  ],
  "valuation": {
