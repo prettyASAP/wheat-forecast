@@ -672,7 +672,93 @@ def test_autumn_layout_uses_previous_year_finals_and_no_yield_for_sowing():
     text = _re.sub(r"<[^>]+>", " ", html)
     assert html.count('<section class="page">') == 3
     assert "évi betakarítás · lezárt szezonok" in text and "vetési időszak" in text
-    assert "Kevés csapadékkal indul" in text or "csapadékkal indul az új termésév" in text
+    assert ("indul az új termésév" in text or "Megkezdődött az új termésév" in text)
     # a vetési kártyán nincs "a szokásoshoz" eltérés és nincs forint-kiesés
     sow_part = html.split("évi termésév ·")[1].split("Trendalapú")[0]
     assert "a szokásoshoz" not in sow_part and "mrd Ft" not in sow_part
+
+
+# --------------------------------------------------------------------------- #
+# 17) Kiírt időjárás: csak eltelt napok; HungaroMet ellenpróba csak hiánytalan állomással
+# --------------------------------------------------------------------------- #
+def test_observed_cutoff_excludes_forecast_days():
+    """2026. okt. 8-án a jelentés 'okt. 1–14.' csapadékot írt 'esett'-ként: a
+    7 napos előrejelzés tényként jelent meg. A kiírt időszak legfeljebb tegnapig tart,
+    és friss állomási adat esetén annak utolsó napjáig (közös időszak)."""
+    from datetime import date as _d
+    from src.predict_live import observed_cutoff
+    today, known = _d(2026, 10, 8), _d(2026, 10, 14)
+    assert observed_cutoff(today, known, None) == _d(2026, 10, 7)
+    assert observed_cutoff(today, known, {"last_day": "2026-10-06"}) == _d(2026, 10, 6)
+    assert observed_cutoff(today, _d(2026, 6, 30), None) == _d(2026, 6, 30)  # lezárt szezon
+
+
+def test_station_window_requires_complete_series_and_min_stations():
+    from datetime import date as _d, timedelta as _td
+    from src.fetch_hungaromet import window_sums
+    s, e = _d(2026, 10, 1), _d(2026, 10, 3)
+    days = [s + _td(days=i) for i in range(3)]
+    series = {1: {d: 1.0 for d in days}, 2: {d: 3.0 for d in days},          # Békés, teljes
+              3: {days[0]: 5.0, days[1]: -999.0, days[2]: 5.0},              # Békés, hiányos
+              4: {d: 2.0 for d in days}}                                     # Fejér, egyetlen
+    county = {1: "Békés", 2: "Békés", 3: "Békés", 4: "Fejér"}
+    w = window_sums(series, s, e, county)
+    assert w["counties"] == {"Békés": {"mm": 6.0, "n": 2}}   # a hiányos kimarad, Fejér <2 állomás
+    assert w["national"] == {"mm": 6.0, "n": 3} and w["days"] == 3   # (3 + 9 + 6) / 3
+
+
+def test_station_window_must_match_the_displayed_period():
+    from datetime import date as _d
+    from src.predict_live import station_window
+    st = {"windows": {"2026-10-01": {"from": "2026-10-01", "to": "2026-10-07"}}}
+    assert station_window(st, _d(2026, 10, 1), _d(2026, 10, 7))["to"] == "2026-10-07"
+    assert station_window(st, _d(2026, 10, 1), _d(2026, 10, 6)) is None   # eltérő időszak: nem közöljük
+    assert station_window(None, _d(2026, 10, 1), _d(2026, 10, 7)) is None
+
+
+def test_sowing_page_first_day_has_no_numbers_and_no_crash():
+    """A szezon első napján nincs eltelt nap: nem írunk ki csapadékot (előrejelzést
+    sem), a lap gondolatjelet mutat és nem áll le."""
+    import copy, re as _re
+    from src import report_html
+    fcs = {c: report_html.load_fc(c) for c in config.REPORT_CROPS}
+    sow = [k for k, f in fcs.items() if f.get("season_phase") == "sowing"]
+    if not sow:
+        pytest.skip("csak vetési időszakban értelmezhető (élő JSON-okból)")
+    for k in sow:
+        f = copy.deepcopy(fcs[k]); f["national"].pop("sowing", None); f["national"].pop("stations", None)
+        for c in f["counties"]:
+            c["weather_todate"] = {k2: None for k2 in c["weather_todate"]}
+        fcs[k] = f
+    html = report_html.build_html(fcs, "2026-10-01", "2026. 10. 01.")
+    text = _re.sub(r"<[^>]+>", " ", html)
+    assert "Megkezdődött az új termésév" in text and "nem esett" not in text
+    assert "None" not in text
+
+
+def test_observed_cutoff_stops_before_gap_filled_day():
+    """Ha az ERA5 archívumból hiányzik egy nap, a kód sokéves átlaggal pótolja; a
+    kiírt 'eddig' időszak ennél a napnál korábban véget ér."""
+    from datetime import date as _d
+    from src.predict_live import observed_cutoff, first_gap_before
+    filled = [_d(2026, 10, 3), _d(2026, 10, 20)]
+    assert first_gap_before(filled, _d(2026, 10, 14)) == _d(2026, 10, 3)
+    assert first_gap_before([_d(2026, 10, 20)], _d(2026, 10, 14)) is None   # a jövőbeli pótlás nem számít
+    assert observed_cutoff(_d(2026, 10, 9), _d(2026, 10, 14), None, _d(2026, 10, 3)) == _d(2026, 10, 2)
+
+
+def test_running_page_tolerates_missing_weather_values():
+    """Futó szezonban sem omolhat össze a 3. oldal, ha nincs kiírható időjárás."""
+    import copy
+    from src import report_html
+    fcs = {c: report_html.load_fc(c) for c in config.REPORT_CROPS}
+    corn = copy.deepcopy(fcs["corn"])
+    corn["season_phase"] = "running"
+    corn["scenarios"] = corn.get("scenarios") or {
+        "remaining_days": 30, "national": {"p10": 5.0, "p50": 5.3, "p90": 5.6},
+        "counties": {}, "analogs": None, "method": "teszt"}
+    for c in corn["counties"]:
+        c["weather_todate"] = {k: None for k in c["weather_todate"]}
+    fcs["corn"] = corn
+    html = report_html.build_html(fcs, "2027-07-01", "2027. 07. 01.")
+    assert "None" not in html and "–" in html

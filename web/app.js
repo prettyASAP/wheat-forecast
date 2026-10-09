@@ -57,6 +57,12 @@ function info(key) {
 // magyar tizedesvessző a kijelzett számokhoz (a JSON-ban pont marad)
 function hu(v, d = 2) { return v.toFixed(d).replace(".", ",").replace("-", "−"); }
 
+// napok a szezon végéig MAI naptól (régi pillanatképben: a forgatókönyv-ablak)
+function daysLeft(fc) {
+  return fc.days_to_season_end != null ? fc.days_to_season_end
+    : (fc.scenarios ? fc.scenarios.remaining_days : 0);
+}
+
 // ISO-dátum (2026-09-19) magyar alakban (2026. 09. 19.)
 function huDate(d) { return d ? d.replace(/-/g, ". ") + "." : ""; }
 
@@ -160,7 +166,10 @@ function applyForecast(fc) {
   }
   if (mapReady) paintMap(fc);  // különben a térkép "load" eseménye festi ki
   const wxNote = fc.scenarios
-    ? `időjárási adat (mért + 7 napos előrejelzés): ${huDate(fc.weather_known_until).slice(0, -1)}-ig`
+    ? (fc.weather_observed_until
+        ? `időjárás: ${huDate(fc.weather_observed_until).slice(0, -1)}-ig; a becslés a 7 napos előrejelzéssel számol`
+        // régi pillanatkép: ott a kiírt számok még az előrejelzett napokat is tartalmazzák
+        : `időjárási adat (mért + 7 napos előrejelzés): ${huDate(fc.weather_known_until).slice(0, -1)}-ig`)
     : `az időjárási adat a teljes szezont lefedi`;
   document.getElementById("meta").textContent =
     `${fc.crop} · termésév: ${fc.crop_year} · frissítve: ${huDate(fc.updated_at)} · ${wxNote}`;
@@ -233,14 +242,21 @@ function renderHeadline(fc) {
     const rng = an ? ` A 2000 óta mért évek szélső kimenetei innen indulva
       <b>${hu(an.worst[0].t_ha)}</b> (${an.worst[0].year}) és <b>${hu(an.best[0].t_ha)}</b>
       (${an.best[0].year}) t/ha.` : "";
-    const rain = sw.prec_pct_of_normal != null
-      ? ` A vetés óta a csapadék a sokéves átlag <b>${sw.prec_pct_of_normal}%-a</b>
-         (${hu(sw.prec_mm, 0)} mm), a vízmérleg ${hu(sw.wb_mm, 0)} mm.` : "";
+    const st = n.stations;
+    const stTxt = st && st.n ? ` A HungaroMet ${st.n} állomásának átlaga ugyanerre a napokra ${hu(st.mm, 0)} mm.` : "";
+    // régi pillanatkép (nincs weather_observed_until): ott a vetési összeg még az
+    // előrejelzett napokat is tartalmazza, ezért nem írjuk ki tényként
+    const rain = !fc.weather_observed_until ? ""
+      : sw.prec_mm != null && sw.prec_mm < 0.5
+      ? ` A vetés óta (${huDate(sw.until).slice(0, -1)}-ig) nem esett csapadék; a vízmérleg ${hu(sw.wb_mm, 0)} mm.${stTxt}`
+      : sw.prec_pct_of_normal != null
+        ? ` A vetés óta a csapadék a sokéves átlag <b>${sw.prec_pct_of_normal}%-a</b>
+           (${hu(sw.prec_mm, 0)} mm), a vízmérleg ${hu(sw.wb_mm, 0)} mm.${stTxt}` : "";
     el.innerHTML = `<div class="headline-main">${cropSubject(fc)} termése: vetési időszak.
         A kiindulás a sokéves szint, <b>${hu(n.trend_t_ha)} t/ha</b>.${rng}${rain}</div>
       <div class="headline-sub"><span class="badge sowing">VETÉSI IDŐSZAK</span> Hozambecslést a
-        tavaszi fejlődés ismeretében közlünk; még ${sc ? sc.remaining_days : ""} nap van a
-        betakarításig. ${info("vetesi")}</div>`;
+        tavaszi fejlődés ismeretében közlünk; még ${daysLeft(fc)} nap van a
+        szezon végéig. ${info("vetesi")}</div>`;
     return;
   }
 
@@ -282,7 +298,7 @@ function renderHeadline(fc) {
 
   const cert = sc
     ? `<span class="badge open">MÉG VÁLTOZHAT</span> A szezonból még
-       <b>${sc.remaining_days} nap</b> van hátra; a végeredmény az időjárástól
+       <b>${daysLeft(fc)} nap</b> van hátra; a végeredmény az időjárástól
        függően <b>${hu(sc.national.p10)}–${hu(sc.national.p90)} t/ha</b> között
        alakulhat.`
     : `<span class="badge final">VÉGLEGES KÖZELI</span> A szezon időjárása már
@@ -411,11 +427,11 @@ function renderNational(fc) {
   if (sc) {
     cards.push(`
       <div class="kpi" title="${esc(sc.method)}">
-        <div class="kpi-label">Mi lehet még belőle? (${sc.remaining_days} nap hátra) ${info("forgatokonyvek")}</div>
+        <div class="kpi-label">Mi lehet még belőle? (${daysLeft(fc)} nap hátra) ${info("forgatokonyvek")}</div>
         <div class="kpi-viz">${scenarioBandSVG(sc.national.p10, sc.national.p50,
                                                sc.national.p90, n.predicted_yield_t_ha)}</div>
         <div class="kpi-sub">▲ mostani becslés · vonal: legvalószínűbb kimenet · a sáv széle: kedvezőtlen/kedvező időjárás</div>
-        ${sc.analogs ? `<div class="kpi-sub">Ha a hátralévő ${sc.remaining_days} nap időjárása olyan lesz, mint
+        ${sc.analogs ? `<div class="kpi-sub">Ha a szezon hátralévő részének időjárása olyan lesz, mint
           <b>${sc.analogs.worst[0].year}</b> azonos időszakában: ${hu(sc.analogs.worst[0].t_ha)} t/ha ·
           mint <b>${sc.analogs.best[0].year}</b> azonos időszakában: ${hu(sc.analogs.best[0].t_ha)} t/ha</div>` : ""}
       </div>`);
@@ -527,7 +543,7 @@ function showPanel(nutsId) {
       </div>`;
   }
   const wxRows = `
-    <div class="chart-title">Időjárás eddig – a pötty: hol áll a vármegye a 20 közül
+    <div class="chart-title">Időjárás ${currentForecast.weather_observed_until ? "eddig" : "(előrejelzéssel együtt)"} – a pötty: hol áll a vármegye a 20 közül
     (bal = legalacsonyabb, jobb = legmagasabb érték)</div>
     ${trackRow("Csapadék", wx.prec_total_mm, " mm", "#5499c7", "csapadek")}
     ${trackRow("Vízmérleg", wx.wb_total_mm, " mm", "#2874a6", "vizmerleg")}

@@ -125,6 +125,9 @@ def build_season_daily(today: date, crop_year: int, crop: str):
     have_index = pd.MultiIndex.from_frame(combined[["nuts_id", "date"]])
     missing = full_index.difference(have_index).to_frame(index=False)
     n_missing_days = missing["date"].nunique()
+    # az első sokéves átlaggal PÓTOLT nap: a kiírt "eddig" időszak ennél nem tarthat
+    # tovább (különben a pótolt átlag "esett csapadékként" jelenne meg)
+    filled_days = sorted(set(missing["date"]))
     if len(missing):
         missing["md"] = [(d.month, d.day) for d in missing["date"]]
         missing = missing.merge(clim, on=["nuts_id", "md"], how="left").drop(columns=["md"])
@@ -135,6 +138,7 @@ def build_season_daily(today: date, crop_year: int, crop: str):
     # dátumot adunk, ne NaN-t — a downstream összehasonlítások dátumot várnak
     known_until = (have_index.get_level_values("date").max()
                    if len(have_index) else start - timedelta(days=1))
+    combined.attrs["first_filled_day"] = first_gap_before(filled_days, known_until)
     print(f"  szezon-napok: {combined.groupby('nuts_id')['date'].count().iloc[0]} / vármegye, "
           f"ismert időjárás eddig: {known_until}, klimatológiával pótolt napok: {n_missing_days}")
     return combined, known_until
@@ -370,6 +374,49 @@ def national_block(crop: str, crop_year: int, rows: list[dict],
     return out
 
 
+STATION_MAX_AGE_DAYS = 4
+
+
+def load_stations(today: date) -> dict | None:
+    """A HungaroMet ellenpróba (web/data/stations.json), ha friss; különben None."""
+    p = config.WEB_DATA / "stations.json"
+    if not p.exists():
+        return None
+    try:
+        st = json.loads(p.read_text(encoding="utf-8"))
+        last = date.fromisoformat(st["last_day"])
+    except Exception:
+        return None
+    return st if (today - last).days <= STATION_MAX_AGE_DAYS else None
+
+
+def first_gap_before(filled_days: list, known_until: date):
+    """Az első pótolt nap, ha a már ismert időszakon belül van (különben None)."""
+    gaps = [d for d in filled_days if d <= known_until]
+    return gaps[0] if gaps else None
+
+
+def observed_cutoff(today: date, known_until: date, stations: dict | None,
+                    first_filled: date | None = None) -> date:
+    """A kiírt időjárás utolsó napja: tegnap (az előrejelzés nélkül); ha van friss
+    állomási adat, legfeljebb annak utolsó napja (közös időszak); és mindig az
+    első pótolt nap ELŐTT (pótolt átlagot nem írunk ki mért helyett)."""
+    cut = min(known_until, today - timedelta(days=1))
+    if stations:
+        cut = min(cut, date.fromisoformat(stations["last_day"]))
+    if first_filled is not None:
+        cut = min(cut, first_filled - timedelta(days=1))
+    return cut
+
+
+def station_window(stations: dict | None, start: date, until: date) -> dict | None:
+    """Az állomási ablak, ha pontosan a [start, until] időszakra szól."""
+    if not stations:
+        return None
+    w = stations.get("windows", {}).get(start.isoformat())
+    return w if w and w.get("to") == until.isoformat() else None
+
+
 def season_phase(crop: str, crop_year: int, today: date, has_scenarios: bool,
                  is_trend: bool) -> str:
     """trend / final / sowing / running – a megjelenítés közös forrása (PDF + web)."""
@@ -452,12 +499,26 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
                  f"az adatforrás valószínűleg degradálódott. Nem publikálunk "
                  f"elavult alapon számolt becslést.")
 
-    # A kijelzett "időjárás eddig" mutatók CSAK a ténylegesen ismert napokból
-    # (audit-javítás: korábban a klimatológiával szezonvégig feltöltött sorból
-    # számoltuk, így pl. a csapadék részben szintetikus jövőt tartalmazott).
-    known_only = season_daily[season_daily["date"] <= known_until]
-    feats_todate = compute_features(known_only, crop)
-    feats_todate = feats_todate[feats_todate["crop_year"] == crop_year]
+    # A KIÍRT "időjárás eddig" mutatók csak ELTELT napokból számolódnak. A
+    # known_until a 7 napos előrejelzést is tartalmazza: a modell szándékosan
+    # felhasználja, de kiírva ("esett") az előrejelzés tényként jelenne meg.
+    # Ha van friss HungaroMet állomási adat, az időszak vége a közös utolsó nap,
+    # hogy a modellből számolt és a mért csapadék UGYANARRA a napokra szóljon.
+    stations = load_stations(today)
+    observed_until = observed_cutoff(today, known_until, stations,
+                                     season_daily.attrs.get("first_filled_day"))
+    # ha a kiírt időszak a vártnál korábban ér véget (pl. egy régi, pótolt nap
+    # miatt), azt látható figyelmeztetésként jelezzük a napi futás felületén
+    lag = (min(today - timedelta(days=1), end) - observed_until).days
+    if today > start and lag > STATION_MAX_AGE_DAYS:
+        print(f"::warning::{spec['label']}: a kiírt időjárás csak {observed_until}-ig tart "
+              f"({lag} nappal a vártnál korábban; első pótolt nap: "
+              f"{season_daily.attrs.get('first_filled_day')})")
+    known_only = season_daily[season_daily["date"] <= observed_until]
+    has_observed = observed_until >= start   # a szezon első napján még nincs eltelt nap
+    if has_observed:
+        feats_todate = compute_features(known_only, crop)
+        feats_todate = feats_todate[feats_todate["crop_year"] == crop_year]
 
     df = load_model_data(crop)
     m = fit_panel_model(df, crop=crop)
@@ -514,14 +575,18 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
 
     pred_map = dict(zip(model_feats["nuts_id"], zip(preds, baseline)))
     for _, c in counties.sort_values("nuts_id").iterrows():
-        f = feats_todate[feats_todate["nuts_id"] == c["nuts_id"]].iloc[0]
-        wx = {
-            "prec_total_mm": round(float(f["prec_total"]), 1),
-            "wb_total_mm": round(float(f["wb_total"]), 1),
-            "heat_days": int(f["heat_days"]),
-            "frost_days_winter": int(f["frost_days_winter"]) if spec["use_frost"] else None,
-            "gdd_total": round(float(f["gdd_total"]), 0),
-        }
+        if has_observed:
+            f = feats_todate[feats_todate["nuts_id"] == c["nuts_id"]].iloc[0]
+            wx = {
+                "prec_total_mm": round(float(f["prec_total"]), 1),
+                "wb_total_mm": round(float(f["wb_total"]), 1),
+                "heat_days": int(f["heat_days"]),
+                "frost_days_winter": int(f["frost_days_winter"]) if spec["use_frost"] else None,
+                "gdd_total": round(float(f["gdd_total"]), 0),
+            }
+        else:  # nincs eltelt nap: nem írunk ki számot (előrejelzést sem)
+            wx = {"prec_total_mm": None, "wb_total_mm": None, "heat_days": None,
+                  "frost_days_winter": None, "gdd_total": None}
         if c["nuts_id"] in pred_map:  # Budapest kimarad a modellből
             p, b = pred_map[c["nuts_id"]]
             row = {
@@ -551,6 +616,8 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
         "crop_year": crop_year,
         "updated_at": today.isoformat(),
         "weather_known_until": str(known_until),
+        "weather_observed_until": str(observed_until),
+        "days_to_season_end": max((end - today).days, 0),
         "unit": "t/ha",
         "band": "80%",
         "method": spec.get("method", "weather"),
@@ -559,9 +626,19 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
         "scenarios": sc,
         "counties": rows,
     }
-    if payload["season_phase"] == "sowing":
+    sw_win = station_window(stations, start, observed_until)
+    if sw_win and sw_win.get("national"):  # pl. januártól a 'recent' fájl okt. 1-jét már nem fedi  # mért ellenpróba a vármegyei sorokhoz és az országos blokkhoz
+        for r in rows:
+            c = sw_win["counties"].get(r["county_name"])
+            if c:
+                r["weather_todate"]["station_prec_mm"] = c["mm"]
+                r["weather_todate"]["station_n"] = c["n"]
+        payload["national"]["stations"] = {**(sw_win.get("national") or {}),
+                                           "from": sw_win["from"], "to": sw_win["to"],
+                                           "source": stations["source"]}
+    if payload["season_phase"] == "sowing" and observed_until >= start:
         payload["national"]["sowing"] = sowing_stats(known_only, crop, crop_year,
-                                                     known_until, county_area)
+                                                     observed_until, county_area)
 
     # Hivatalos EU-becslés viszonyítási pontként (ha friss és erre a termésévre szól)
     off_path = config.WEB_DATA / "official_estimates.json"

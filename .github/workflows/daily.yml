@@ -5,7 +5,13 @@ name: daily-forecast
 
 on:
   schedule:
-    - cron: "30 4 * * *"   # minden nap 04:30 UTC (06:30 Budapest, nyáron)
+    # A GitHub az ütemezett futást terhelés szerint órákkal késleltetheti (2026
+    # őszén a 04:30-as futás rendre 11:15 és 11:45 UTC között indult), ezért a
+    # jelentés nem készült el reggelre. Három korai időpont: az első, amelyik
+    # lefut, elkészíti a napi jelentést, a többi felismeri és kihagyja.
+    - cron: "15 23 * * *"
+    - cron: "15 1 * * *"
+    - cron: "15 3 * * *"
   workflow_dispatch:
 
 permissions:
@@ -14,12 +20,19 @@ permissions:
   id-token: write
 
 concurrency:
-  group: daily-forecast
+  # külön sor az ütemezett és a kézi futásnak: egy sorban csak egy futás várakozhat,
+  # így a következő ütemezett időpont nem törölheti a várakozó kézi indítást
+  group: daily-forecast-${{ github.event_name }}
   cancel-in-progress: false
 
 jobs:
   forecast:
     runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.guard.outputs.skip }}
+    env:
+      # a jelentés dátuma és a "ma" a magyar naptári nap (a 23:15 UTC-s futás már másnap)
+      TZ: Europe/Budapest
     # Minden `run:` blokk hibára álljon meg és a pipe-hibák se nyelődjenek el.
     # (A GitHub Actions alapértelmezése is -eo pipefail, de itt explicit rögzítjük,
     #  hogy egy jövőbeli shell-váltás se csendesítse el a hibákat.)
@@ -29,12 +42,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # ha a mai jelentés már elkészült (egy korábbi időpont lefutott), az ütemezett
+      # futás itt megáll; kézi indítás (workflow_dispatch) mindig végigfut
+      - name: Elkészült-e már a mai jelentés
+        id: guard
+        run: |
+          # a sorban várakozó futás a létrehozáskori commitot tölti le, ezért a main
+          # AKTUÁLIS csúcsán nézzük, elkészült-e már a mai jelentés
+          git fetch -q origin main
+          if [ "${{ github.event_name }}" = "schedule" ] && git cat-file -e "origin/main:web/data/jelentes/jelentes_$(date +%F).pdf" 2>/dev/null; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "A mai jelentés már elkészült, kihagyom."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-python@v5
+        if: steps.guard.outputs.skip != 'true'
         with:
           python-version: "3.12"
           cache: pip
 
       - name: Függőségek
+        if: steps.guard.outputs.skip != 'true'
         run: |
           set -euo pipefail
           pip install -r requirements.txt
@@ -45,11 +74,13 @@ jobs:
       # Ha ezek buknak, az élő előrejelzés el sem indul — nem publikálunk
       # hibás logikával számolt forecastot.
       - name: Tesztek (megbízhatósági öv)
+        if: steps.guard.outputs.skip != 'true'
         run: |
           set -euo pipefail
           python -m pytest tests/ -q
 
       - name: Piaci árjegyzések letöltése (EU agrifood API / AKI PÁIR-eredetű)
+        if: steps.guard.outputs.skip != 'true'
         run: |
           set -euo pipefail
           # az előrejelzés ELŐTT fut: a forintosítás ezt a friss árat használja.
@@ -57,7 +88,15 @@ jobs:
           # elavulás esetén a 4. oldal magától kimarad — a job nem bukik el ezen
           python -m src.fetch_market_prices || echo "::warning::piaci árak frissítése nem sikerült — a meglévő/kimaradó árakkal megy tovább"
 
+      - name: HungaroMet állomási csapadék (mért ellenpróba)
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          # hibánál a meglévő fájl marad; 4 napnál régebbit a becslő nem használ
+          python -m src.fetch_hungaromet || echo "::warning::HungaroMet letöltése nem sikerült"
+
       - name: Élő előrejelzés futtatása (mind az öt termény)
+        if: steps.guard.outputs.skip != 'true'
         run: |
           set -euo pipefail
           python -m src.predict_live --crop wheat
@@ -69,23 +108,25 @@ jobs:
           python -m src.predict_live --crop rapeseed
 
       - name: Napi PDF-jelentés generálása (HTML→PDF)
+        if: steps.guard.outputs.skip != 'true'
         run: |
           set -euo pipefail
           python -m src.report_html
 
       - name: Friss forecast commit
+        if: steps.guard.outputs.skip != 'true'
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add web/data/forecast_*.json web/data/history/ \
-                  web/data/market_prices.json \
+                  web/data/market_prices.json web/data/stations.json \
                   web/data/official_estimates.json \
                   web/data/jelentes/ web/data/jelentes_latest.pdf
           if git diff --cached --quiet; then
             echo "Nincs változás, nincs commit."
           else
-            git commit -m "napi forecast frissítés ($(date -u +%F))"
+            git commit -m "napi forecast frissítés ($(date +%F))"
             # Ha közben más commit került a main-re, rebase-elünk push előtt. Ez a
             # commit KIZÁRÓLAG generált fájlokat tartalmaz (lásd a fenti git add
             # listát), ezért ütközésnél mindig a most generált, friss változat a
@@ -128,12 +169,19 @@ jobs:
           exit 1
 
       - name: Pages artifact feltöltése
+        if: steps.guard.outputs.skip != 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: web
 
   deploy:
     needs: forecast
+    # a telepítés közös sorban fut, akárhonnan indult a futás: két egyidejű Pages-
+    # telepítés ütközne, vagy a régebbi állapot írhatná felül az újabbat
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: false
+    if: needs.forecast.outputs.skip != 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

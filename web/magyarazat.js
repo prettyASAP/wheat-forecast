@@ -121,7 +121,7 @@ const GLOSSARY = {
   csapadek: {
     title: "Csapadék (mm)",
     text: "A termésév eddig lehullott összes csapadéka milliméterben, a vármegye " +
-      "középpontjára számolva (ERA5 időjárási elemzés). 1 mm = 1 liter víz " +
+      "középpontjára számolva (Open-Meteo: ERA5, a legutóbbi napokra időjárási modellek). 1 mm = 1 liter víz " +
       "négyzetméterenként.",
   },
   vizmerleg: {
@@ -163,11 +163,14 @@ const GLOSSARY = {
   },
   idojaras_eddig: {
     title: "Időjárási adat / „eddig”",
-    text: "A mutatók a szezonból eddig eltelt, ténylegesen megfigyelt napokból " +
-      "számolódnak (plusz legfeljebb 7 nap meteorológiai előrejelzés). A szezon " +
-      "hátralévő részét a becslésben a korábbi évek időjárása képviseli – ez a " +
-      "„még változhat” rész.",
+    text: "A kiírt mutatók (csapadék, vízmérleg, hőösszeg, hőstressz) csak a szezon " +
+      "eltelt napjaiból számolódnak, tegnapig. A becslés ezen felül a következő 7 nap " +
+      "előrejelzését is felhasználja, a szezon hátralévő részét pedig a korábbi évek " +
+      "időjárása képviseli; ez a „még változhat” rész. A modellből számolt csapadék " +
+      "mellett, ahol elérhető, a HungaroMet automata állomásainak mért átlaga is " +
+      "szerepel, ugyanarra az időszakra.",
   },
+
   frissites: {
     title: "Frissítés",
     text: "A rendszer minden reggel automatikusan letölti a legfrissebb időjárási " +

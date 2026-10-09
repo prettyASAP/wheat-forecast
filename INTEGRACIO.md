@@ -133,18 +133,31 @@ with open("/kimenet/vegleges_egyesitett.pdf", "wb") as f:
 
 ---
 
-## 7. Friss adat (opcionális)
+## 7. Friss adat és időzítés
 
-A repóban lévő `forecast_*.json` a legutóbbi napi futásból való. Ha a PDF-nek a
-**mai** időjárással kell frissülnie, előbb futtasd a becslést (ehhez kell net,
-mert az Open-Meteo ERA5-öt tölt):
+A napi automatikus futás (GitHub Actions) magyar idő szerint éjfél után indul
+(23:15, 01:15 és 03:15 UTC; az első lefutó elkészíti a napi jelentést, a többi
+kihagyja). A GitHub az ütemezett futást terhelés szerint órákkal késleltetheti
+(2026 őszén a 04:30 UTC-s futás rendre 11 óra után indult), ezért a beolvasztás
+előtt érdemes ellenőrizni, hogy a `web/data/jelentes/jelentes_<mai dátum>.pdf`
+létezik-e; ha nem, a `jelentes_latest.pdf` még az előző napi.
+
+A repóban lévő adat a legutóbbi napi futásból való. Ha a PDF-nek a **mai** adattal
+kell frissülnie, előbb futtasd a letöltéseket és a becslést (ehhez kell net):
 
 ```bash
-python -m src.predict_live --crop wheat
-python -m src.predict_live --crop corn
-python -m src.predict_live --crop barley
+python -m src.fetch_market_prices
+python -m src.fetch_hungaromet
+for c in wheat corn barley sunflower rapeseed; do python -m src.predict_live --crop $c; done
 python -m src.report_html --out /kimenet/termeshozam.pdf
 ```
+
+A kiírt időjárási számok (csapadék, vízmérleg, hőösszeg) csak eltelt napokat
+tartalmaznak. A becslés maga a 7 napos előrejelzést is felhasználja, de ezt a PDF
+nem írja ki tényként. A HungaroMet állomási csapadék (`web/data/stations.json`)
+ugyanarra a napokra jelenik meg ellenpróbaként; forrásjelölése kötelező, a PDF
+kiírja („Adatbázis: Meteorológiai Adattár, HungaroMet Nonprofit Zrt. átlagolva az
+egyes értékekre”).
 
 Ha csak „a jelentést, ahogy van" akarod beilleszteni, a 7. pont kihagyható — a
 `report_html` a meglévő adatból dolgozik.
@@ -190,6 +203,7 @@ src/config.py             # útvonalak, terménydefiníciók
 web/data/forecast_*.json  # a becslések (5 db: 3 fő + 2 trendalapú termény)
 web/data/market_prices.json     # piaci árak + forintosítási ár (4. oldal)
 web/data/official_estimates.json  # EU-becslés (viszonyítási sor; elhagyható)
+web/data/stations.json          # HungaroMet állomási csapadék (ellenpróba; elhagyható)
 web/data/nuts3_hu.geojson # vármegyehatárok
 web/data/history/**       # a trendábrához
 requirements.txt          # függőségek

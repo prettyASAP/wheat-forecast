@@ -272,8 +272,10 @@
           (data.crop ? data.crop + " · " : "") +
           (data.crop_year ? "termésév: " + data.crop_year + " · " : "") +
           (data.updated_at ? "frissítve: " + huDate(data.updated_at) : "") +
-          (data.weather_known_until
-            ? " · időjárás eddig: " + huDate(data.weather_known_until) : "");
+          (data.weather_observed_until
+            ? " · időjárás eddig: " + huDate(data.weather_observed_until)
+            : (data.weather_known_until
+               ? " · időjárás (mért + 7 napos előrejelzés): " + huDate(data.weather_known_until) : ""));
         csvBtn.disabled = false;
         setStatus(null);
         render();
