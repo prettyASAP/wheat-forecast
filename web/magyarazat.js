@@ -174,7 +174,7 @@ const GLOSSARY = {
       "előrejelzését is felhasználja, a szezon hátralévő részét pedig a korábbi évek " +
       "időjárása képviseli; ez a „még változhat” rész. A modellből számolt csapadék " +
       "mellett, ahol elérhető, a HungaroMet automata állomásainak mért átlaga is " +
-      "szerepel, ugyanarra a napokra (Adatbázis: Meteorológiai Adattár, HungaroMet Nonprofit Zrt. átlagolva az egyes értékekre).",
+      "szerepel, ugyanezekre a napokra (Adatbázis: Meteorológiai Adattár, HungaroMet Nonprofit Zrt. átlagolva az egyes értékekre).",
   },
 
   frissites: {

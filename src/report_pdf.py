@@ -746,7 +746,7 @@ def draw_live_page(pdf: PdfPages, fc: dict, page_no: int, total_pages: int,
                   color=INK, va="top", ha="right")
         y -= LINE
     y = draw_para(page, M, y - 0.002, 1 - 2 * M,
-                  "Vízmérleg: a csapadék és a párolgás egyenlege a szezon eddigi "
+                  "Vízmérleg: a csapadék és a potenciális párolgás (ET₀) egyenlege a szezon eddigi "
                   "részében — minél negatívabb, annál erősebb az aszálynyomás.",
                   fontsize=FS, color=MUTED)
 
