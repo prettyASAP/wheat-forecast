@@ -87,18 +87,21 @@ const GLOSSARY = {
       "kimondjuk.",
   },
   vetesi: {
-    title: "Vetési időszak",
+    title: "A termésév eleje (még nincs hozamszám)",
     text: "Az őszi vetésű terményeknél (búza, őszi árpa) október 1-jétől február " +
-      "végéig, a kukoricánál a vetéstől május végéig a néhány napnyi vagy heti " +
+      "végéig, a kukoricánál április 1-jétől május végéig a néhány napnyi vagy heti " +
       "időjárásból számolt hozam hamis pontosságot sugallna: a modell ilyenkor " +
       "gyakorlatilag a sokéves trendet adná vissza. Ezért ebben az időszakban nem " +
       "közlünk hozamszámot. A kiindulás a sokéves szint, a tartomány a 2000 óta mért " +
       "évek időjárásával számolt modell-kimenetek két széle (melyik év időjárása adná " +
       "a leggyengébb és a legerősebb termést, " +
-      "ha innen indulva annak az évnek az időjárása következett). Emellett a vetés " +
-      "körülményeit mutatjuk: csapadék, vízmérleg és hőösszeg a vetés óta, a sokéves " +
-      "azonos időszak átlagához mérve. Hozambecslést a tavaszi fejlődés (bokrosodás, " +
-      "illetve kukoricánál június) ismeretében közlünk.",
+      "ha innen indulva annak az évnek az időjárása következett). Emellett az " +
+      "időjárás eddigi alakulását mutatjuk: csapadék, vízmérleg és hőösszeg október 1. " +
+      "(kukoricánál április 1.) óta, a sokéves azonos időszak átlagához mérve. Ez a " +
+      "kezdőnap a számítás rögzített napja, nem a tényleges vetés: az évente és " +
+      "gazdaságonként eltér, az őszi árpát gyakran már szeptember végén vetik. " +
+      "Hozambecslést az őszi vetésűeknél márciustól (bokrosodás), a kukoricánál " +
+      "júniustól közlünk.",
   },
   trendalapu: {
     title: "Trendalapú becslés (napraforgó, repce)",

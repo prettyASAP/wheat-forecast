@@ -465,6 +465,13 @@ _HU_MONTHS = ["", "jan.", "febr.", "márc.", "ápr.", "máj.", "jún.", "júl.",
               "aug.", "szept.", "okt.", "nov.", "dec."]
 
 
+def _day_hu(iso) -> str:
+    """'2026-10-01' -> 'okt. 1.' (üres bemenetre üres szöveg)."""
+    if not iso:
+        return ""
+    return f"{_HU_MONTHS[int(iso[5:7])]} {int(iso[8:10])}."
+
+
 def _period_hu(period: str) -> str:
     """'2026-07-13 – 2026-07-19' -> 'júl. 13–19.'; hónap-átnyúlásnál
     'jún. 29. – júl. 5.'; a havi '2026. 05. hó' -> '2026. máj.'"""
@@ -559,7 +566,7 @@ WB_SCALE_MM = 50  # rögzített skála: −50 mm (piros) … 0 … +50 mm (kék)
 
 
 def save_wb_map(fc: dict, gdf, out_path: Path) -> None:
-    """Vízmérleg (csapadék mínusz párolgás) a vetés óta, vármegyénként, RÖGZÍTETT,
+    """Vízmérleg (csapadék mínusz párolgás) a termésév kezdete óta, vármegyénként, RÖGZÍTETT,
     nullára szimmetrikus skálán: a megyék közti néhány mm-es különbség ne tűnjön
     nagynak (relatív skálán −24 és −19 mm piros és kék lenne)."""
     vals = {c["nuts_id"]: c["weather_todate"]["wb_total_mm"] for c in fc["counties"]}
@@ -609,7 +616,7 @@ def final_card(fc: dict) -> str:
 
 
 def sowing_card(fc: dict) -> str:
-    """Vetési időszak: kiindulás a sokéves szint, tartomány a mért évek szélső kimenetei."""
+    """A termésév eleje (hozamszám előtt): kiindulás a sokéves szint, tartomány a mért évek szélső kimenetei."""
     n = fc["national"]; an = (fc.get("scenarios") or {}).get("analogs") or {}
     w, b = (an.get("worst") or [None])[0], (an.get("best") or [None])[0]
     rng = (f'A modell szerint, ha a 2000 óta mért évek időjárása követné: legrosszabb esetben '
@@ -617,14 +624,14 @@ def sowing_card(fc: dict) -> str:
            f'({b["year"]}) t/ha.' if w and b else "")
     return f"""<div class="blueprint" style="break-inside:avoid;padding:13px 16px 12px">
   <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
-  <h3 style="margin:0;font-size:20px">{fc['crop'].capitalize()} <span style="font-family:var(--font-body);font-weight:400;font-size:12px;{MUTED}">{fc['crop_year']} · vetési időszak</span></h3>
+  <h3 style="margin:0;font-size:20px">{fc['crop'].capitalize()} <span style="font-family:var(--font-body);font-weight:400;font-size:12px;{MUTED}">{fc['crop_year']} · a termésév eleje</span></h3>
   <div style="display:flex;gap:22px;align-items:flex-end;margin:9px 0 5px">
     <div><div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;{MUTED}">kiindulás (sokéves szint)</div>
       <div style="font-family:var(--font-heading);font-weight:600;font-size:30px;line-height:1">{hu(n['trend_t_ha'])} <span style="font-size:13px;{MUTED}">t/ha</span></div></div>
     <div><div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;{MUTED}">{n['prev_year']}. évi tény</div>
       <div style="font-family:var(--font-heading);font-weight:600;font-size:22px;line-height:1">{hu(n['prev_year_yield_t_ha'])}</div></div>
   </div>
-  <div style="font-size:11.5px;line-height:1.5;{MUTED}">{rng} Hozambecslést a tavaszi fejlődés ismeretében közlünk.</div>
+  <div style="font-size:11.5px;line-height:1.5;{MUTED}">{rng} Hozambecslést {yield_from_hu(fc)} közlünk.</div>
 </div>"""
 
 
@@ -640,6 +647,17 @@ def days_left(fc: dict) -> int:
     nincs: ott a forgatókönyv-ablak hossza a tartalék)."""
     v = fc.get("days_to_season_end")
     return v if v is not None else (fc.get("scenarios") or {}).get("remaining_days", 0)
+
+
+_HU_MONTHS_FROM = ["", "januártól", "februártól", "márciustól", "áprilistól", "májustól",
+                   "júniustól", "júliustól", "augusztustól", "szeptembertől", "októbertől",
+                   "novembertől", "decembertől"]
+
+
+def yield_from_hu(fc: dict) -> str:
+    """Mettől közlünk hozamszámot (config.YIELD_FROM), pl. 'márciustól'."""
+    yf = config.YIELD_FROM.get(crop_key(fc))
+    return _HU_MONTHS_FROM[yf[0]] if yf else "később"
 
 
 def season_end_hu(fc: dict) -> str:
@@ -688,11 +706,16 @@ def banner_parts(final: list, sowing: list, running: list) -> tuple[str, str, st
     if sowing:
         sw = sowing[0]["national"].get("sowing") or {}
         pct = sw.get("prec_pct_of_normal")
-        what = "Az őszi vetés" if all(crop_key(f) in ("wheat", "barley") for f in sowing) else f"A {_names(sowing)} vetése"
+        # a kezdőnap a számítás rögzített napja (okt. 1., kukoricánál ápr. 1.),
+        # nem a tényleges vetés: azt nem ismerjük, évente és gazdaságonként eltér
+        since = _day_hu(sw.get("since")) or "a termésév kezdete"
+        # tavasszal csak a kukorica indul, a búza és az árpa már fut: megnevezzük
+        what = ("Az új termésév" if all(crop_key(f) in ("wheat", "barley") for f in sowing)
+                else f"A {_names(sowing)} szezonja")
         if sw.get("prec_mm") is not None and sw["prec_mm"] < 0.5:
-            parts.append(f"{what} csapadék nélkül indul: a vetés óta nem esett eső.")
+            parts.append(f"{what} csapadék nélkül indul: {since} óta nem esett eső.")
         elif pct is not None:
-            parts.append(f"{what} {_rain_word(pct)} csapadékkal indul: a sokéves átlag {pct}%-a.")
+            parts.append(f"{what} {_rain_word(pct)} csapadékkal indul: {since} óta a sokéves átlag {pct}%-a.")
     return " ".join(parts), big, big_label
 
 
@@ -708,14 +731,16 @@ def sowing_page(sowing: list, page_no: int, total: int, footer, methodology: str
     focus = [next(c for c in fc["counties"] if c["county_name"] == k) for k in FOCUS]
     st = fc["national"].get("stations")
     period = _period_hu(f"{sw.get('since', '')} – {sw.get('until', '')}") if sw else ""
+    # a számítás kezdőnapja; az első napokban még nincs sowing-statisztika, ott a configból
+    start_hu = _day_hu(sw.get("since")) or f"{_HU_MONTHS[config.CROPS[crop_key(fc)]['season'][0]]} 1."
     st_txt = (f" A HungaroMet {st['n']} automata állomásának átlaga ugyanerre a napokra "
               f"{hu(st['mm'],0)} mm." if st and st.get("n") else "")
     if sw and dry:
-        lead = (f"<strong>A vetés óta ({period}) nem esett csapadék:</strong> a modell szerint országosan "
+        lead = (f"<strong>A termésév kezdete óta ({period}) nem esett csapadék:</strong> a modell szerint országosan "
                 f"{hu(sw['prec_mm'],0)} mm, a sokéves átlag ugyanerre az időszakra {hu(sw['prec_normal_mm'],0)} mm."
                 f"{st_txt} A vízmérleg {hu(sw['wb_mm'],0)} mm (a sokéves átlag {hu(sw['wb_normal_mm'],0)} mm).")
     else:
-        lead = (f"<strong>A vetés óta ({period}) országosan {hu(sw['prec_mm'],0)} mm csapadék esett a modell szerint, "
+        lead = (f"<strong>A termésév kezdete óta ({period}) országosan {hu(sw['prec_mm'],0)} mm csapadék esett a modell szerint, "
                 f"a sokéves átlag {pct}%-a.</strong>{st_txt} A vízmérleg {hu(sw['wb_mm'],0)} mm "
                 f"(a sokéves átlag {hu(sw['wb_normal_mm'],0)} mm)." if sw else "")
     has_st = any(c["weather_todate"].get("station_prec_mm") is not None for c in focus)
@@ -746,23 +771,23 @@ def sowing_page(sowing: list, page_no: int, total: int, footer, methodology: str
     wbs = [c["weather_todate"]["wb_total_mm"] for c in fc["counties"]
            if c["predicted_yield_t_ha"] is not None and c["weather_todate"]["wb_total_mm"] is not None]
     map_block = (f"""  <div style="margin-top:16px;break-inside:avoid">
-    <p class="rep-kicker" style="margin-bottom:6px">Vízmérleg a vetés óta – vármegyénként <span style="font-weight:400;letter-spacing:0;text-transform:none;font-size:10px;{MUTED}">−{WB_SCALE_MM} mm (piros) és +{WB_SCALE_MM} mm (kék) közötti skálán; most {hu(min(wbs),0)} és {hu(max(wbs),0)} mm között · vastag keret: fókusz-vármegye</span></p>
+    <p class="rep-kicker" style="margin-bottom:6px">Vízmérleg a termésév kezdete óta – vármegyénként <span style="font-weight:400;letter-spacing:0;text-transform:none;font-size:10px;{MUTED}">−{WB_SCALE_MM} mm (piros) és +{WB_SCALE_MM} mm (kék) közötti skálán; most {hu(min(wbs),0)} és {hu(max(wbs),0)} mm között · vastag keret: fókusz-vármegye</span></p>
     <img src="assets/map_sowing_wb.png" alt="vízmérleg-térkép" style="width:100%;max-height:300px;object-fit:contain;display:block">
   </div>""" if wbs else "")
     return f"""<section class="page">
   <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-bottom:14px">
-    <div><p class="rep-kicker">Vetési időszak – {_names(sowing)}</p><h2 style="margin:0;font-size:30px;line-height:1">{title}</h2></div>
+    <div><p class="rep-kicker">A termésév eleje – {_names(sowing)}</p><h2 style="margin:0;font-size:30px;line-height:1">{title}</h2></div>
     <div style="font-size:11px;{MUTED};text-align:right;white-space:nowrap">{rem} nap a szezon végéig ({season_end_hu(fc)}) · {page_no} / {total}</div>
   </div>
   <p style="font-size:15px;line-height:1.6;margin:0 0 12px">{lead}</p>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start">
-    <div><p class="rep-kicker" style="margin-bottom:6px">Fókusz-vármegyék – a vetés óta</p>
+    <div><p class="rep-kicker" style="margin-bottom:6px">Fókusz-vármegyék – a termésév kezdete óta</p>
       <table class="table" style="font-size:11.5px"><thead><tr><th>Vármegye</th><th style="text-align:right">Csapadék</th>{st_head}<th style="text-align:right">Vízmérleg</th><th style="text-align:right">Hőösszeg</th></tr></thead><tbody>{frows}</tbody></table>
-      <p style="font-size:10px;{MUTED};margin:6px 0 0">{period} Csapadék, vízmérleg, hőösszeg: modell (Open-Meteo: ERA5, a legutóbbi napokra időjárási modellek), a megye középpontjára, naptári napokra.{st_foot} Vízmérleg: csapadék mínusz párolgás.</p></div>
+      <p style="font-size:10px;{MUTED};margin:6px 0 0">{period} A kezdőnap rögzített ({start_hu}), nem a tényleges vetés napja. Csapadék, vízmérleg, hőösszeg: modell (Open-Meteo: ERA5, a legutóbbi napokra időjárási modellek), a megye középpontjára, naptári napokra.{st_foot} Vízmérleg: csapadék mínusz párolgás.</p></div>
     <div class="blueprint" style="padding:14px;margin:0"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
       <div style="font-family:var(--font-heading);font-weight:600;font-size:13px;margin-bottom:8px">Mit hozhat az év? <span style="font-weight:400;font-size:11px;{MUTED}">t/ha, modellszámítás a 2000 óta mért évek időjárásával</span></div>
       <table class="table" style="font-size:12px"><thead><tr><th></th>{head}</tr></thead><tbody>{rows}</tbody></table>
-      <p style="font-size:10.5px;{MUTED};margin:8px 0 0">Hozambecslést a tavaszi fejlődés (bokrosodás) ismeretében közlünk; addig a tartomány a tájékozódást szolgálja.</p></div>
+      <p style="font-size:10.5px;{MUTED};margin:8px 0 0">Hozambecslést {yield_from_hu(fc)} közlünk; addig a tartomány a tájékozódást szolgálja.</p></div>
   </div>
 {map_block}
   <p style="font-size:10px;line-height:1.5;text-align:justify;{MUTED};margin:14px 0 0;border-top:1px solid var(--color-divider);padding-top:7px">{methodology}{station_note(fc)}</p>
@@ -978,7 +1003,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
                        f'<div style="display:grid;grid-template-columns:repeat({len(running)},1fr);gap:12px">'
                        + "".join(crop_card(f) for f in running) + "</div>")
         blocks += (f'<p class="rep-kicker" style="margin:14px 0 6px">{sowing[0]["crop_year"]}. évi termésév · '
-                   f'{"őszi vetés" if all(crop_key(f) in ("wheat","barley") for f in sowing) else "vetés"}</p>'
+                   f'még nincs hozamszám</p>'
                    f'<div style="display:grid;grid-template-columns:repeat({max(len(sowing),2)},1fr);gap:12px">'
                    + "".join(sowing_card(f) for f in sowing) + "</div>")
         big_block = (f'<div style="flex:none;text-align:right;border-left:1px solid color-mix(in srgb,#fff 22%,transparent);padding-left:22px">'

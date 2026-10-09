@@ -10,7 +10,7 @@
     { key: "prec_total_mm", label: "Csapadék (mm)", numeric: true, decimals: 1, explain: "csapadek" },
     { key: "wb_total_mm", label: "Vízmérleg (mm)", numeric: true, decimals: 1, explain: "vizmerleg" },
     { key: "heat_days", label: "Hőstressznapok", numeric: true, decimals: 0, explain: "hostressz" },
-    { key: "gdd_total", label: "Hőösszeg", numeric: true, decimals: 0, tip: "a vetés óta felgyűlt meleg (fok x nap, GDD)", explain: "hoosszeg" }
+    { key: "gdd_total", label: "Hőösszeg", numeric: true, decimals: 0, tip: "a szezon kezdete óta felgyűlt meleg (fok x nap, GDD)", explain: "hoosszeg" }
   ];
 
   var state = {

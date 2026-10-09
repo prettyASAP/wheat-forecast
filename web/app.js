@@ -77,6 +77,13 @@ function huDate(d) { return d ? d.replace(/-/g, ". ") + "." : ""; }
 /* A mondat alanya névelővel és termésévvel: "A búza idei" / "Az őszi árpa idei" /
    "A repce 2027. évi" – ősszel az őszi vetésűek már a KÖVETKEZŐ termésévben járnak,
    ott az "idei" hamis lenne. */
+// mettől közlünk hozamszámot (a payload yield_from mezője, config.YIELD_FROM)
+const HU_MONTHS_FROM = ["", "januártól", "februártól", "márciustól", "áprilistól", "májustól",
+  "júniustól", "júliustól", "augusztustól", "szeptembertől", "októbertől", "novembertől", "decembertől"];
+function yieldFromHu(fc) {
+  return fc.yield_from ? HU_MONTHS_FROM[+fc.yield_from.slice(5, 7)] : "a tavaszi fejlődés ismeretében";
+}
+
 function cropSubject(fc) {
   const art = /^[aáeéiíoóöőuúüű]/i.test(fc.crop) ? "Az" : "A";
   const when = fc.crop_year === new Date().getFullYear() ? "idei" : `${fc.crop_year}. évi`;
@@ -270,14 +277,14 @@ function renderHeadline(fc) {
     // előrejelzett napokat is tartalmazza, ezért nem írjuk ki tényként
     const rain = !fc.weather_observed_until ? ""
       : sw.prec_mm != null && sw.prec_mm < 0.5
-      ? ` A vetés óta (${huDate(sw.until).slice(0, -1)}-ig) nem esett csapadék; a vízmérleg ${hu(sw.wb_mm, 0)} mm.${stTxt}`
+      ? ` A termésév kezdete óta${sw.since ? ` (${huDate(sw.since).slice(0, -1)}–${huDate(sw.until).slice(0, -1)})` : ""} nem esett csapadék; a vízmérleg ${hu(sw.wb_mm, 0)} mm.${stTxt}`
       : sw.prec_pct_of_normal != null
-        ? ` A vetés óta a csapadék a sokéves átlag <b>${sw.prec_pct_of_normal}%-a</b>
+        ? ` A termésév kezdete${sw.since ? ` (${huDate(sw.since)})` : ""} óta a csapadék a sokéves átlag <b>${sw.prec_pct_of_normal}%-a</b>
            (${hu(sw.prec_mm, 0)} mm), a vízmérleg ${hu(sw.wb_mm, 0)} mm.${stTxt}` : "";
-    el.innerHTML = `<div class="headline-main">${cropSubject(fc)} termése: vetési időszak.
+    el.innerHTML = `<div class="headline-main">${cropSubject(fc)} termésére még nincs hozamszám.
         A kiindulás a sokéves szint, <b>${hu(n.trend_t_ha)} t/ha</b>.${rng}${rain}</div>
-      <div class="headline-sub"><span class="badge sowing">VETÉSI IDŐSZAK</span> Hozambecslést a
-        tavaszi fejlődés ismeretében közlünk; még ${daysLeft(fc)} nap van a
+      <div class="headline-sub"><span class="badge sowing">A TERMÉSÉV ELEJE</span> Hozambecslést
+        ${yieldFromHu(fc)} közlünk; még ${daysLeft(fc)} nap van a
         szezon végéig. ${info("vetesi")}</div>`;
     return;
   }
@@ -427,7 +434,7 @@ function renderNational(fc) {
     // régi pillanatképben a vetési összeg az előrejelzett napokat is tartalmazza: nem írjuk ki
     if (fc.weather_observed_until && sw.prec_mm != null) cards.push(`
       <div class="kpi">
-        <div class="kpi-label">A vetés óta ${info("vizmerleg")}</div>
+        <div class="kpi-label">A termésév kezdete${sw.since ? ` (${huDate(sw.since)})` : ""} óta ${info("vizmerleg")}</div>
         <div class="kpi-value">${sw.prec_pct_of_normal != null ? sw.prec_pct_of_normal + "%" : hu(sw.prec_mm, 0) + " mm"}
           <small>${sw.prec_pct_of_normal != null ? "a sokéves csapadék" : "csapadék"}</small></div>
         <div class="kpi-sub">${hu(sw.prec_mm, 0)} mm csapadék (sokéves ${hu(sw.prec_normal_mm, 0)} mm) ·

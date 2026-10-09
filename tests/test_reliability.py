@@ -344,7 +344,9 @@ def test_report_html_has_three_pages_and_all_crops():
     if any(fc.get("season_phase") == "running" for fc in fcs.values()):
         assert "Terményben és forintban" in html
     elif any(fc.get("season_phase") == "sowing" for fc in fcs.values()):
-        assert "Vetési időszak" in html
+        assert "A termésév eleje" in html
+        # a rögzített kezdőnap nem a tényleges vetés: nem nevezzük annak
+        assert "vetés óta" not in html.lower() and "vetési időszak" not in html.lower()
 
 
 # --------------------------------------------------------------------------- #
@@ -671,7 +673,7 @@ def test_autumn_layout_uses_previous_year_finals_and_no_yield_for_sowing():
     html = report_html.build_html(fcs, "2026-10-06", "2026. 10. 06.", final_prev=prev)
     text = _re.sub(r"<[^>]+>", " ", html)
     assert html.count('<section class="page">') == 3
-    assert "évi betakarítás · lezárt szezonok" in text and "vetési időszak" in text
+    assert "évi betakarítás · lezárt szezonok" in text and "a termésév eleje" in text
     assert ("indul az új termésév" in text or "Megkezdődött az új termésév" in text)
     # a vetési kártyán nincs "a szokásoshoz" eltérés és nincs forint-kiesés
     sow_part = html.split("évi termésév ·")[1].split("Trendalapú")[0]
@@ -775,3 +777,22 @@ def test_last_week_of_season_is_not_called_closed():
     html = report_html.build_html(fcs, "2026-09-25", "2026. 09. 25.")
     assert "Mindhárom termény szezonja lezárult" not in html
     assert "5 nap van hátra, az előrejelzés lefedi" in html
+
+
+def test_sowing_page_first_days_without_stats_names_fixed_start():
+    """A termésév első napjaiban (még nincs national.sowing) a lábjegyzet a
+    rögzített kezdőnapot a configból írja, nem üres zárójelet."""
+    import copy
+    from src import report_html
+    fcs = {c: report_html.load_fc(c) for c in config.REPORT_CROPS}
+    sow = [copy.deepcopy(f) for f in fcs.values() if f.get("season_phase") == "sowing"]
+    if not sow:
+        pytest.skip("csak vetési időszakban értelmezhető (élő JSON-okból)")
+    for f in sow:
+        f["national"].pop("sowing", None); f["national"].pop("stations", None)
+        for c in f["counties"]:
+            for k in ("prec_total_mm", "wb_total_mm", "gdd_total"):
+                c["weather_todate"][k] = None
+    html = report_html.sowing_page(sow, 3, 4, lambda *a, **k: "", "")
+    assert "rögzített ()" not in html
+    assert "rögzített (okt. 1.)" in html or "rögzített (ápr. 1.)" in html

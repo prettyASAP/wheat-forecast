@@ -636,6 +636,9 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
         payload["national"]["stations"] = {**(sw_win.get("national") or {}),
                                            "from": sw_win["from"], "to": sw_win["to"],
                                            "source": stations["source"]}
+    if payload["season_phase"] == "sowing":
+        # mettől közlünk hozamszámot (a web ebből írja ki, pl. "márciustól")
+        payload["yield_from"] = date(crop_year, *config.YIELD_FROM[crop]).isoformat()
     if payload["season_phase"] == "sowing" and observed_until >= start:
         payload["national"]["sowing"] = sowing_stats(known_only, crop, crop_year,
                                                      observed_until, county_area)
