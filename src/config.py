@@ -326,7 +326,8 @@ KSH_TO_NUTS3: dict[str, str] = {
 }
 # A KSH "Területi egység szintje" értékei, amelyek NUTS3 egységet jelölnek
 # (a régió/nagyrégió/ország aggregátumokat kiszűrjük).
-KSH_NUTS3_LEVELS = {"vármegye", "vármegye, régió", "főváros, régió"}
+# a KSH 2026. szept. 30-i frissítése óta a szint újra "megye" (előtte "vármegye")
+KSH_NUTS3_LEVELS = {"vármegye", "vármegye, régió", "megye", "megye, régió", "főváros, régió"}
 
 # Budapest kezelése a modellben: "drop" (kihagyás) vagy "merge_pest" (Pesthez).
 # Döntés: kihagyjuk — Budapest búzaterülete elhanyagolható (2020 óta < 600 ha),

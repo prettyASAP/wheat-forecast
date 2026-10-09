@@ -26,7 +26,7 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 
-from src import config
+from src import config, ksh_actuals
 
 # ---------------------------------------------------------------------------- #
 # Adat + segédek (a matplotlib-generátorral közös nyelvezet)
@@ -260,9 +260,12 @@ def crop_card(fc: dict) -> str:
     n = fc["national"]
     v = n.get("value")
     live = fc.get("scenarios") is not None
-    tag = ('<span class="tag tag-accent">Még változhat</span>' if live
+    act = n.get("actual")
+    tag = ('<span class="tag tag-outline">KSH-adat</span>' if act
+           else '<span class="tag tag-accent">Még változhat</span>' if live
            else '<span class="tag tag-outline">Végleges közeli</span>')
-    status = (f"{days_left(fc)} nap van hátra" if live
+    status = (f"frissítve: {act['updated']}" if act
+              else f"{days_left(fc)} nap van hátra" if live
               else (f"{days_left(fc)} nap van hátra, az előrejelzés lefedi" if days_left(fc) > 0
                     else "a szezon lezárult"))
     a = n["anomaly_pct"]
@@ -271,7 +274,9 @@ def crop_card(fc: dict) -> str:
     oe = n.get("official_estimate")
     official_row = (f'<div class="rep-stat-row" style="border-top:1px dotted var(--color-divider);'
                     f'margin-top:3px;padding-top:3px"><span>EU-becslés</span>'
-                    f'<span style="font-weight:600">{hu(oe["yield_t_ha"])}</span></div>' if oe else "")
+                    f'<span style="font-weight:600">{hu(oe["yield_t_ha"])}</span></div>' if oe
+                    else f'<div class="rep-stat-row"><span>modellbecslés</span><span>{_model_line(n)}</span></div>'
+                    if act else "")
     band_row = (f'<div class="rep-stat-row"><span>80%-os sáv</span><span>{hu(lo)}–{hu(hi)}</span></div>'
                 if lo is not None else "")
     live_box = ""
@@ -323,7 +328,7 @@ def focus_bar_rows(fcs: dict) -> str:
             dv = rec["predicted_yield_t_ha"] - nat
             dv_col = GREEN if dv > 0.005 else RUST if dv < -0.005 else "var(--color-neutral-500)"
             rows.append(
-                f'<tr><td>{fc["crop"]}</td>'
+                f'<tr><td>{fc["crop"]}{" (KSH)" if fc["national"].get("actual") else ""}</td>'
                 f'<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">{hu(rec["predicted_yield_t_ha"])} t/ha</td>'
                 f'<td style="text-align:right;color:{RUST if a<0 else GREEN};font-variant-numeric:tabular-nums">{signed(a,1)}%</td>'
                 f'<td style="text-align:right;color:{dv_col};font-variant-numeric:tabular-nums">{signed(dv)}</td>'
@@ -431,9 +436,10 @@ def trend_strip(trend_fcs: list) -> str:
     for fc in trend_fcs:
         n = fc["national"]
         v = n.get("value")
+        act = n.get("actual")
         val = (f'<span style="color:color-mix(in srgb,var(--color-text) 52%,transparent);'
                f'margin-left:auto;font-variant-numeric:tabular-nums">'
-               f'~{v["production_value_bn_huf"]:.0f} mrd Ft</span>' if v else "")
+               f'{"" if act else "~"}{v["production_value_bn_huf"]:.0f} mrd Ft</span>' if v else "")
         oe = n.get("official_estimate")
         eu_line = (f'<div style="font-size:10.5px;color:color-mix(in srgb,var(--color-text) 50%,'
                    f'transparent);margin-top:1px">EU-becslés: {hu(oe["yield_t_ha"])} t/ha</div>'
@@ -447,7 +453,7 @@ def trend_strip(trend_fcs: list) -> str:
             f'<span style="font-family:var(--font-heading);font-weight:600;font-size:15px;'
             f'font-variant-numeric:tabular-nums">{hu(n["predicted_yield_t_ha"])} t/ha</span>'
             f'<span style="color:color-mix(in srgb,var(--color-text) 50%,transparent)">'
-            f'±{hu(n["model_error_pct"], 1)}%</span>{val}</div>{eu_line}</div>')
+            f'{"KSH-adat" if act else "±" + hu(n["model_error_pct"], 1) + "%"}</span>{val}</div>{eu_line}</div>')
     return (
         '<div style="margin-top:14px;border-top:1px solid var(--color-divider);'
         'padding-top:10px;break-inside:avoid">'
@@ -592,24 +598,48 @@ def _stat(a: str, b: str, bold: bool = False) -> str:
             f'<span style="{"font-weight:600" if bold else ""}">{b}</span></div>')
 
 
+def _model_line(n: dict) -> str:
+    """'5,18 (+18%)': a modell záró becslése a KSH-tényhez mérve."""
+    m, y = n["actual"]["model_yield_t_ha"], n["predicted_yield_t_ha"]
+    return f"{hu(m)} ({signed(100 * (m - y) / y, 0)}%)"
+
+
+def ksh_note(fs: list) -> str:
+    """Lábjegyzet: mely terményeknél áll KSH-tény (táblaszám, frissítés napja)."""
+    act = [f for f in fs if f["national"].get("actual")]
+    if not act:
+        return ""
+    # minden tábla a saját frissítési napjával (a táblák külön frissülnek)
+    by_date: dict = {}
+    for f in act:
+        a = f["national"]["actual"]
+        by_date.setdefault(a["updated"], []).append(a["table"])
+    parts = [f"{', '.join(dict.fromkeys(t))} ({d})" for d, t in by_date.items()]
+    return f" KSH-adat: a KSH {'; '.join(parts)} táblája."
+
+
 def final_card(fc: dict) -> str:
     """Lezárt szezon, tömör kártya (az A-elrendezés felső blokkja)."""
     n = fc["national"]; v = n.get("value"); a = n["anomaly_pct"]
     a_col = RUST if a < -0.05 else GREEN if a > 0.05 else "var(--color-text)"
     oe = n.get("official_estimate")
+    act = n.get("actual")
+    stats = ([_stat(f"{n['prev_year']}. évi tény", hu(n['prev_year_yield_t_ha'])),
+              _stat("Modellbecslés", _model_line(n))] if act else
+             [_stat("80%-os sáv", f"{hu(n['pred_low_t_ha'])}–{hu(n['pred_high_t_ha'])}"),
+              _stat(f"{n['prev_year']}. évi tény", hu(n['prev_year_yield_t_ha'])),
+              _stat("EU-becslés", hu(oe["yield_t_ha"]), True) if oe else ""])
     val = (f'<div style="margin-top:auto;border-top:1px solid var(--color-divider);padding-top:7px">'
            f'<span style="font-family:var(--font-heading);font-weight:600;font-size:18px">{v["production_value_bn_huf"]:.0f}</span> '
            f'<span style="font-size:11px;{MUTED}">mrd Ft</span> <span style="color:{RUST if v["trend_gap_bn_huf"] < 0 else GREEN};'
            f'font-weight:600;font-size:12px">({signed(v["trend_gap_bn_huf"], 0)})</span></div>' if v else "")
     return f"""<div class="blueprint" style="break-inside:avoid;padding:12px 14px 11px;display:flex;flex-direction:column;gap:6px">
   <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
-  <h3 style="margin:0;font-size:18px">{fc['crop'].capitalize()} <span style="font-family:var(--font-body);font-weight:400;font-size:12px;{MUTED}">{fc['crop_year']}</span></h3>
+  <h3 style="margin:0;font-size:18px">{fc['crop'].capitalize()} <span style="font-family:var(--font-body);font-weight:400;font-size:12px;{MUTED}">{fc['crop_year']}{" · KSH-adat" if act else ""}</span></h3>
   <div><span style="font-family:var(--font-heading);font-weight:600;font-size:30px;line-height:1">{hu(n['predicted_yield_t_ha'])}</span> <span style="font-size:13px;{MUTED}">t/ha</span></div>
   <div style="font-family:var(--font-heading);font-weight:600;font-size:19px;color:{a_col};line-height:1.1">{signed(a,1)}% <span style="font-size:11px;font-family:var(--font-body);font-weight:400;{MUTED}">a szokásoshoz</span></div>
   <div style="border-top:1px solid var(--color-divider);padding-top:6px">
-    {_stat("80%-os sáv", f"{hu(n['pred_low_t_ha'])}–{hu(n['pred_high_t_ha'])}")}
-    {_stat(f"{n['prev_year']}. évi tény", hu(n['prev_year_yield_t_ha']))}
-    {_stat("EU-becslés", hu(oe["yield_t_ha"]), True) if oe else ""}
+    {"".join(stats)}
   </div>
   {val}
 </div>"""
@@ -818,6 +848,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
     for f in (final_prev or []) if sowing else []:
         closed_by.setdefault(crop_key(f), f)
     closed = [closed_by[k] for k in config.REPORT_CROPS if k in closed_by]
+    any_act = any(f["national"].get("actual") for f in closed + list(trend_fcs or []))
     shown = {k: closed_by[k] if k in closed_by else fcs[k] for k in config.REPORT_CROPS
              if k in closed_by or (k in fcs and phase(fcs[k]) == "running")}  # 2. oldal
     if closed and running:
@@ -858,7 +889,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
         f'<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>'
         f'<div style="font-family:var(--font-heading);font-weight:600;font-size:15px;margin-bottom:8px">'
         f'{fc["crop"]} · országos: <span style="color:{RUST if fc["national"]["anomaly_pct"]<0 else GREEN}">'
-        f'{signed(fc["national"]["anomaly_pct"],1)}%</span></div>'
+        f'{signed(fc["national"]["anomaly_pct"],1)}%</span>{" · KSH-adat" if fc["national"].get("actual") else ""}</div>'
         f'<img src="assets/map_{crop_key(fc)}.png" alt="{fc["crop"]} térkép" style="width:100%;max-height:120px;object-fit:contain"></figure>'
         for fc in shown.values())
 
@@ -991,7 +1022,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
             blocks += (f'<p class="rep-kicker" style="margin:0 0 6px">{fy}. évi betakarítás · lezárt szezonok</p>'
                        f'<div style="display:grid;grid-template-columns:repeat({len(closed)},1fr);gap:12px">'
                        + "".join(final_card(f) for f in closed) + "</div>"
-                       + drivers_strip({crop_key(f): f for f in closed}, f"Mi húzta a {fy}. évi termést?"))
+                       + drivers_strip({crop_key(f): f for f in closed}, f"Mi húzta a {fy}. évi termést" + (" a modell szerint?" if any(f["national"].get("actual") for f in closed) else "?")))
         if running:
             blocks += (f'<p class="rep-kicker" style="margin:14px 0 6px">Futó szezon</p>'
                        f'<div style="display:grid;grid-template-columns:repeat({len(running)},1fr);gap:12px">'
@@ -1019,7 +1050,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
   </div>
   {blocks}
   {trend_strip(trend_fcs or [])}
-  <p style="font-size:10px;{MUTED};margin:10px 0 0">Vármegyei statisztikai modell (KSH 2000-től, ERA5 időjárás). {banner_price} és a legutóbbi lezárt évi területtel. EU-becslés: az Európai Bizottság havonta frissülő termésadata.</p>
+  <p style="font-size:10px;{MUTED};margin:10px 0 0">Vármegyei statisztikai modell (KSH 2000-től, ERA5 időjárás).{ksh_note(closed + list(trend_fcs or []))} {banner_price}{", a legutóbbi lezárt évi területtel (KSH-adatnál a KSH termésével)" if any_act else " és a legutóbbi lezárt évi területtel"}.{" EU-becslés: az Európai Bizottság havonta frissülő termésadata." if any(f["national"].get("official_estimate") for f in closed + running + list(trend_fcs or [])) else ""}</p>
   {footer(1, total)}
 </section>"""
     else:
@@ -1045,8 +1076,8 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
     </div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">{cards}</div>
-  <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:14px 0 0">A hozamok vármegyei statisztikai modellből (KSH 2000-től + ERA5 időjárás) származnak. {season_note}{official_note}</p>
-  {drivers_strip(fcs)}
+  <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:14px 0 0">A hozamok vármegyei statisztikai modellből (KSH 2000-től + ERA5 időjárás) származnak.{ksh_note(list(fcs.values()))} {season_note}{official_note}</p>
+  {drivers_strip(fcs, "Mi húzza a termést a modell szerint?" if any(f["national"].get("actual") for f in fcs.values()) else "Mi húzza a becslést?")}
   {trend_strip(trend_fcs or [])}
   {footer(1, total)}
 </section>"""
@@ -1074,9 +1105,9 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
   </div>
   <div style="margin-top:14px;break-inside:avoid">
     <p class="rep-kicker" style="margin-bottom:8px">Fókusz-vármegyék – {' · '.join(FOCUS)}</p>
-    <table class="table"><thead><tr><th style="width:24%">Termény</th><th style="width:16%;text-align:right">Becslés</th><th style="width:16%;text-align:right">Eltérés (%)</th><th style="width:16%;text-align:right">Országostól (t/ha)</th><th style="width:28%">Eltérés a szokásostól</th></tr></thead>
+    <table class="table"><thead><tr><th style="width:24%">Termény</th><th style="width:16%;text-align:right">{"Hozam" if any(f["national"].get("actual") for f in shown.values()) else "Becslés"}</th><th style="width:16%;text-align:right">Eltérés (%)</th><th style="width:16%;text-align:right">Országostól (t/ha)</th><th style="width:28%">Eltérés a szokásostól</th></tr></thead>
     <tbody>{focus_rows}</tbody></table>
-    <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:8px 0 0">A sáv a szokásostól való eltérést mutatja ±20%-os skálán, a függőleges vonás a 0%. „Országostól”: eltérés az országos becsléstől.</p>
+    <p style="font-size:11px;color:color-mix(in srgb,var(--color-text) 48%,transparent);margin:8px 0 0">A sáv a szokásostól való eltérést mutatja ±20%-os skálán, a függőleges vonás a 0%. „Országostól”: eltérés az országos {"értéktől" if any(f["national"].get("actual") for f in shown.values()) else "becsléstől"}.</p>
   </div>
   {footer(2, total)}
 </section>
@@ -1143,6 +1174,9 @@ def main(make_pdf: bool = True, out_path: str | Path | None = None) -> Path | No
     # A napi PDF az időjárás-informált fő terményeket szedi (a trend-alapú
     # napraforgó/repce a webes előrejelzésben szerepel) – lásd config.REPORT_CROPS.
     fcs = {crop: load_fc(crop) for crop in config.REPORT_CROPS}
+    ksh = ksh_actuals.load()  # ahol a KSH már közölte, a tény áll a modell helyén
+    for fc in fcs.values():
+        ksh_actuals.apply(fc, ksh)
     gdf = gpd.read_file(config.WEB_DATA / "nuts3_hu.geojson")
     for crop, fc in fcs.items():
         save_crop_map(fc, gdf, ASSETS_DIR / f"map_{crop}.png")
@@ -1154,6 +1188,7 @@ def main(make_pdf: bool = True, out_path: str | Path | None = None) -> Path | No
         if spec.get("method") == "trend" and \
                 (config.WEB_DATA / f"forecast_{crop}.json").exists():
             trend_fcs.append(load_fc(crop))
+            ksh_actuals.apply(trend_fcs[-1], ksh)
 
     # piaci árjegyzések (4. oldal) – csak ha a fájl létezik és 7 napnál frissebb
     # (elavult árakat nem közlünk; a blokk ilyenkor egyszerűen kimarad)
@@ -1191,6 +1226,7 @@ def main(make_pdf: bool = True, out_path: str | Path | None = None) -> Path | No
                 o = off.get(crop)
                 if o and o.get("year") == prev["crop_year"]:  # friss EU-becslés a régi helyett
                     prev["national"]["official_estimate"] = {**o, "source": "Európai Bizottság (DG AGRI)"}
+                ksh_actuals.apply(prev, ksh)  # az átárazás után: a tény a friss áron
                 save_crop_map(prev, gdf, ASSETS_DIR / f"map_{crop}.png")
                 final_prev.append(prev)
 

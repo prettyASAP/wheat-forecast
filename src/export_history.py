@@ -36,12 +36,13 @@ def national_series(panel: pd.DataFrame) -> pd.Series:
     return g["production_t"].sum() / g["area_ha"].sum()
 
 
-def ksh_national_official(crop: str) -> dict[str, dict[int, float]]:
+def ksh_national_official(crop: str, path=None) -> dict[str, dict[int, float]]:
     """A KSH csv 'Ország összesen' sorai mindhárom szekcióból — etalon.
 
     Visszaad: {"yield_t_ha": {év: érték}, "area_ha": {...}, "production_t": {...}}
+    A path alapértelmezése a tanítóadat (data/raw/ksh); a ksh_actuals más fájlt ad.
     """
-    path = config.RAW_KSH / f"{config.CROPS[crop]['ksh_slug']}.csv"
+    path = path or config.RAW_KSH / f"{config.CROPS[crop]['ksh_slug']}.csv"
     lines = path.read_bytes().decode(config.KSH_ENCODING).splitlines()
     header = lines[1].split(";")
     years = [int(c) for c in header if c.strip().isdigit()]

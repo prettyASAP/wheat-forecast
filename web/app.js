@@ -35,6 +35,11 @@ let currentLayer = "anomaly";
 let layerAutoSet = false;  // a réteget a vetési időszak miatt mi váltottuk
 
 let map, geojson, historyDates = [], currentForecast = null;
+// a friss forecast (benne a KSH-tény, ha van): a csúszka utolsó napja ezt mutatja,
+// a korábbi napok a modell pillanatképeit
+let latestForecast = null;
+// a KSH lezárt évi ténye (ksh_actuals.json): a csúszka régi napjain jelöljük
+let kshActuals = null;
 let selectedId = null;
 let crop = "wheat";
 const yieldHistory = {};  // crop -> yield_history JSON (cache)
@@ -248,8 +253,11 @@ function renderHeadline(fc) {
   // TREND-alapú termények (napraforgó, repce): a mérési kapu elutasította az
   // időjárásmodellt, ezért a sokéves trendet közöljük – őszintén felcímkézve.
   if (fc.method === "trend") {
-    const mainT = `${cropSubject(fc)} termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b>
-      körül várható, a sokéves szokásos szint közelében`
+    const mainT = (n.actual
+      ? `${cropSubject(fc)} termése a KSH adata szerint <b>${hu(n.predicted_yield_t_ha)} t/ha</b>
+         (${a > 0 ? "+" : ""}${hu(a, 1)}% a szokásoshoz)`
+      : `${cropSubject(fc)} termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b>
+      körül várható, a sokéves szokásos szint közelében`)
       + (v ? ` – ${pricePhrase(v)} ez kb.
          <b>${Math.round(v.production_value_bn_huf)} mrd Ft</b> termelési érték.` : ".");
     const certT = `<span class="badge trend">TRENDALAPÚ</span> Ennél a terménynél az
@@ -259,7 +267,7 @@ function renderHeadline(fc) {
       ? ` A becslés tipikus tévedése a múltbeli visszamérések alapján
          ±${hu(n.model_error_pct, 1)}%. ${info("tevedes")}` : "";
     el.innerHTML = `<div class="headline-main">${mainT}</div>
-      <div class="headline-sub">${certT}${errT}</div>`;
+      <div class="headline-sub">${n.actual ? kshCert(n) : certT + errT}</div>`;
     return;
   }
 
@@ -288,18 +296,24 @@ function renderHeadline(fc) {
     return;
   }
 
+  // ha a KSH már közölte: tény, nem becslés
+  const yp = n.actual
+    ? `termése a KSH adata szerint <b>${hu(n.predicted_yield_t_ha)} t/ha</b>`
+    : `termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül
+      várható`;
   let main;
   if (a <= -3) {
-    main = `${cropSubject(fc)} termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül
-      várható, ami <b>${hu(Math.abs(a), 1)}%-kal marad el a sokéves szokásos
+    main = `${cropSubject(fc)} ${yp}, ami <b>${hu(Math.abs(a), 1)}%-kal marad el a sokéves szokásos
       szinttől</b>` +
       (v ? ` – ${pricePhrase(v)} számolva ez kb.
        <b>${Math.round(Math.abs(v.trend_gap_bn_huf))} mrd Ft kiesést jelent</b>.` : ".");
   } else if (a >= 3) {
-    main = `${cropSubject(fc)} termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül
-      várható, <b>${hu(a, 1)}%-kal a sokéves szokásos szint felett</b>` +
+    main = `${cropSubject(fc)} ${yp}, <b>${hu(a, 1)}%-kal a sokéves szokásos szint felett</b>` +
       (v ? ` – ${pricePhrase(v)} számolva ez kb.
        <b>${Math.round(v.trend_gap_bn_huf)} mrd Ft többletet jelent</b>.` : ".");
+  } else if (n.actual) {
+    main = `${cropSubject(fc)} ${yp}, a sokéves szokásos szint közelében
+      (${a > 0 ? "+" : ""}${hu(a, 1)}%).`;
   } else {
     main = `${cropSubject(fc)} termése a sokéves szokásos szint közelében,
       <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül várható
@@ -317,10 +331,14 @@ function renderHeadline(fc) {
       a visszaesés, a termés azonban így is a megszokott szint felett alakul.`);
   }
   if (n.rank_from_worst <= 5) {
-    clauses.push(`Ha így marad, a ${n.rank_total} év
+    clauses.push(n.actual
+      ? `Ez a ${n.rank_total} év ${n.rank_from_worst}. leggyengébb éve.`
+      : `Ha így marad, a ${n.rank_total} év
       ${n.rank_from_worst}. leggyengébb éve lenne.`);
   } else if (n.rank_from_worst >= n.rank_total - 4) {
-    clauses.push(`Ha így marad, a ${n.rank_total} év
+    clauses.push(n.actual
+      ? `Ez a ${n.rank_total} év ${n.rank_total - n.rank_from_worst + 1}. legerősebb éve.`
+      : `Ha így marad, a ${n.rank_total} év
       ${n.rank_total - n.rank_from_worst + 1}. legerősebb éve lenne.`);
   }
 
@@ -342,7 +360,15 @@ function renderHeadline(fc) {
 
   el.innerHTML = `
     <div class="headline-main">${main} ${clauses.join(" ")}</div>
-    <div class="headline-sub">${cert}${err}</div>${envelopeWarning(n)}`;
+    <div class="headline-sub">${n.actual ? kshCert(n) : cert + err}</div>${envelopeWarning(n)}`;
+}
+
+/* KSH-tény jelölése: a forrás, a frissítés napja és a modell záró becslése. */
+function kshCert(n) {
+  const act = n.actual;
+  return `<span class="badge final">KSH-ADAT</span> A KSH vármegyei termésadata
+    (${esc(act.table || "")} tábla, frissítve: ${esc(act.updated || "")}). A modell záró
+    becslése ${hu(act.model_yield_t_ha)} t/ha volt.`;
 }
 
 /* Modelltartomány-jelző: ha egy idei mutató kívül esik azon, amit a modell a
@@ -444,10 +470,11 @@ function renderNational(fc) {
   }
   cards.push(`
     <div class="kpi">
-      <div class="kpi-label">Országos becslés · ${fc.crop_year} ${info("becsles")}</div>
+      <div class="kpi-label">${n.actual ? "Országos termésátlag (KSH)" : "Országos becslés"} · ${fc.crop_year} ${info("becsles")}</div>
       <div class="kpi-value">${hu(n.predicted_yield_t_ha)} <small>t/ha</small></div>
       <div class="kpi-sub">${chip(n.anomaly_pct, "%")} a szokásoshoz ${info("szokasos")} ·
         ${chip(n.yoy_pct, "%")} a ${n.prev_year}. évihez</div>
+      ${n.actual ? `<div class="kpi-sub">a modell záró becslése: ${hu(n.actual.model_yield_t_ha)} t/ha</div>` : ""}
       ${n.official_estimate ? `<div class="kpi-sub">Európai Bizottság becslése:
         <b>${hu(n.official_estimate.yield_t_ha)} t/ha</b> ${info("eubecsles")}</div>` : ""}
     </div>`);
@@ -490,7 +517,7 @@ function renderNational(fc) {
     }).join("");
     cards.push(`
       <div class="kpi kpi-drivers" title="${esc(n.drivers.note)}">
-        <div class="kpi-label">Mi húzza a becslést? ${info("hajtoerok")}</div>
+        <div class="kpi-label">${n.actual ? "Mi húzta a termést? (a modell szerint)" : "Mi húzza a becslést?"} ${info("hajtoerok")}</div>
         ${rows}
         <div class="kpi-sub">az időjárás hatása százalékpontban, a modell átlagos
           időjárás mellett várt szintjéhez mérve</div>
@@ -591,10 +618,10 @@ function showPanel(nutsId) {
   if (hc) {
     const cur = c.predicted_yield_t_ha === null ? null : {
       year: currentForecast.crop_year, value: c.predicted_yield_t_ha,
-      low: c.low, high: c.high,
+      low: c.low ?? c.predicted_yield_t_ha, high: c.high ?? c.predicted_yield_t_ha,
     };
     chart = `<div class="chart-title">Hozam ${hc.years[0]}–${hc.years[hc.years.length - 1]}
-             (piros: idei becslés a sávval)</div>` +
+             (piros: ${currentForecast.national.actual ? "KSH-adat" : "idei becslés a sávval"})</div>` +
             yieldChartSVG(hc.years, hc.yields, cur);
   }
   if (c.predicted_yield_t_ha === null) {
@@ -612,7 +639,9 @@ function showPanel(nutsId) {
       : "";
     body.innerHTML = `
       <div class="big-number">${hu(c.predicted_yield_t_ha)} t/ha</div>
-      <div class="band" title="80%-os valószínűségi sáv${currentForecast.scenarios ? ' – a modell hibája és a hátralévő időjárás bizonytalansága együtt' : ''}">Várható tartomány: ${hu(c.low)} – ${hu(c.high)} t/ha – 10-ből 8 esetben ebbe esik ${info("tartomany")}</div>
+      ${c.low == null
+        ? `<div class="band">KSH-adat${c.model_yield_t_ha != null ? ` · a modell záró becslése: ${hu(c.model_yield_t_ha)} t/ha` : ""}</div>`
+        : `<div class="band" title="80%-os valószínűségi sáv${currentForecast.scenarios ? ' – a modell hibája és a hátralévő időjárás bizonytalansága együtt' : ''}">Várható tartomány: ${hu(c.low)} – ${hu(c.high)} t/ha – 10-ből 8 esetben ebbe esik ${info("tartomany")}</div>`}
       ${scRow}
       <div class="anomaly ${cls}">${sign}${hu(c.anomaly_pct, 1)}% a szokásoshoz képest ${info("szokasos")}</div>
       ${c.value_bn_huf !== undefined ? `<div class="band">termelési érték: ~${hu(c.value_bn_huf, 1)} mrd Ft
@@ -642,10 +671,23 @@ document.getElementById("slider").addEventListener("input", async e => {
   const d = historyDates[Number(e.target.value)];
   if (!d) return;
   document.getElementById("slider-date").textContent = d;
+  if (Number(e.target.value) === historyDates.length - 1 && latestForecast) {
+    applyForecast(latestForecast);
+    return;
+  }
   try {
     const snap = await fetchJson(`data/history/${cropNow}/${d}.json`);
     if (seq !== loadSeq) return;   // közben terményt váltottak
     applyForecast(snap);
+    // a régi nap a modell akkori becslése; ha a KSH azóta közölte az évet, kiírjuk mellé
+    const k = kshActuals && kshActuals.crops && kshActuals.crops[cropNow];
+    const y = k && k.years && k.years[String(snap.crop_year)];
+    if (y) {
+      document.getElementById("headline").insertAdjacentHTML("beforeend",
+        `<div class="headline-sub"><span class="badge final">KSH-ADAT</span> Ez a modell
+         ${huDate(d).slice(0, -1)}-i becslése. A KSH azóta közölte a ${snap.crop_year}. évi termésátlagot:
+         <b>${hu(y.national.yield_t_ha)} t/ha</b> (frissítve: ${esc(k.updated || "")}).</div>`);
+    }
   } catch (err) { console.error(err); }
 });
 
@@ -669,6 +711,7 @@ async function loadCrop(newCrop) {
   } catch { /* nincs history – üres marad */ }
   if (seq !== loadSeq) return;  // közben másik terményre váltottak – eldobjuk
   historyDates = dates;
+  latestForecast = fc;
   applyForecast(fc);
   setupTimeline();
 }
@@ -693,6 +736,7 @@ document.getElementById("layer-select").addEventListener("change", e => {
 });
 
 async function init() {
+  fetchJson("data/ksh_actuals.json", true).then(d => { kshActuals = d; }).catch(() => {});
   const gj = await fetchJson("data/nuts3_hu.geojson");
   geojson = gj;
   // MapLibre feature-state-hez numerikus/string id kell a feature-ön

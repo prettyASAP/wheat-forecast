@@ -25,6 +25,19 @@ def js(ut):
         return json.load(f)
 
 
+def _egyezik(pill, fc):
+    """A pillanatkép a modell számát őrzi, a becslésfájlban a KSH-tény is állhat
+    (src/ksh_actuals): a tényt a pillanatképre is ráhelyezve kell egyeznie."""
+    if pill == fc:
+        return True
+    try:
+        from src import ksh_actuals
+    except Exception:
+        return False
+    ksh_actuals.apply(pill)
+    return pill == fc
+
+
 def sha(ut):
     return hashlib.sha256(open(ut, "rb").read()).hexdigest()
 
@@ -280,7 +293,7 @@ def main():
     for c, d in fc.items():
         pill = os.path.join(WEB, "history", c, f"{d['updated_at']}.json")
         if not os.path.exists(pill): gond.append(f"{c}: nincs pillanatkép {d['updated_at']}")
-        elif js(pill) != d: gond.append(f"{c}: a pillanatkép eltér a becslésfájltól")
+        elif not _egyezik(js(pill), d): gond.append(f"{c}: a pillanatkép eltér a becslésfájltól")
     if os.path.exists(pdf_ut) and os.path.exists(utolso) and sha(pdf_ut) != sha(utolso):
         gond.append("a jelentes_latest.pdf eltér a dátumozott PDF-től")
     piszkos = git("status", "--porcelain", "--", "web/data")

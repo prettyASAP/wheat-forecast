@@ -1,0 +1,1655 @@
+{
+ "fetched": "2026-10-09",
+ "crops": {
+  "wheat": {
+   "table": "19.1.2.4.",
+   "updated": "2026. szeptember 30.",
+   "page": "https://www.ksh.hu/stadat_files/mez/hu/mez0071.html",
+   "years": {
+    "2024": {
+     "national": {
+      "yield_t_ha": 5.71,
+      "area_ha": 922907.0,
+      "production_t": 5272961.0
+     },
+     "counties": {
+      "HU110": {
+       "yield_t_ha": 4.77,
+       "area_ha": 354.0,
+       "production_t": 1689.0
+      },
+      "HU120": {
+       "yield_t_ha": 5.13,
+       "area_ha": 45084.0,
+       "production_t": 231347.0
+      },
+      "HU211": {
+       "yield_t_ha": 6.2,
+       "area_ha": 60755.0,
+       "production_t": 376841.0
+      },
+      "HU212": {
+       "yield_t_ha": 5.26,
+       "area_ha": 20082.0,
+       "production_t": 105662.0
+      },
+      "HU213": {
+       "yield_t_ha": 4.69,
+       "area_ha": 26380.0,
+       "production_t": 123735.0
+      },
+      "HU221": {
+       "yield_t_ha": 5.51,
+       "area_ha": 49255.0,
+       "production_t": 271414.0
+      },
+      "HU222": {
+       "yield_t_ha": 5.81,
+       "area_ha": 41421.0,
+       "production_t": 240604.0
+      },
+      "HU223": {
+       "yield_t_ha": 6.12,
+       "area_ha": 22277.0,
+       "production_t": 136336.0
+      },
+      "HU231": {
+       "yield_t_ha": 6.69,
+       "area_ha": 42443.0,
+       "production_t": 283917.0
+      },
+      "HU232": {
+       "yield_t_ha": 6.15,
+       "area_ha": 48581.0,
+       "production_t": 298609.0
+      },
+      "HU233": {
+       "yield_t_ha": 6.46,
+       "area_ha": 47548.0,
+       "production_t": 307298.0
+      },
+      "HU311": {
+       "yield_t_ha": 5.81,
+       "area_ha": 60045.0,
+       "production_t": 348759.0
+      },
+      "HU312": {
+       "yield_t_ha": 5.57,
+       "area_ha": 39878.0,
+       "production_t": 222029.0
+      },
+      "HU313": {
+       "yield_t_ha": 5.33,
+       "area_ha": 14179.0,
+       "production_t": 75595.0
+      },
+      "HU321": {
+       "yield_t_ha": 6.19,
+       "area_ha": 59156.0,
+       "production_t": 365910.0
+      },
+      "HU322": {
+       "yield_t_ha": 5.35,
+       "area_ha": 96594.0,
+       "production_t": 516579.0
+      },
+      "HU323": {
+       "yield_t_ha": 5.27,
+       "area_ha": 26368.0,
+       "production_t": 138831.0
+      },
+      "HU331": {
+       "yield_t_ha": 5.37,
+       "area_ha": 66454.0,
+       "production_t": 356761.0
+      },
+      "HU332": {
+       "yield_t_ha": 5.88,
+       "area_ha": 99857.0,
+       "production_t": 587036.0
+      },
+      "HU333": {
+       "yield_t_ha": 5.05,
+       "area_ha": 56196.0,
+       "production_t": 284009.0
+      }
+     }
+    },
+    "2025": {
+     "national": {
+      "yield_t_ha": 5.5,
+      "area_ha": 1046422.0,
+      "production_t": 5759228.0
+     },
+     "counties": {
+      "HU110": {
+       "yield_t_ha": 4.61,
+       "area_ha": 266.0,
+       "production_t": 1227.0
+      },
+      "HU120": {
+       "yield_t_ha": 4.75,
+       "area_ha": 50266.0,
+       "production_t": 238855.0
+      },
+      "HU211": {
+       "yield_t_ha": 5.9,
+       "area_ha": 70626.0,
+       "production_t": 416406.0
+      },
+      "HU212": {
+       "yield_t_ha": 5.26,
+       "area_ha": 20049.0,
+       "production_t": 105444.0
+      },
+      "HU213": {
+       "yield_t_ha": 5.15,
+       "area_ha": 25784.0,
+       "production_t": 132693.0
+      },
+      "HU221": {
+       "yield_t_ha": 5.96,
+       "area_ha": 64249.0,
+       "production_t": 382775.0
+      },
+      "HU222": {
+       "yield_t_ha": 6.29,
+       "area_ha": 42154.0,
+       "production_t": 265194.0
+      },
+      "HU223": {
+       "yield_t_ha": 6.79,
+       "area_ha": 26715.0,
+       "production_t": 181481.0
+      },
+      "HU231": {
+       "yield_t_ha": 7.13,
+       "area_ha": 52208.0,
+       "production_t": 372004.0
+      },
+      "HU232": {
+       "yield_t_ha": 6.62,
+       "area_ha": 57945.0,
+       "production_t": 383751.0
+      },
+      "HU233": {
+       "yield_t_ha": 6.79,
+       "area_ha": 54277.0,
+       "production_t": 368675.0
+      },
+      "HU311": {
+       "yield_t_ha": 5.74,
+       "area_ha": 59067.0,
+       "production_t": 338972.0
+      },
+      "HU312": {
+       "yield_t_ha": 5.18,
+       "area_ha": 39900.0,
+       "production_t": 206725.0
+      },
+      "HU313": {
+       "yield_t_ha": 4.81,
+       "area_ha": 14867.0,
+       "production_t": 71448.0
+      },
+      "HU321": {
+       "yield_t_ha": 5.31,
+       "area_ha": 68123.0,
+       "production_t": 361692.0
+      },
+      "HU322": {
+       "yield_t_ha": 4.33,
+       "area_ha": 111286.0,
+       "production_t": 481415.0
+      },
+      "HU323": {
+       "yield_t_ha": 5.24,
+       "area_ha": 27848.0,
+       "production_t": 145823.0
+      },
+      "HU331": {
+       "yield_t_ha": 6.14,
+       "area_ha": 72439.0,
+       "production_t": 444957.0
+      },
+      "HU332": {
+       "yield_t_ha": 4.5,
+       "area_ha": 120138.0,
+       "production_t": 541179.0
+      },
+      "HU333": {
+       "yield_t_ha": 4.67,
+       "area_ha": 68215.0,
+       "production_t": 318512.0
+      }
+     }
+    },
+    "2026": {
+     "national": {
+      "yield_t_ha": 4.38,
+      "area_ha": 1051848.0,
+      "production_t": 4604299.0
+     },
+     "counties": {
+      "HU110": {
+       "yield_t_ha": 2.97,
+       "area_ha": 260.0,
+       "production_t": 773.0
+      },
+      "HU120": {
+       "yield_t_ha": 3.06,
+       "area_ha": 49013.0,
+       "production_t": 149781.0
+      },
+      "HU211": {
+       "yield_t_ha": 3.95,
+       "area_ha": 72641.0,
+       "production_t": 286802.0
+      },
+      "HU212": {
+       "yield_t_ha": 4.21,
+       "area_ha": 20927.0,
+       "production_t": 88029.0
+      },
+      "HU213": {
+       "yield_t_ha": 4.81,
+       "area_ha": 24104.0,
+       "production_t": 115904.0
+      },
+      "HU221": {
+       "yield_t_ha": 5.32,
+       "area_ha": 56857.0,
+       "production_t": 302552.0
+      },
+      "HU222": {
+       "yield_t_ha": 5.99,
+       "area_ha": 42466.0,
+       "production_t": 254366.0
+      },
+      "HU223": {
+       "yield_t_ha": 6.38,
+       "area_ha": 28692.0,
+       "production_t": 183057.0
+      },
+      "HU231": {
+       "yield_t_ha": 6.48,
+       "area_ha": 54226.0,
+       "production_t": 351585.0
+      },
+      "HU232": {
+       "yield_t_ha": 6.07,
+       "area_ha": 58631.0,
+       "production_t": 355954.0
+      },
+      "HU233": {
+       "yield_t_ha": 5.41,
+       "area_ha": 58174.0,
+       "production_t": 314893.0
+      },
+      "HU311": {
+       "yield_t_ha": 4.68,
+       "area_ha": 66156.0,
+       "production_t": 309397.0
+      },
+      "HU312": {
+       "yield_t_ha": 4.23,
+       "area_ha": 43878.0,
+       "production_t": 185532.0
+      },
+      "HU313": {
+       "yield_t_ha": 4.09,
+       "area_ha": 15227.0,
+       "production_t": 62259.0
+      },
+      "HU321": {
+       "yield_t_ha": 3.5,
+       "area_ha": 69297.0,
+       "production_t": 242490.0
+      },
+      "HU322": {
+       "yield_t_ha": 3.1,
+       "area_ha": 109767.0,
+       "production_t": 340199.0
+      },
+      "HU323": {
+       "yield_t_ha": 3.95,
+       "area_ha": 29792.0,
+       "production_t": 117677.0
+      },
+      "HU331": {
+       "yield_t_ha": 4.58,
+       "area_ha": 75449.0,
+       "production_t": 345589.0
+      },
+      "HU332": {
+       "yield_t_ha": 3.68,
+       "area_ha": 112670.0,
+       "production_t": 414734.0
+      },
+      "HU333": {
+       "yield_t_ha": 2.87,
+       "area_ha": 63620.0,
+       "production_t": 182724.0
+      }
+     }
+    }
+   }
+  },
+  "corn": {
+   "table": "19.1.2.5.",
+   "updated": "2026. június 30.",
+   "page": "https://www.ksh.hu/stadat_files/mez/hu/mez0072.html",
+   "years": {
+    "2023": {
+     "national": {
+      "yield_t_ha": 8.15,
+      "area_ha": 770694.0,
+      "production_t": 6278912.0
+     },
+     "counties": {
+      "HU110": {
+       "yield_t_ha": 5.47,
+       "area_ha": 570.0,
+       "production_t": 3117.0
+      },
+      "HU120": {
+       "yield_t_ha": 8.17,
+       "area_ha": 36667.0,
+       "production_t": 299476.0
+      },
+      "HU211": {
+       "yield_t_ha": 8.64,
+       "area_ha": 62031.0,
+       "production_t": 535794.0
+      },
+      "HU212": {
+       "yield_t_ha": 8.78,
+       "area_ha": 26053.0,
+       "production_t": 228706.0
+      },
+      "HU213": {
+       "yield_t_ha": 7.87,
+       "area_ha": 17384.0,
+       "production_t": 136870.0
+      },
+      "HU221": {
+       "yield_t_ha": 8.09,
+       "area_ha": 37517.0,
+       "production_t": 303593.0
+      },
+      "HU222": {
+       "yield_t_ha": 9.35,
+       "area_ha": 19506.0,
+       "production_t": 182478.0
+      },
+      "HU223": {
+       "yield_t_ha": 9.26,
+       "area_ha": 22311.0,
+       "production_t": 206503.0
+      },
+      "HU231": {
+       "yield_t_ha": 8.5,
+       "area_ha": 47244.0,
+       "production_t": 401728.0
+      },
+      "HU232": {
+       "yield_t_ha": 8.74,
+       "area_ha": 53481.0,
+       "production_t": 467675.0
+      },
+      "HU233": {
+       "yield_t_ha": 9.15,
+       "area_ha": 51312.0,
+       "production_t": 469525.0
+      },
+      "HU311": {
+       "yield_t_ha": 8.33,
+       "area_ha": 43361.0,
+       "production_t": 361091.0
+      },
+      "HU312": {
+       "yield_t_ha": 8.56,
+       "area_ha": 6560.0,
+       "production_t": 56172.0
+      },
+      "HU313": {
+       "yield_t_ha": 7.15,
+       "area_ha": 3446.0,
+       "production_t": 24639.0
+      },
+      "HU321": {
+       "yield_t_ha": 8.24,
+       "area_ha": 69610.0,
+       "production_t": 573315.0
+      },
+      "HU322": {
+       "yield_t_ha": 5.81,
+       "area_ha": 33601.0,
+       "production_t": 195105.0
+      },
+      "HU323": {
+       "yield_t_ha": 8.17,
+       "area_ha": 80905.0,
+       "production_t": 661228.0
+      },
+      "HU331": {
+       "yield_t_ha": 7.87,
+       "area_ha": 53940.0,
+       "production_t": 424745.0
+      },
+      "HU332": {
+       "yield_t_ha": 7.91,
+       "area_ha": 73231.0,
+       "production_t": 579107.0
+      },
+      "HU333": {
+       "yield_t_ha": 5.26,
+       "area_ha": 31964.0,
+       "production_t": 168045.0
+      }
+     }
+    },
+    "2024": {
+     "national": {
+      "yield_t_ha": 6.03,
+      "area_ha": 883060.0,
+      "production_t": 5328706.0
+     },
+     "counties": {
+      "HU120": {
+       "yield_t_ha": 4.38,
+       "area_ha": 45079.0,
+       "production_t": 197616.0
+      },
+      "HU211": {
+       "yield_t_ha": 5.58,
+       "area_ha": 72607.0,
+       "production_t": 404929.0
+      },
+      "HU212": {
+       "yield_t_ha": 5.98,
+       "area_ha": 27809.0,
+       "production_t": 166411.0
+      },
+      "HU213": {
+       "yield_t_ha": 6.49,
+       "area_ha": 20510.0,
+       "production_t": 133033.0
+      },
+      "HU221": {
+       "yield_t_ha": 6.93,
+       "area_ha": 38387.0,
+       "production_t": 265887.0
+      },
+      "HU222": {
+       "yield_t_ha": 6.91,
+       "area_ha": 25429.0,
+       "production_t": 175827.0
+      },
+      "HU223": {
+       "yield_t_ha": 7.37,
+       "area_ha": 28023.0,
+       "production_t": 206514.0
+      },
+      "HU231": {
+       "yield_t_ha": 7.47,
+       "area_ha": 57253.0,
+       "production_t": 427417.0
+      },
+      "HU232": {
+       "yield_t_ha": 6.78,
+       "area_ha": 61014.0,
+       "production_t": 413808.0
+      },
+      "HU233": {
+       "yield_t_ha": 6.15,
+       "area_ha": 62809.0,
+       "production_t": 385984.0
+      },
+      "HU311": {
+       "yield_t_ha": 7.17,
+       "area_ha": 39917.0,
+       "production_t": 286130.0
+      },
+      "HU312": {
+       "yield_t_ha": 5.9,
+       "area_ha": 9300.0,
+       "production_t": 54856.0
+      },
+      "HU313": {
+       "yield_t_ha": 5.19,
+       "area_ha": 4443.0,
+       "production_t": 23052.0
+      },
+      "HU321": {
+       "yield_t_ha": 6.82,
+       "area_ha": 82243.0,
+       "production_t": 561173.0
+      },
+      "HU322": {
+       "yield_t_ha": 5.53,
+       "area_ha": 36890.0,
+       "production_t": 203958.0
+      },
+      "HU323": {
+       "yield_t_ha": 6.21,
+       "area_ha": 85751.0,
+       "production_t": 532476.0
+      },
+      "HU331": {
+       "yield_t_ha": 4.56,
+       "area_ha": 64108.0,
+       "production_t": 292533.0
+      },
+      "HU332": {
+       "yield_t_ha": 5.31,
+       "area_ha": 88829.0,
+       "production_t": 471306.0
+      },
+      "HU333": {
+       "yield_t_ha": 3.85,
+       "area_ha": 32659.0,
+       "production_t": 125796.0
+      }
+     }
+    },
+    "2025": {
+     "national": {
+      "yield_t_ha": 5.27,
+      "area_ha": 737038.0,
+      "production_t": 3885965.0
+     },
+     "counties": {
+      "HU110": {
+       "yield_t_ha": 5.85,
+       "area_ha": 120.0,
+       "production_t": 702.0
+      },
+      "HU120": {
+       "yield_t_ha": 3.61,
+       "area_ha": 33993.0,
+       "production_t": 122844.0
+      },
+      "HU211": {
+       "yield_t_ha": 4.65,
+       "area_ha": 60081.0,
+       "production_t": 279170.0
+      },
+      "HU212": {
+       "yield_t_ha": 5.26,
+       "area_ha": 24201.0,
+       "production_t": 127305.0
+      },
+      "HU213": {
+       "yield_t_ha": 5.47,
+       "area_ha": 14000.0,
+       "production_t": 76645.0
+      },
+      "HU221": {
+       "yield_t_ha": 7.63,
+       "area_ha": 36171.0,
+       "production_t": 276100.0
+      },
+      "HU222": {
+       "yield_t_ha": 7.36,
+       "area_ha": 21966.0,
+       "production_t": 161593.0
+      },
+      "HU223": {
+       "yield_t_ha": 7.12,
+       "area_ha": 26362.0,
+       "production_t": 187822.0
+      },
+      "HU231": {
+       "yield_t_ha": 6.0,
+       "area_ha": 46096.0,
+       "production_t": 276595.0
+      },
+      "HU232": {
+       "yield_t_ha": 5.91,
+       "area_ha": 57439.0,
+       "production_t": 339575.0
+      },
+      "HU233": {
+       "yield_t_ha": 5.98,
+       "area_ha": 50041.0,
+       "production_t": 299136.0
+      },
+      "HU311": {
+       "yield_t_ha": 6.35,
+       "area_ha": 37477.0,
+       "production_t": 237923.0
+      },
+      "HU312": {
+       "yield_t_ha": 3.75,
+       "area_ha": 6051.0,
+       "production_t": 22703.0
+      },
+      "HU313": {
+       "yield_t_ha": 4.4,
+       "area_ha": 3312.0,
+       "production_t": 14560.0
+      },
+      "HU321": {
+       "yield_t_ha": 5.4,
+       "area_ha": 72340.0,
+       "production_t": 390956.0
+      },
+      "HU322": {
+       "yield_t_ha": 3.75,
+       "area_ha": 29858.0,
+       "production_t": 112059.0
+      },
+      "HU323": {
+       "yield_t_ha": 5.98,
+       "area_ha": 87351.0,
+       "production_t": 522775.0
+      },
+      "HU331": {
+       "yield_t_ha": 4.25,
+       "area_ha": 42344.0,
+       "production_t": 179888.0
+      },
+      "HU332": {
+       "yield_t_ha": 2.72,
+       "area_ha": 65407.0,
+       "production_t": 177605.0
+      },
+      "HU333": {
+       "yield_t_ha": 3.57,
+       "area_ha": 22428.0,
+       "production_t": 80009.0
+      }
+     }
+    }
+   }
+  },
+  "barley": {
+   "table": "19.1.2.6.",
+   "updated": "2026. szeptember 30.",
+   "page": "https://www.ksh.hu/stadat_files/mez/hu/mez0073.html",
+   "years": {
+    "2024": {
+     "national": {
+      "yield_t_ha": 5.57,
+      "area_ha": 256968.0,
+      "production_t": 1430669.0
+     },
+     "counties": {
+      "HU110": {
+       "yield_t_ha": 4.71,
+       "area_ha": 136.0,
+       "production_t": 641.0
+      },
+      "HU120": {
+       "yield_t_ha": 4.35,
+       "area_ha": 12212.0,
+       "production_t": 53079.0
+      },
+      "HU211": {
+       "yield_t_ha": 5.96,
+       "area_ha": 19757.0,
+       "production_t": 117688.0
+      },
+      "HU212": {
+       "yield_t_ha": 5.32,
+       "area_ha": 5937.0,
+       "production_t": 31563.0
+      },
+      "HU213": {
+       "yield_t_ha": 4.89,
+       "area_ha": 7740.0,
+       "production_t": 37811.0
+      },
+      "HU221": {
+       "yield_t_ha": 5.44,
+       "area_ha": 16448.0,
+       "production_t": 89554.0
+      },
+      "HU222": {
+       "yield_t_ha": 5.57,
+       "area_ha": 14379.0,
+       "production_t": 80095.0
+      },
+      "HU223": {
+       "yield_t_ha": 6.22,
+       "area_ha": 3630.0,
+       "production_t": 22595.0
+      },
+      "HU231": {
+       "yield_t_ha": 6.23,
+       "area_ha": 11883.0,
+       "production_t": 74005.0
+      },
+      "HU232": {
+       "yield_t_ha": 6.44,
+       "area_ha": 10471.0,
+       "production_t": 67406.0
+      },
+      "HU233": {
+       "yield_t_ha": 5.99,
+       "area_ha": 13248.0,
+       "production_t": 79420.0
+      },
+      "HU311": {
+       "yield_t_ha": 5.45,
+       "area_ha": 8133.0,
+       "production_t": 44350.0
+      },
+      "HU312": {
+       "yield_t_ha": 5.42,
+       "area_ha": 8533.0,
+       "production_t": 46226.0
+      },
+      "HU313": {
+       "yield_t_ha": 6.15,
+       "area_ha": 1518.0,
+       "production_t": 9333.0
+      },
+      "HU321": {
+       "yield_t_ha": 5.79,
+       "area_ha": 9990.0,
+       "production_t": 57859.0
+      },
+      "HU322": {
+       "yield_t_ha": 5.25,
+       "area_ha": 32067.0,
+       "production_t": 168208.0
+      },
+      "HU323": {
+       "yield_t_ha": 4.81,
+       "area_ha": 1388.0,
+       "production_t": 6672.0
+      },
+      "HU331": {
+       "yield_t_ha": 5.51,
+       "area_ha": 31443.0,
+       "production_t": 173240.0
+      },
+      "HU332": {
+       "yield_t_ha": 5.74,
+       "area_ha": 27366.0,
+       "production_t": 156967.0
+      },
+      "HU333": {
+       "yield_t_ha": 5.51,
+       "area_ha": 20689.0,
+       "production_t": 113957.0
+      }
+     }
+    },
+    "2025": {
+     "national": {
+      "yield_t_ha": 5.87,
+      "area_ha": 270466.0,
+      "production_t": 1587580.0
+     },
+     "counties": {
+      "HU110": {
+       "yield_t_ha": 3.04,
+       "area_ha": 122.0,
+       "production_t": 371.0
+      },
+      "HU120": {
+       "yield_t_ha": 4.87,
+       "area_ha": 12160.0,
+       "production_t": 59198.0
+      },
+      "HU211": {
+       "yield_t_ha": 6.05,
+       "area_ha": 18219.0,
+       "production_t": 110294.0
+      },
+      "HU212": {
+       "yield_t_ha": 5.99,
+       "area_ha": 5943.0,
+       "production_t": 35593.0
+      },
+      "HU213": {
+       "yield_t_ha": 5.41,
+       "area_ha": 7088.0,
+       "production_t": 38380.0
+      },
+      "HU221": {
+       "yield_t_ha": 5.95,
+       "area_ha": 18873.0,
+       "production_t": 112314.0
+      },
+      "HU222": {
+       "yield_t_ha": 6.03,
+       "area_ha": 11796.0,
+       "production_t": 71116.0
+      },
+      "HU223": {
+       "yield_t_ha": 6.51,
+       "area_ha": 4767.0,
+       "production_t": 31039.0
+      },
+      "HU231": {
+       "yield_t_ha": 6.35,
+       "area_ha": 13801.0,
+       "production_t": 87596.0
+      },
+      "HU232": {
+       "yield_t_ha": 6.79,
+       "area_ha": 11113.0,
+       "production_t": 75451.0
+      },
+      "HU233": {
+       "yield_t_ha": 6.12,
+       "area_ha": 12684.0,
+       "production_t": 77617.0
+      },
+      "HU311": {
+       "yield_t_ha": 6.02,
+       "area_ha": 6888.0,
+       "production_t": 41441.0
+      },
+      "HU312": {
+       "yield_t_ha": 5.73,
+       "area_ha": 7254.0,
+       "production_t": 41580.0
+      },
+      "HU313": {
+       "yield_t_ha": 4.08,
+       "area_ha": 1297.0,
+       "production_t": 5295.0
+      },
+      "HU321": {
+       "yield_t_ha": 5.67,
+       "area_ha": 9873.0,
+       "production_t": 56006.0
+      },
+      "HU322": {
+       "yield_t_ha": 5.53,
+       "area_ha": 33111.0,
+       "production_t": 183090.0
+      },
+      "HU323": {
+       "yield_t_ha": 4.83,
+       "area_ha": 1442.0,
+       "production_t": 6965.0
+      },
+      "HU331": {
+       "yield_t_ha": 6.31,
+       "area_ha": 33931.0,
+       "production_t": 214181.0
+      },
+      "HU332": {
+       "yield_t_ha": 5.47,
+       "area_ha": 32932.0,
+       "production_t": 180033.0
+      },
+      "HU333": {
+       "yield_t_ha": 5.89,
+       "area_ha": 27172.0,
+       "production_t": 160020.0
+      }
+     }
+    },
+    "2026": {
+     "national": {
+      "yield_t_ha": 4.63,
+      "area_ha": 350975.0,
+      "production_t": 1625306.0
+     },
+     "counties": {
+      "HU120": {
+       "yield_t_ha": 3.42,
+       "area_ha": 17001.0,
+       "production_t": 58166.0
+      },
+      "HU211": {
+       "yield_t_ha": 4.75,
+       "area_ha": 25211.0,
+       "production_t": 119785.0
+      },
+      "HU212": {
+       "yield_t_ha": 4.7,
+       "area_ha": 7864.0,
+       "production_t": 36966.0
+      },
+      "HU213": {
+       "yield_t_ha": 4.93,
+       "area_ha": 10708.0,
+       "production_t": 52780.0
+      },
+      "HU221": {
+       "yield_t_ha": 5.62,
+       "area_ha": 20366.0,
+       "production_t": 114479.0
+      },
+      "HU222": {
+       "yield_t_ha": 5.56,
+       "area_ha": 17077.0,
+       "production_t": 94943.0
+      },
+      "HU223": {
+       "yield_t_ha": 6.18,
+       "area_ha": 5131.0,
+       "production_t": 31696.0
+      },
+      "HU231": {
+       "yield_t_ha": 6.37,
+       "area_ha": 15386.0,
+       "production_t": 98071.0
+      },
+      "HU232": {
+       "yield_t_ha": 6.58,
+       "area_ha": 13887.0,
+       "production_t": 91382.0
+      },
+      "HU233": {
+       "yield_t_ha": 5.99,
+       "area_ha": 16339.0,
+       "production_t": 97942.0
+      },
+      "HU311": {
+       "yield_t_ha": 5.13,
+       "area_ha": 7896.0,
+       "production_t": 40470.0
+      },
+      "HU312": {
+       "yield_t_ha": 4.7,
+       "area_ha": 10633.0,
+       "production_t": 49938.0
+      },
+      "HU313": {
+       "yield_t_ha": 4.54,
+       "area_ha": 2942.0,
+       "production_t": 13369.0
+      },
+      "HU321": {
+       "yield_t_ha": 3.67,
+       "area_ha": 15348.0,
+       "production_t": 56335.0
+      },
+      "HU322": {
+       "yield_t_ha": 3.7,
+       "area_ha": 43313.0,
+       "production_t": 160361.0
+      },
+      "HU323": {
+       "yield_t_ha": 3.66,
+       "area_ha": 2331.0,
+       "production_t": 8532.0
+      },
+      "HU331": {
+       "yield_t_ha": 4.79,
+       "area_ha": 42046.0,
+       "production_t": 201447.0
+      },
+      "HU332": {
+       "yield_t_ha": 3.85,
+       "area_ha": 45997.0,
+       "production_t": 177115.0
+      },
+      "HU333": {
+       "yield_t_ha": 3.86,
+       "area_ha": 31501.0,
+       "production_t": 121530.0
+      }
+     }
+    }
+   }
+  },
+  "sunflower": {
+   "table": "19.1.2.11.",
+   "updated": "2026. június 30.",
+   "page": "https://www.ksh.hu/stadat_files/mez/hu/mez0078.html",
+   "years": {
+    "2023": {
+     "national": {
+      "yield_t_ha": 2.92,
+      "area_ha": 674202.0,
+      "production_t": 1970150.0
+     },
+     "counties": {
+      "HU110": {
+       "yield_t_ha": 2.31,
+       "area_ha": 70.0,
+       "production_t": 162.0
+      },
+      "HU120": {
+       "yield_t_ha": 2.89,
+       "area_ha": 35112.0,
+       "production_t": 101622.0
+      },
+      "HU211": {
+       "yield_t_ha": 3.07,
+       "area_ha": 41775.0,
+       "production_t": 128123.0
+      },
+      "HU212": {
+       "yield_t_ha": 2.94,
+       "area_ha": 13360.0,
+       "production_t": 39266.0
+      },
+      "HU213": {
+       "yield_t_ha": 3.04,
+       "area_ha": 11110.0,
+       "production_t": 33786.0
+      },
+      "HU221": {
+       "yield_t_ha": 2.93,
+       "area_ha": 15385.0,
+       "production_t": 45079.0
+      },
+      "HU222": {
+       "yield_t_ha": 2.78,
+       "area_ha": 9160.0,
+       "production_t": 25432.0
+      },
+      "HU223": {
+       "yield_t_ha": 2.85,
+       "area_ha": 7869.0,
+       "production_t": 22427.0
+      },
+      "HU231": {
+       "yield_t_ha": 3.15,
+       "area_ha": 24250.0,
+       "production_t": 76423.0
+      },
+      "HU232": {
+       "yield_t_ha": 3.19,
+       "area_ha": 30635.0,
+       "production_t": 97763.0
+      },
+      "HU233": {
+       "yield_t_ha": 3.32,
+       "area_ha": 39346.0,
+       "production_t": 130765.0
+      },
+      "HU311": {
+       "yield_t_ha": 2.99,
+       "area_ha": 40139.0,
+       "production_t": 120156.0
+      },
+      "HU312": {
+       "yield_t_ha": 2.97,
+       "area_ha": 31102.0,
+       "production_t": 92313.0
+      },
+      "HU313": {
+       "yield_t_ha": 2.85,
+       "area_ha": 7595.0,
+       "production_t": 21642.0
+      },
+      "HU321": {
+       "yield_t_ha": 3.07,
+       "area_ha": 61041.0,
+       "production_t": 187146.0
+      },
+      "HU322": {
+       "yield_t_ha": 2.62,
+       "area_ha": 91326.0,
+       "production_t": 239318.0
+      },
+      "HU323": {
+       "yield_t_ha": 2.95,
+       "area_ha": 54167.0,
+       "production_t": 159645.0
+      },
+      "HU331": {
+       "yield_t_ha": 2.83,
+       "area_ha": 42798.0,
+       "production_t": 121174.0
+      },
+      "HU332": {
+       "yield_t_ha": 2.99,
+       "area_ha": 85117.0,
+       "production_t": 254358.0
+      },
+      "HU333": {
+       "yield_t_ha": 2.24,
+       "area_ha": 32845.0,
+       "production_t": 73550.0
+      }
+     }
+    },
+    "2024": {
+     "national": {
+      "yield_t_ha": 2.67,
+      "area_ha": 674133.0,
+      "production_t": 1798953.0
+     },
+     "counties": {
+      "HU120": {
+       "yield_t_ha": 2.34,
+       "area_ha": 36030.0,
+       "production_t": 84246.0
+      },
+      "HU211": {
+       "yield_t_ha": 2.54,
+       "area_ha": 41274.0,
+       "production_t": 104985.0
+      },
+      "HU212": {
+       "yield_t_ha": 2.45,
+       "area_ha": 13273.0,
+       "production_t": 32550.0
+      },
+      "HU213": {
+       "yield_t_ha": 2.58,
+       "area_ha": 12135.0,
+       "production_t": 31276.0
+      },
+      "HU221": {
+       "yield_t_ha": 2.52,
+       "area_ha": 17485.0,
+       "production_t": 44111.0
+      },
+      "HU222": {
+       "yield_t_ha": 2.61,
+       "area_ha": 9086.0,
+       "production_t": 23685.0
+      },
+      "HU223": {
+       "yield_t_ha": 2.59,
+       "area_ha": 5733.0,
+       "production_t": 14846.0
+      },
+      "HU231": {
+       "yield_t_ha": 3.18,
+       "area_ha": 20638.0,
+       "production_t": 65605.0
+      },
+      "HU232": {
+       "yield_t_ha": 2.83,
+       "area_ha": 30400.0,
+       "production_t": 85916.0
+      },
+      "HU233": {
+       "yield_t_ha": 2.96,
+       "area_ha": 38582.0,
+       "production_t": 114221.0
+      },
+      "HU311": {
+       "yield_t_ha": 2.5,
+       "area_ha": 40132.0,
+       "production_t": 100285.0
+      },
+      "HU312": {
+       "yield_t_ha": 2.61,
+       "area_ha": 33250.0,
+       "production_t": 86880.0
+      },
+      "HU313": {
+       "yield_t_ha": 2.38,
+       "area_ha": 7799.0,
+       "production_t": 18525.0
+      },
+      "HU321": {
+       "yield_t_ha": 2.97,
+       "area_ha": 61763.0,
+       "production_t": 183713.0
+      },
+      "HU322": {
+       "yield_t_ha": 2.74,
+       "area_ha": 96177.0,
+       "production_t": 263505.0
+      },
+      "HU323": {
+       "yield_t_ha": 2.53,
+       "area_ha": 50753.0,
+       "production_t": 128376.0
+      },
+      "HU331": {
+       "yield_t_ha": 2.35,
+       "area_ha": 42839.0,
+       "production_t": 100519.0
+      },
+      "HU332": {
+       "yield_t_ha": 2.9,
+       "area_ha": 84741.0,
+       "production_t": 245982.0
+      },
+      "HU333": {
+       "yield_t_ha": 2.18,
+       "area_ha": 32043.0,
+       "production_t": 69727.0
+      }
+     }
+    },
+    "2025": {
+     "national": {
+      "yield_t_ha": 2.48,
+      "area_ha": 710765.0,
+      "production_t": 1761086.0
+     },
+     "counties": {
+      "HU120": {
+       "yield_t_ha": 2.15,
+       "area_ha": 38622.0,
+       "production_t": 83185.0
+      },
+      "HU211": {
+       "yield_t_ha": 2.45,
+       "area_ha": 46917.0,
+       "production_t": 115017.0
+      },
+      "HU212": {
+       "yield_t_ha": 2.47,
+       "area_ha": 12677.0,
+       "production_t": 31360.0
+      },
+      "HU213": {
+       "yield_t_ha": 2.42,
+       "area_ha": 10497.0,
+       "production_t": 25441.0
+      },
+      "HU221": {
+       "yield_t_ha": 2.83,
+       "area_ha": 19945.0,
+       "production_t": 56461.0
+      },
+      "HU222": {
+       "yield_t_ha": 2.73,
+       "area_ha": 9782.0,
+       "production_t": 26745.0
+      },
+      "HU223": {
+       "yield_t_ha": 3.1,
+       "area_ha": 6750.0,
+       "production_t": 20939.0
+      },
+      "HU231": {
+       "yield_t_ha": 3.0,
+       "area_ha": 26337.0,
+       "production_t": 78981.0
+      },
+      "HU232": {
+       "yield_t_ha": 2.71,
+       "area_ha": 39576.0,
+       "production_t": 107208.0
+      },
+      "HU233": {
+       "yield_t_ha": 3.0,
+       "area_ha": 43954.0,
+       "production_t": 131671.0
+      },
+      "HU311": {
+       "yield_t_ha": 2.45,
+       "area_ha": 33157.0,
+       "production_t": 81215.0
+      },
+      "HU312": {
+       "yield_t_ha": 2.31,
+       "area_ha": 27760.0,
+       "production_t": 64185.0
+      },
+      "HU313": {
+       "yield_t_ha": 2.19,
+       "area_ha": 6648.0,
+       "production_t": 14527.0
+      },
+      "HU321": {
+       "yield_t_ha": 2.81,
+       "area_ha": 63925.0,
+       "production_t": 179891.0
+      },
+      "HU322": {
+       "yield_t_ha": 2.21,
+       "area_ha": 99313.0,
+       "production_t": 219487.0
+      },
+      "HU323": {
+       "yield_t_ha": 2.78,
+       "area_ha": 48189.0,
+       "production_t": 133923.0
+      },
+      "HU331": {
+       "yield_t_ha": 2.41,
+       "area_ha": 39937.0,
+       "production_t": 96098.0
+      },
+      "HU332": {
+       "yield_t_ha": 2.21,
+       "area_ha": 100844.0,
+       "production_t": 223202.0
+      },
+      "HU333": {
+       "yield_t_ha": 1.99,
+       "area_ha": 35935.0,
+       "production_t": 71550.0
+      }
+     }
+    }
+   }
+  },
+  "rapeseed": {
+   "table": "19.1.2.12.",
+   "updated": "2026. június 30.",
+   "page": "https://www.ksh.hu/stadat_files/mez/hu/mez0079.html",
+   "years": {
+    "2023": {
+     "national": {
+      "yield_t_ha": 3.32,
+      "area_ha": 188779.0,
+      "production_t": 626410.0
+     },
+     "counties": {
+      "HU110": {
+       "yield_t_ha": 1.85,
+       "area_ha": 119.0,
+       "production_t": 220.0
+      },
+      "HU120": {
+       "yield_t_ha": 2.96,
+       "area_ha": 7842.0,
+       "production_t": 23242.0
+      },
+      "HU211": {
+       "yield_t_ha": 3.65,
+       "area_ha": 11284.0,
+       "production_t": 41167.0
+      },
+      "HU212": {
+       "yield_t_ha": 2.82,
+       "area_ha": 2318.0,
+       "production_t": 6536.0
+      },
+      "HU213": {
+       "yield_t_ha": 2.83,
+       "area_ha": 4175.0,
+       "production_t": 11795.0
+      },
+      "HU221": {
+       "yield_t_ha": 3.0,
+       "area_ha": 14049.0,
+       "production_t": 42173.0
+      },
+      "HU222": {
+       "yield_t_ha": 3.12,
+       "area_ha": 21134.0,
+       "production_t": 65892.0
+      },
+      "HU223": {
+       "yield_t_ha": 3.39,
+       "area_ha": 11752.0,
+       "production_t": 39865.0
+      },
+      "HU231": {
+       "yield_t_ha": 3.4,
+       "area_ha": 8802.0,
+       "production_t": 29917.0
+      },
+      "HU232": {
+       "yield_t_ha": 3.47,
+       "area_ha": 17140.0,
+       "production_t": 59450.0
+      },
+      "HU233": {
+       "yield_t_ha": 3.55,
+       "area_ha": 8830.0,
+       "production_t": 31365.0
+      },
+      "HU311": {
+       "yield_t_ha": 3.48,
+       "area_ha": 16578.0,
+       "production_t": 57765.0
+      },
+      "HU312": {
+       "yield_t_ha": 3.44,
+       "area_ha": 7104.0,
+       "production_t": 24420.0
+      },
+      "HU313": {
+       "yield_t_ha": 3.44,
+       "area_ha": 5002.0,
+       "production_t": 17193.0
+      },
+      "HU321": {
+       "yield_t_ha": 3.72,
+       "area_ha": 4794.0,
+       "production_t": 17851.0
+      },
+      "HU322": {
+       "yield_t_ha": 3.06,
+       "area_ha": 5936.0,
+       "production_t": 18169.0
+      },
+      "HU323": {
+       "yield_t_ha": 3.75,
+       "area_ha": 5079.0,
+       "production_t": 19032.0
+      },
+      "HU331": {
+       "yield_t_ha": 3.52,
+       "area_ha": 15623.0,
+       "production_t": 55042.0
+      },
+      "HU332": {
+       "yield_t_ha": 3.27,
+       "area_ha": 10641.0,
+       "production_t": 34819.0
+      },
+      "HU333": {
+       "yield_t_ha": 2.88,
+       "area_ha": 10577.0,
+       "production_t": 30497.0
+      }
+     }
+    },
+    "2024": {
+     "national": {
+      "yield_t_ha": 2.61,
+      "area_ha": 172434.0,
+      "production_t": 450364.0
+     },
+     "counties": {
+      "HU110": {
+       "yield_t_ha": 1.72,
+       "area_ha": 135.0,
+       "production_t": 232.0
+      },
+      "HU120": {
+       "yield_t_ha": 2.67,
+       "area_ha": 9538.0,
+       "production_t": 25433.0
+      },
+      "HU211": {
+       "yield_t_ha": 2.63,
+       "area_ha": 10725.0,
+       "production_t": 28210.0
+      },
+      "HU212": {
+       "yield_t_ha": 2.56,
+       "area_ha": 1672.0,
+       "production_t": 4273.0
+      },
+      "HU213": {
+       "yield_t_ha": 2.02,
+       "area_ha": 4933.0,
+       "production_t": 9954.0
+      },
+      "HU221": {
+       "yield_t_ha": 2.47,
+       "area_ha": 11841.0,
+       "production_t": 29223.0
+      },
+      "HU222": {
+       "yield_t_ha": 2.55,
+       "area_ha": 19611.0,
+       "production_t": 49993.0
+      },
+      "HU223": {
+       "yield_t_ha": 3.02,
+       "area_ha": 9183.0,
+       "production_t": 27737.0
+      },
+      "HU231": {
+       "yield_t_ha": 2.63,
+       "area_ha": 7152.0,
+       "production_t": 18826.0
+      },
+      "HU232": {
+       "yield_t_ha": 3.03,
+       "area_ha": 13026.0,
+       "production_t": 39516.0
+      },
+      "HU233": {
+       "yield_t_ha": 2.81,
+       "area_ha": 8358.0,
+       "production_t": 23478.0
+      },
+      "HU311": {
+       "yield_t_ha": 2.74,
+       "area_ha": 17255.0,
+       "production_t": 47277.0
+      },
+      "HU312": {
+       "yield_t_ha": 2.8,
+       "area_ha": 6727.0,
+       "production_t": 18868.0
+      },
+      "HU313": {
+       "yield_t_ha": 2.85,
+       "area_ha": 4186.0,
+       "production_t": 11938.0
+      },
+      "HU321": {
+       "yield_t_ha": 2.58,
+       "area_ha": 3741.0,
+       "production_t": 9645.0
+      },
+      "HU322": {
+       "yield_t_ha": 1.94,
+       "area_ha": 4334.0,
+       "production_t": 8395.0
+      },
+      "HU323": {
+       "yield_t_ha": 2.58,
+       "area_ha": 5094.0,
+       "production_t": 13155.0
+      },
+      "HU331": {
+       "yield_t_ha": 2.68,
+       "area_ha": 16208.0,
+       "production_t": 43409.0
+      },
+      "HU332": {
+       "yield_t_ha": 2.24,
+       "area_ha": 8796.0,
+       "production_t": 19688.0
+      },
+      "HU333": {
+       "yield_t_ha": 2.13,
+       "area_ha": 9919.0,
+       "production_t": 21114.0
+      }
+     }
+    },
+    "2025": {
+     "national": {
+      "yield_t_ha": 3.19,
+      "area_ha": 143249.0,
+      "production_t": 457597.0
+     },
+     "counties": {
+      "HU110": {
+       "yield_t_ha": 1.81,
+       "area_ha": 101.0,
+       "production_t": 183.0
+      },
+      "HU120": {
+       "yield_t_ha": 2.84,
+       "area_ha": 7732.0,
+       "production_t": 21943.0
+      },
+      "HU211": {
+       "yield_t_ha": 3.44,
+       "area_ha": 9234.0,
+       "production_t": 31762.0
+      },
+      "HU212": {
+       "yield_t_ha": 3.19,
+       "area_ha": 1438.0,
+       "production_t": 4592.0
+      },
+      "HU213": {
+       "yield_t_ha": 2.93,
+       "area_ha": 1814.0,
+       "production_t": 5321.0
+      },
+      "HU221": {
+       "yield_t_ha": 2.9,
+       "area_ha": 6605.0,
+       "production_t": 19146.0
+      },
+      "HU222": {
+       "yield_t_ha": 2.73,
+       "area_ha": 12324.0,
+       "production_t": 33657.0
+      },
+      "HU223": {
+       "yield_t_ha": 3.61,
+       "area_ha": 8648.0,
+       "production_t": 31247.0
+      },
+      "HU231": {
+       "yield_t_ha": 2.93,
+       "area_ha": 5220.0,
+       "production_t": 15300.0
+      },
+      "HU232": {
+       "yield_t_ha": 3.64,
+       "area_ha": 11629.0,
+       "production_t": 42342.0
+      },
+      "HU233": {
+       "yield_t_ha": 3.53,
+       "area_ha": 6765.0,
+       "production_t": 23884.0
+      },
+      "HU311": {
+       "yield_t_ha": 3.16,
+       "area_ha": 16113.0,
+       "production_t": 50950.0
+      },
+      "HU312": {
+       "yield_t_ha": 3.36,
+       "area_ha": 7044.0,
+       "production_t": 23638.0
+      },
+      "HU313": {
+       "yield_t_ha": 3.25,
+       "area_ha": 4298.0,
+       "production_t": 13952.0
+      },
+      "HU321": {
+       "yield_t_ha": 3.18,
+       "area_ha": 4340.0,
+       "production_t": 13785.0
+      },
+      "HU322": {
+       "yield_t_ha": 3.28,
+       "area_ha": 5373.0,
+       "production_t": 17608.0
+      },
+      "HU323": {
+       "yield_t_ha": 3.34,
+       "area_ha": 3938.0,
+       "production_t": 13170.0
+      },
+      "HU331": {
+       "yield_t_ha": 3.36,
+       "area_ha": 10830.0,
+       "production_t": 36361.0
+      },
+      "HU332": {
+       "yield_t_ha": 2.99,
+       "area_ha": 10416.0,
+       "production_t": 31115.0
+      },
+      "HU333": {
+       "yield_t_ha": 2.94,
+       "area_ha": 9387.0,
+       "production_t": 27641.0
+      }
+     }
+    }
+   }
+  }
+ }
+}

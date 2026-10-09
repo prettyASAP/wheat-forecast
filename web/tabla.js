@@ -202,6 +202,12 @@
     });
   }
 
+  // a hozamoszlop címkéje: ha a KSH már közölte a termésévet, tény áll benne
+  function yieldLabel(col) {
+    var act = state.data && state.data.national && state.data.national.actual;
+    return col.key === "predicted_yield_t_ha" && act ? "Termésátlag, KSH (t/ha)" : col.label;
+  }
+
   // ---- CSV export ----
   function csvField(s) {
     s = String(s);
@@ -214,7 +220,7 @@
   function downloadCsv() {
     if (!state.data) return;
     var lines = [];
-    lines.push(COLUMNS.map(function (c) { return csvField(c.label); }).join(";"));
+    lines.push(COLUMNS.map(function (c) { return csvField(yieldLabel(c)); }).join(";"));
     sortedRows().forEach(function (row) {
       var cells = COLUMNS.map(function (col) {
         var v = row[col.key];
@@ -268,10 +274,14 @@
       .then(function (data) {
         state.data = data;
         state.rows = (data.counties || []).map(flatten);
+        var th = headRow.querySelector('th[data-key="predicted_yield_t_ha"] span');
+        if (th) th.textContent = yieldLabel(COLUMNS[1]);
+        var act = data.national && data.national.actual;
         meta.textContent =
           (data.crop ? data.crop + " · " : "") +
           (data.crop_year ? "termésév: " + data.crop_year + " · " : "") +
           (data.updated_at ? "frissítve: " + huDate(data.updated_at) : "") +
+          (act ? " · KSH-adat (" + act.updated + ")" : "") +
           (data.weather_observed_until
             ? " · időjárás eddig: " + huDate(data.weather_observed_until)
             : (data.weather_known_until

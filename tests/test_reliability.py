@@ -796,3 +796,101 @@ def test_sowing_page_first_days_without_stats_names_fixed_start():
     html = report_html.sowing_page(sow, 3, 4, lambda *a, **k: "", "")
     assert "rögzített ()" not in html
     assert "rögzített (okt. 1.)" in html or "rögzített (ápr. 1.)" in html
+
+
+# --------------------------------------------------------------------------- #
+# KSH-tény a lezárt termésévekre (src/ksh_actuals.py)
+# --------------------------------------------------------------------------- #
+def _ksh_csv(tmp_path, level="megye"):
+    """Szintetikus KSH-tábla a 2026. szept. 30-i formátumban ("megye" szintjelölés)."""
+    names = [n for n in config.KSH_TO_NUTS3 if n != "Budapest"][:19]
+    head = "Területi egység neve;Területi egység szintje;2025;2026"
+    lines = ["19.1.2.4. A búza termelése megye és régió szerint;;;", head]
+    for title, f in (("Betakarított terület, hektár", lambda i: (1000, 1000)),
+                     ("Betakarított összes termés, tonna", lambda i: (5500, 4000 + 10 * i)),
+                     ("Termésátlag, kg/hektár", lambda i: (5500, 4000 + 10 * i))):
+        lines.append(f"{title};;;")
+        lines.append("Budapest;főváros, régió;3 000;2 970")
+        for i, n in enumerate(names):
+            a, b = f(i)
+            lines.append(f"{n};{level};{a:,};{b:,}".replace(",", " "))
+        tot = {"Betakarított terület, hektár": "19 000;19 000",
+               "Betakarított összes termés, tonna": "104 500;77 710",
+               "Termésátlag, kg/hektár": "5 500;4 090"}[title]
+        lines.append(f"Ország összesen;ország;{tot}")
+    p = tmp_path / "mez0071.csv"
+    p.write_bytes("\n".join(lines).encode(config.KSH_ENCODING))
+    return p, names
+
+
+def test_ksh_actuals_parses_new_megye_labels(tmp_path):
+    from src import ksh_actuals
+    p, names = _ksh_csv(tmp_path)
+    years = ksh_actuals.parse_file("wheat", p)
+    assert set(years) == {2025, 2026}
+    assert years[2026]["national"]["yield_t_ha"] == pytest.approx(4.09)
+    assert len(years[2026]["counties"]) == 20  # 19 vármegye + Budapest
+
+
+def _fc_for_apply():
+    rows = [{"nuts_id": "HU211", "county_name": "Fejér", "predicted_yield_t_ha": 5.57,
+             "anomaly_pct": -5.0, "low": 5.0, "high": 6.0, "value_bn_huf": 30.0, "trend_gap_bn_huf": -1.0},
+            {"nuts_id": "HU212", "county_name": "Komárom-Esztergom", "predicted_yield_t_ha": 5.2,
+             "anomaly_pct": -4.0, "low": 4.8, "high": 5.6},
+            {"nuts_id": "HU110", "county_name": "Budapest", "predicted_yield_t_ha": None,
+             "anomaly_pct": None, "low": None, "high": None}]
+    nat = {"predicted_yield_t_ha": 5.18, "pred_low_t_ha": 4.62, "pred_high_t_ha": 5.74,
+           "anomaly_pct": -10.0, "trend_t_ha": 5.75, "yoy_pct": -5.8, "prev_year": 2025,
+           "prev_year_yield_t_ha": 5.5, "rank_from_worst": 8, "rank_total": 27,
+           "official_estimate": {"yield_t_ha": 4.19},
+           "value": {"price_huf_per_t": 73000, "area_ha": 1046156, "area_year": 2025,
+                     "production_mt": 5.42, "production_value_bn_huf": 395.0,
+                     "trend_gap_bn_huf": -44.0, "note": "ár: x; terület: a 2025. évi"}}
+    return {"crop": "búza", "crop_year": 2026, "national": nat, "counties": rows}
+
+
+_KSH_DATA = {"crops": {"wheat": {"table": "19.1.2.4.", "updated": "2026. szeptember 30.", "years": {
+    "2026": {"national": {"yield_t_ha": 4.38, "area_ha": 1051848.0, "production_t": 4604299.0},
+             "counties": {"HU211": {"yield_t_ha": 3.95, "area_ha": 72641.0, "production_t": 286802.0}}}}}}}
+
+
+def test_ksh_actuals_replaces_model_with_fact_and_is_idempotent():
+    import copy
+    from src import ksh_actuals
+    fc = _fc_for_apply()
+    assert ksh_actuals.apply(fc, _KSH_DATA)
+    n = fc["national"]
+    assert n["predicted_yield_t_ha"] == 4.38 and n["actual"]["model_yield_t_ha"] == 5.18
+    assert n["anomaly_pct"] == pytest.approx(100 * (4.38 - 5.75) / 5.75, abs=0.05)
+    assert n["pred_low_t_ha"] is None and "official_estimate" not in n
+    assert n["value"]["production_value_bn_huf"] == pytest.approx(4604299 * 73000 / 1e9, abs=0.05)
+    assert n["value"]["area_year"] == 2026
+    fej, kom, bud = fc["counties"]
+    base = 5.57 / 0.95
+    assert fej["predicted_yield_t_ha"] == 3.95 and fej["model_yield_t_ha"] == 5.57
+    assert fej["anomaly_pct"] == pytest.approx(100 * (3.95 - base) / base, abs=0.05)
+    assert fej["low"] is None and fej["value_bn_huf"] == pytest.approx(286802 * 73000 / 1e9, abs=0.05)
+    # a KSH-ban hiányzó vármegyénél nem keverünk modellszámot a tények közé
+    assert kom["predicted_yield_t_ha"] is None and "KSH" in kom["note"]
+    assert bud["predicted_yield_t_ha"] is None and "model_yield_t_ha" not in bud
+    snap = copy.deepcopy(fc)
+    ksh_actuals.apply(fc, _KSH_DATA)  # ismételt hívás: ugyanaz
+    assert fc == snap
+
+
+def test_ksh_actuals_updates_previous_year_fact_for_new_crop_year():
+    from src import ksh_actuals
+    fc = _fc_for_apply(); fc["crop_year"] = 2027
+    assert not ksh_actuals.apply(fc, _KSH_DATA)  # 2027-re nincs tény
+    n = fc["national"]
+    assert n["prev_year"] == 2026 and n["prev_year_yield_t_ha"] == 4.38
+    assert n["predicted_yield_t_ha"] == 5.18  # a modell száma marad
+
+
+def test_final_card_shows_ksh_fact_and_model_line():
+    from src import ksh_actuals, report_html
+    fc = _fc_for_apply()
+    ksh_actuals.apply(fc, _KSH_DATA)
+    html = report_html.final_card(fc)
+    assert "KSH-adat" in html and "4,38" in html and "Modellbecslés" in html
+    assert "80%-os sáv" not in html and "EU-becslés" not in html

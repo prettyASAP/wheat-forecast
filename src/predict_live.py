@@ -18,6 +18,7 @@ Futtatás:  python -m src.predict_live [--crop wheat|corn]
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import sys
 from datetime import date, timedelta
@@ -29,7 +30,7 @@ from src import config
 from src.build_panel import assign_crop_year
 from src.features import compute_features
 from src.fetch_weather import CENTROIDS_CSV, fetch_county, get_daily
-from src import drivers
+from src import drivers, ksh_actuals
 from src.model import fit_panel_model, load_model_data, predict_naive_trend
 from src.validate import loyo_summary_json
 
@@ -663,10 +664,20 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
         nat["drivers"] = drivers.national_drivers(
             contrib, county_area, nat["trend_t_ha"], nat["anomaly_pct"])
         nat["envelope"] = drivers.envelope_check(m, df, model_feats, county_area)
+    # Ahol a KSH már közölte a termésév (vagy az előző év) adatát, a kiírt
+    # számok a tényből jönnek; a modell záró becslése mellékes adatként marad.
+    # A lenti ellenőrzés a MODELL számain fut (payload), nem a ténnyel.
+    out = copy.deepcopy(payload)
+    if ksh_actuals.apply(out):
+        print(f"  [ok] KSH-tény: {out['national']['predicted_yield_t_ha']} t/ha "
+              f"(modell: {payload['national']['predicted_yield_t_ha']})")
     hdir = history_dir(crop)
     hdir.mkdir(parents=True, exist_ok=True)
-    forecast_json(crop).write_text(json.dumps(payload, ensure_ascii=False, indent=1),
+    forecast_json(crop).write_text(json.dumps(out, ensure_ascii=False, indent=1),
                                    encoding="utf-8")
+    # a napi pillanatkép a MODELL idősora (ábra, csúszka, utólagos visszamérés):
+    # oda a modell száma kerül. A PDF a lezárt évre a tényt teszi rá (report_html);
+    # a web csúszkája a régi napon a modell akkori becslését mutatja, mellette a KSH-tényt.
     (hdir / f"{today.isoformat()}.json").write_text(
         json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     dates = sorted(p.stem for p in hdir.glob("????-??-??.json"))

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 import pandas as pd
 
@@ -43,9 +44,10 @@ def _parse_number(cell: str) -> float | None:
     return float(s.replace(",", "."))
 
 
-def parse_ksh_csv(crop: str) -> pd.DataFrame:
-    """A KSH csv-ből hosszú tábla: nuts_id, county_name, crop_year, yield_t_ha, ..."""
-    path = config.RAW_KSH / f"{config.CROPS[crop]['ksh_slug']}.csv"
+def parse_ksh_csv(crop: str, path: Path | None = None) -> pd.DataFrame:
+    """A KSH csv-ből hosszú tábla: nuts_id, county_name, crop_year, yield_t_ha, ...
+    A path alapértelmezése a tanítóadat (data/raw/ksh); a ksh_actuals más fájlt ad."""
+    path = path or config.RAW_KSH / f"{config.CROPS[crop]['ksh_slug']}.csv"
     if not path.exists():
         sys.exit(f"HIBA: hiányzik {path}. Futtasd előbb: python -m src.fetch_ksh --crop {crop}")
     # terményspecifikus szekciócímek (pl. árpánál "Őszi árpa ..."), különben az alap

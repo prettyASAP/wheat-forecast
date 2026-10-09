@@ -10,7 +10,9 @@ const GLOSSARY = {
       "2000 óta mért vármegyei hozamai és az ugyanott mért időjárás (hőmérséklet, " +
       "csapadék, párolgás) közti, statisztikailag kimutatott összefüggésekből számolja, " +
       "mit ígér az idei szezon időjárása. Nem hivatalos adat – statisztikai becslés; " +
-      "a pontos számítás a lap alján, a Szakmai leírásban.",
+      "a pontos számítás a lap alján, a Szakmai leírásban. Ha a KSH egy lezárt " +
+      "termésévre már közölte a vármegyei termésátlagot, a becslés helyén a KSH " +
+      "adata áll („KSH-adat”), a modell záró becslése mellette, összevetésként.",
   },
   szokasos: {
     title: "Eltérés a szokásostól (%)",
