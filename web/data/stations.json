@@ -13,85 +13,85 @@
     "n": 269
    },
    "counties": {
-    "Békés": {
-     "mm": 0.0,
-     "n": 22
-    },
-    "Bács-Kiskun": {
-     "mm": 0.0,
-     "n": 19
-    },
-    "Jász-Nagykun-Szolnok": {
-     "mm": 0.0,
-     "n": 17
-    },
-    "Csongrád-Csanád": {
-     "mm": 0.0,
-     "n": 13
-    },
-    "Borsod-Abaúj-Zemplén": {
-     "mm": 0.0,
-     "n": 25
-    },
-    "Heves": {
-     "mm": 0.0,
-     "n": 11
-    },
-    "Hajdú-Bihar": {
-     "mm": 0.0,
-     "n": 17
-    },
-    "Nógrád": {
-     "mm": 0.0,
-     "n": 7
-    },
     "Szabolcs-Szatmár-Bereg": {
      "mm": 0.0,
      "n": 20
     },
-    "Somogy": {
+    "Békés": {
      "mm": 0.0,
-     "n": 11
-    },
-    "Zala": {
-     "mm": 0.0,
-     "n": 9
-    },
-    "Veszprém": {
-     "mm": 0.0,
-     "n": 10
-    },
-    "Pest": {
-     "mm": 0.0,
-     "n": 21
-    },
-    "Fejér": {
-     "mm": 0.0,
-     "n": 9
-    },
-    "Komárom-Esztergom": {
-     "mm": 0.0,
-     "n": 5
-    },
-    "Budapest": {
-     "mm": 0.0,
-     "n": 6
-    },
-    "Baranya": {
-     "mm": 0.0,
-     "n": 11
-    },
-    "Vas": {
-     "mm": 0.0,
-     "n": 8
+     "n": 22
     },
     "Győr-Moson-Sopron": {
      "mm": 0.0,
      "n": 19
     },
+    "Zala": {
+     "mm": 0.0,
+     "n": 9
+    },
+    "Vas": {
+     "mm": 0.0,
+     "n": 8
+    },
+    "Komárom-Esztergom": {
+     "mm": 0.0,
+     "n": 5
+    },
+    "Pest": {
+     "mm": 0.0,
+     "n": 21
+    },
+    "Baranya": {
+     "mm": 0.0,
+     "n": 11
+    },
+    "Somogy": {
+     "mm": 0.0,
+     "n": 11
+    },
+    "Fejér": {
+     "mm": 0.0,
+     "n": 9
+    },
+    "Bács-Kiskun": {
+     "mm": 0.0,
+     "n": 19
+    },
+    "Veszprém": {
+     "mm": 0.0,
+     "n": 10
+    },
+    "Budapest": {
+     "mm": 0.0,
+     "n": 6
+    },
     "Tolna": {
      "mm": 0.0,
      "n": 9
+    },
+    "Heves": {
+     "mm": 0.0,
+     "n": 11
+    },
+    "Nógrád": {
+     "mm": 0.0,
+     "n": 7
+    },
+    "Jász-Nagykun-Szolnok": {
+     "mm": 0.0,
+     "n": 17
+    },
+    "Borsod-Abaúj-Zemplén": {
+     "mm": 0.0,
+     "n": 25
+    },
+    "Csongrád-Csanád": {
+     "mm": 0.0,
+     "n": 13
+    },
+    "Hajdú-Bihar": {
+     "mm": 0.0,
+     "n": 17
     }
    }
   },
@@ -104,85 +104,85 @@
     "n": 247
    },
    "counties": {
-    "Békés": {
-     "mm": 122.8,
-     "n": 22
-    },
-    "Bács-Kiskun": {
-     "mm": 124.4,
-     "n": 17
-    },
-    "Jász-Nagykun-Szolnok": {
-     "mm": 104.7,
-     "n": 17
-    },
-    "Csongrád-Csanád": {
-     "mm": 130.9,
-     "n": 13
-    },
-    "Borsod-Abaúj-Zemplén": {
-     "mm": 129.7,
-     "n": 21
-    },
-    "Heves": {
-     "mm": 109.0,
-     "n": 10
-    },
-    "Hajdú-Bihar": {
-     "mm": 97.5,
-     "n": 15
-    },
-    "Nógrád": {
-     "mm": 136.5,
-     "n": 7
-    },
     "Szabolcs-Szatmár-Bereg": {
      "mm": 138.9,
      "n": 18
     },
-    "Somogy": {
-     "mm": 188.9,
-     "n": 11
+    "Békés": {
+     "mm": 122.8,
+     "n": 22
+    },
+    "Győr-Moson-Sopron": {
+     "mm": 158.7,
+     "n": 17
     },
     "Zala": {
      "mm": 250.6,
      "n": 9
     },
-    "Veszprém": {
-     "mm": 145.0,
-     "n": 9
-    },
-    "Pest": {
-     "mm": 98.4,
-     "n": 18
-    },
-    "Fejér": {
-     "mm": 108.8,
+    "Vas": {
+     "mm": 213.6,
      "n": 8
     },
     "Komárom-Esztergom": {
      "mm": 135.7,
      "n": 3
     },
-    "Budapest": {
-     "mm": 96.9,
-     "n": 6
+    "Pest": {
+     "mm": 98.4,
+     "n": 18
     },
     "Baranya": {
      "mm": 203.5,
      "n": 11
     },
-    "Vas": {
-     "mm": 213.6,
+    "Somogy": {
+     "mm": 188.9,
+     "n": 11
+    },
+    "Fejér": {
+     "mm": 108.8,
      "n": 8
     },
-    "Győr-Moson-Sopron": {
-     "mm": 158.7,
+    "Bács-Kiskun": {
+     "mm": 124.4,
      "n": 17
+    },
+    "Veszprém": {
+     "mm": 145.0,
+     "n": 9
+    },
+    "Budapest": {
+     "mm": 96.9,
+     "n": 6
     },
     "Tolna": {
      "mm": 141.7,
      "n": 7
+    },
+    "Heves": {
+     "mm": 109.0,
+     "n": 10
+    },
+    "Nógrád": {
+     "mm": 136.5,
+     "n": 7
+    },
+    "Jász-Nagykun-Szolnok": {
+     "mm": 104.7,
+     "n": 17
+    },
+    "Borsod-Abaúj-Zemplén": {
+     "mm": 129.7,
+     "n": 21
+    },
+    "Csongrád-Csanád": {
+     "mm": 130.9,
+     "n": 13
+    },
+    "Hajdú-Bihar": {
+     "mm": 97.5,
+     "n": 15
     }
    }
   }
