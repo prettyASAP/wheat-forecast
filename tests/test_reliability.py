@@ -693,6 +693,29 @@ def test_observed_cutoff_excludes_forecast_days():
     assert observed_cutoff(today, _d(2026, 6, 30), None) == _d(2026, 6, 30)  # lezárt szezon
 
 
+def test_station_window_requires_complete_series_and_min_stations():
+    from datetime import date as _d, timedelta as _td
+    from src.fetch_hungaromet import window_sums
+    s, e = _d(2026, 10, 1), _d(2026, 10, 3)
+    days = [s + _td(days=i) for i in range(3)]
+    series = {1: {d: 1.0 for d in days}, 2: {d: 3.0 for d in days},          # Békés, teljes
+              3: {days[0]: 5.0, days[1]: -999.0, days[2]: 5.0},              # Békés, hiányos
+              4: {d: 2.0 for d in days}}                                     # Fejér, egyetlen
+    county = {1: "Békés", 2: "Békés", 3: "Békés", 4: "Fejér"}
+    w = window_sums(series, s, e, county)
+    assert w["counties"] == {"Békés": {"mm": 6.0, "n": 2}}   # a hiányos kimarad, Fejér <2 állomás
+    assert w["national"] == {"mm": 6.0, "n": 3} and w["days"] == 3   # (3 + 9 + 6) / 3
+
+
+def test_station_window_must_match_the_displayed_period():
+    from datetime import date as _d
+    from src.predict_live import station_window
+    st = {"windows": {"2026-10-01": {"from": "2026-10-01", "to": "2026-10-07"}}}
+    assert station_window(st, _d(2026, 10, 1), _d(2026, 10, 7))["to"] == "2026-10-07"
+    assert station_window(st, _d(2026, 10, 1), _d(2026, 10, 6)) is None   # eltérő időszak: nem közöljük
+    assert station_window(None, _d(2026, 10, 1), _d(2026, 10, 7)) is None
+
+
 def test_sowing_page_first_day_has_no_numbers_and_no_crash():
     """A szezon első napján nincs eltelt nap: nem írunk ki csapadékot (előrejelzést
     sem), a lap gondolatjelet mutat és nem áll le."""
@@ -752,34 +775,3 @@ def test_last_week_of_season_is_not_called_closed():
     html = report_html.build_html(fcs, "2026-09-25", "2026. 09. 25.")
     assert "Mindhárom termény szezonja lezárult" not in html
     assert "5 nap van hátra, az előrejelzés lefedi" in html
-
-
-def test_hungaromet_values_are_published_unchanged_and_zero_is_a_value():
-    """A felhasználási feltétel szerint az adatot változtatás nélkül közöljük: nincs
-    átlag, nincs összeg; a -999 adathiány (null), a 0,0 mm valódi mért érték."""
-    from src.fetch_hungaromet import published, pick_station
-    from datetime import date as _d, timedelta as _td
-    assert published(0.0) == 0.0 and published(2.3) == 2.3
-    assert published(-999.0) is None and published(None) is None
-    assert published(float("nan")) is None          # üres mező: érvényes JSON maradjon
-    last = _d(2026, 10, 7)
-    full = {last - _td(days=i): 0.0 for i in range(7)}
-    gap = dict(full); gap[last] = -999.0
-    cands = [{"km": 2.0, "series": gap}, {"km": 9.0, "series": full}]
-    assert pick_station(cands, last)["km"] == 9.0      # a közelebbi hiányos: a következő hiánytalan
-
-
-def test_daily_check_shows_only_elapsed_days_and_unchanged_station_values():
-    from datetime import date as _d, timedelta as _td
-    from src.predict_live import daily_check
-    days = [_d(2026, 10, 1) + _td(days=i) for i in range(9)]
-    sd = pd.DataFrame({"nuts_id": "HU332", "date": days, "precipitation_sum": [0.0] * 7 + [4.2, 9.9]})
-    st = {"source": "Adatbázis: Meteorológiai Adattár, HungaroMet Nonprofit Zrt.", "day_definition": "x",
-          "stations": [{"county": "Békés", "name": "Békéscsaba repülőtér", "number": 1, "distance_km": 10.6,
-                        "rau": {d.isoformat(): (1.4 if i == 6 else 0.0) for i, d in enumerate(days)}}]}
-    dc = daily_check(st, sd, {"Békés": "HU332"}, _d(2026, 10, 1), _d(2026, 10, 7))
-    assert dc["days"][0] == "2026-10-01" and dc["days"][-1] == "2026-10-07"   # az előrejelzett 8–9. nap nincs benne
-    row = dc["rows"][0]
-    assert row["model_mm"] == [0.0] * 7
-    assert row["station_mm"] == [0.0] * 6 + [1.4]                              # változatlan napi értékek
-    assert daily_check(st, sd, {"Békés": "HU332"}, _d(2026, 10, 1), _d(2026, 9, 30)) is None   # szezon első napja

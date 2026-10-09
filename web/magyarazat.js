@@ -93,7 +93,8 @@ const GLOSSARY = {
       "időjárásból számolt hozam hamis pontosságot sugallna: a modell ilyenkor " +
       "gyakorlatilag a sokéves trendet adná vissza. Ezért ebben az időszakban nem " +
       "közlünk hozamszámot. A kiindulás a sokéves szint, a tartomány a 2000 óta mért " +
-      "évek szélső kimenetei (melyik év hozta a leggyengébb és a legerősebb termést, " +
+      "évek időjárásával számolt modell-kimenetek két széle (melyik év időjárása adná " +
+      "a leggyengébb és a legerősebb termést, " +
       "ha innen indulva annak az évnek az időjárása következett). Emellett a vetés " +
       "körülményeit mutatjuk: csapadék, vízmérleg és hőösszeg a vetés óta, a sokéves " +
       "azonos időszak átlagához mérve. Hozambecslést a tavaszi fejlődés (bokrosodás, " +
@@ -166,9 +167,9 @@ const GLOSSARY = {
     text: "A kiírt mutatók (csapadék, vízmérleg, hőösszeg, hőstressz) csak a szezon " +
       "eltelt napjaiból számolódnak, tegnapig. A becslés ezen felül a következő 7 nap " +
       "előrejelzését is felhasználja, a szezon hátralévő részét pedig a korábbi évek " +
-      "időjárása képviseli; ez a „még változhat” rész. A napi jelentés a fókuszmegyékre " +
-      "a modell napi csapadékát a legközelebbi HungaroMet automata állomás közölt napi " +
-      "értéke mellé teszi, változtatás nélkül.",
+      "időjárása képviseli; ez a „még változhat” rész. A modellből számolt csapadék " +
+      "mellett, ahol elérhető, a HungaroMet automata állomásainak mért átlaga is " +
+      "szerepel, ugyanarra a napokra (Adatbázis: Meteorológiai Adattár, HungaroMet Nonprofit Zrt. átlagolva az egyes értékekre).",
   },
 
   frissites: {

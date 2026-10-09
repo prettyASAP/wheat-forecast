@@ -261,10 +261,11 @@ function renderHeadline(fc) {
   if (fc.season_phase === "sowing") {
     const sw = n.sowing || {};
     const an = (sc && sc.analogs) || null;
-    const rng = an ? ` A 2000 óta mért évek szélső kimenetei innen indulva
-      <b>${hu(an.worst[0].t_ha)}</b> (${an.worst[0].year}) és <b>${hu(an.best[0].t_ha)}</b>
-      (${an.best[0].year}) t/ha.` : "";
-    const stTxt = "";  // HungaroMet-adatból átlagot nem közlünk (felhasználási feltétel)
+    const rng = an ? ` A modell szerint, ha a 2000 óta mért évek időjárása követné: legrosszabb
+      esetben <b>${hu(an.worst[0].t_ha)}</b> (${an.worst[0].year}), legjobb esetben
+      <b>${hu(an.best[0].t_ha)}</b> (${an.best[0].year}) t/ha.` : "";
+    const st = n.stations;
+    const stTxt = st && st.n ? ` A HungaroMet ${st.n} állomásának átlaga ugyanerre a napokra ${hu(st.mm, 0)} mm (${esc(st.source)}).` : "";
     // régi pillanatkép (nincs weather_observed_until): ott a vetési összeg még az
     // előrejelzett napokat is tartalmazza, ezért nem írjuk ki tényként
     const rain = !fc.weather_observed_until ? ""
