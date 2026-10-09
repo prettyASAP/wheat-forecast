@@ -263,7 +263,8 @@ def crop_card(fc: dict) -> str:
     tag = ('<span class="tag tag-accent">Még változhat</span>' if live
            else '<span class="tag tag-outline">Végleges közeli</span>')
     status = (f"{days_left(fc)} nap van hátra" if live
-              else "a szezon lezárult")
+              else (f"{days_left(fc)} nap van hátra, az előrejelzés lefedi" if days_left(fc) > 0
+                    else "a szezon lezárult"))
     a = n["anomaly_pct"]
     a_col = RUST if a < -0.05 else GREEN if a > 0.05 else "var(--color-text)"
     lo, hi = n.get("pred_low_t_ha"), n.get("pred_high_t_ha")
@@ -801,11 +802,13 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
     shown = {k: closed_by[k] if k in closed_by else fcs[k] for k in config.REPORT_CROPS
              if k in closed_by or (k in fcs and phase(fcs[k]) == "running")}  # 2. oldal
     if closed and running:
-        season_note = (f"Lezárult szezon: {_names(closed)}. Még változhat: {_names(running)}.")
+        season_note = (f"Végleges közeli: {_names(closed)}. Még változhat: {_names(running)}.")
     elif running:
         season_note = "Mindhárom termény szezonja tart, a becslések még változhatnak."
     else:
-        season_note = "Mindhárom termény szezonja lezárult."
+        season_note = ("Mindhárom termény szezonja lezárult."
+                       if all(days_left(f) == 0 for f in fcs.values())
+                       else "Mindhárom termény becslése végleges közeli.")
     banner_price = next((price_phrase(v, cap=True) for v in vals if v),
                         "A legutolsó hivatalos termelői áron")
     y, m, d = today.split("-")

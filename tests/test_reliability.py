@@ -762,3 +762,16 @@ def test_running_page_tolerates_missing_weather_values():
     fcs["corn"] = corn
     html = report_html.build_html(fcs, "2027-07-01", "2027. 07. 01.")
     assert "None" not in html and "–" in html
+
+
+def test_last_week_of_season_is_not_called_closed():
+    """A szezon utolsó hetében már nincs forgatókönyv (az előrejelzés a végéig ér),
+    de még vannak hátralévő napok: a jelentés nem mondhatja, hogy lezárult."""
+    import copy
+    from src import report_html
+    fcs = {c: copy.deepcopy(report_html.load_fc(c)) for c in config.REPORT_CROPS}
+    for k, f in fcs.items():
+        f.update(scenarios=None, season_phase="final", days_to_season_end=5 if k == "corn" else 0)
+    html = report_html.build_html(fcs, "2026-09-25", "2026. 09. 25.")
+    assert "Mindhárom termény szezonja lezárult" not in html
+    assert "5 nap van hátra, az előrejelzés lefedi" in html
