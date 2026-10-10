@@ -1,7 +1,7 @@
 {
  "crop": "kukorica",
  "crop_year": 2026,
- "updated_at": "2026-10-09",
+ "updated_at": "2026-10-10",
  "weather_known_until": "2026-09-30",
  "weather_observed_until": "2026-09-30",
  "days_to_season_end": 0,
@@ -39,7 +39,7 @@
    "production_kt": 2013.2,
    "area_kha": 599.2,
    "source": "Európai Bizottság (DG AGRI)",
-   "as_of": "2026-10-09"
+   "as_of": "2026-10-10"
   },
   "drivers": {
    "groups": [
