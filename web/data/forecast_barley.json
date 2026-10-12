@@ -4,6 +4,7 @@
  "updated_at": "2026-10-12",
  "weather_known_until": "2026-10-18",
  "weather_observed_until": "2026-10-11",
+ "season_start": "2026-10-01",
  "days_to_season_end": 261,
  "unit": "t/ha",
  "band": "80%",
@@ -23,15 +24,15 @@
   "weights": "2025. évi vármegyei betakarított területek, Budapest nélkül",
   "model_error_pct": 7.0,
   "value": {
-   "price_huf_per_t": 66390,
+   "price_huf_per_t": 66460,
    "price_year": 2026,
    "price_phrase": "2026. októberi termelői áron",
    "area_ha": 270344,
    "area_year": 2025,
    "production_mt": 1.6,
-   "production_value_bn_huf": 106.1,
+   "production_value_bn_huf": 106.3,
    "trend_gap_bn_huf": -4.0,
-   "note": "ár: takarmányárpa termelői ára, 4 jegyzett hét átlaga (2026-09-07 – 2026-10-04), 181.99 EUR/t × 364.82 Ft/EUR (MNB hivatalos középárfolyam, 2026-10-09); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
+   "note": "ár: takarmányárpa termelői ára, 4 jegyzett hét átlaga (2026-09-07 – 2026-10-04), 181.99 EUR/t × 365.21 Ft/EUR (MNB hivatalos középárfolyam, 2026-10-12); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
   },
   "stations": {
    "mm": 20.1,
@@ -58,7 +59,7 @@
      "key": "water",
      "label": "Vízellátás (csapadék, vízmérleg)",
      "short": "Vízellátás",
-     "t_ha": -0.038,
+     "t_ha": -0.039,
      "pct": -0.6
     },
     {
@@ -114,13 +115,13 @@
     "p90": 7.05
    },
    "HU212": {
-    "p10": 5.47,
+    "p10": 5.46,
     "p50": 5.94,
-    "p90": 6.42
+    "p90": 6.41
    },
    "HU213": {
-    "p10": 5.15,
-    "p50": 5.57,
+    "p10": 5.14,
+    "p50": 5.56,
     "p90": 6.03
    },
    "HU221": {
@@ -130,7 +131,7 @@
    },
    "HU222": {
     "p10": 5.6,
-    "p50": 5.94,
+    "p50": 5.93,
     "p90": 6.44
    },
    "HU223": {
@@ -145,7 +146,7 @@
    },
    "HU232": {
     "p10": 5.79,
-    "p50": 6.13,
+    "p50": 6.14,
     "p90": 6.75
    },
    "HU233": {
@@ -179,7 +180,7 @@
     "p90": 6.07
    },
    "HU323": {
-    "p10": 4.53,
+    "p10": 4.54,
     "p50": 5.25,
     "p90": 5.67
    },
@@ -294,8 +295,8 @@
    "nuts_id": "HU212",
    "county_name": "Komárom-Esztergom",
    "predicted_yield_t_ha": 5.9,
-   "anomaly_pct": -4.7,
-   "low": 5.03,
+   "anomaly_pct": -4.8,
+   "low": 5.02,
    "high": 6.69,
    "weather_todate": {
     "prec_total_mm": 14.5,
@@ -315,7 +316,7 @@
    "county_name": "Veszprém",
    "predicted_yield_t_ha": 5.53,
    "anomaly_pct": -4.3,
-   "low": 4.7,
+   "low": 4.69,
    "high": 6.28,
    "weather_todate": {
     "prec_total_mm": 24.1,
@@ -334,7 +335,7 @@
    "nuts_id": "HU221",
    "county_name": "Győr-Moson-Sopron",
    "predicted_yield_t_ha": 5.94,
-   "anomaly_pct": -5.3,
+   "anomaly_pct": -5.4,
    "low": 5.11,
    "high": 6.69,
    "weather_todate": {
@@ -355,7 +356,7 @@
    "county_name": "Vas",
    "predicted_yield_t_ha": 5.94,
    "anomaly_pct": -5.0,
-   "low": 5.13,
+   "low": 5.12,
    "high": 6.68,
    "weather_todate": {
     "prec_total_mm": 13.3,
@@ -374,7 +375,7 @@
    "nuts_id": "HU223",
    "county_name": "Zala",
    "predicted_yield_t_ha": 6.21,
-   "anomaly_pct": -4.4,
+   "anomaly_pct": -4.3,
    "low": 5.31,
    "high": 7.03,
    "weather_todate": {
@@ -416,7 +417,7 @@
    "predicted_yield_t_ha": 6.2,
    "anomaly_pct": -4.8,
    "low": 5.28,
-   "high": 7.03,
+   "high": 7.04,
    "weather_todate": {
     "prec_total_mm": 15.8,
     "wb_total_mm": -12.8,
@@ -474,7 +475,7 @@
    "nuts_id": "HU312",
    "county_name": "Heves",
    "predicted_yield_t_ha": 5.71,
-   "anomaly_pct": -3.5,
+   "anomaly_pct": -3.6,
    "low": 4.7,
    "high": 6.62,
    "weather_todate": {
@@ -487,7 +488,7 @@
     "station_n": 11,
     "station_model_mm": 29.2
    },
-   "value_bn_huf": 2.7,
+   "value_bn_huf": 2.8,
    "trend_gap_bn_huf": -0.1
   },
   {
@@ -534,7 +535,7 @@
    "nuts_id": "HU322",
    "county_name": "Jász-Nagykun-Szolnok",
    "predicted_yield_t_ha": 5.57,
-   "anomaly_pct": -4.3,
+   "anomaly_pct": -4.2,
    "low": 4.53,
    "high": 6.5,
    "weather_todate": {

@@ -4,6 +4,7 @@
  "updated_at": "2026-10-12",
  "weather_known_until": "2026-09-30",
  "weather_observed_until": "2026-09-30",
+ "season_start": "2026-04-01",
  "days_to_season_end": 0,
  "unit": "t/ha",
  "band": "80%",
@@ -23,15 +24,15 @@
   "weights": "2025. évi vármegyei betakarított területek, Budapest nélkül",
   "model_error_pct": 12.6,
   "value": {
-   "price_huf_per_t": 189650,
+   "price_huf_per_t": 189850,
    "price_year": 2026,
    "price_phrase": "2026. októberi termelői áron",
    "area_ha": 710765,
    "area_year": 2025,
    "production_mt": 2.06,
-   "production_value_bn_huf": 391.5,
+   "production_value_bn_huf": 391.9,
    "trend_gap_bn_huf": 1.5,
-   "note": "ár: hagyományos napraforgómag termelői ára, 4 jegyzett hét átlaga (2026-09-07 – 2026-10-04), 519.84 EUR/t × 364.82 Ft/EUR (MNB hivatalos középárfolyam, 2026-10-09); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
+   "note": "ár: hagyományos napraforgómag termelői ára, 4 jegyzett hét átlaga (2026-09-07 – 2026-10-04), 519.84 EUR/t × 365.21 Ft/EUR (MNB hivatalos középárfolyam, 2026-10-12); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
   },
   "official_estimate": {
    "year": 2026,
@@ -125,7 +126,7 @@
     "frost_days_winter": null,
     "gdd_total": 3280.0
    },
-   "value_bn_huf": 5.2,
+   "value_bn_huf": 5.3,
    "trend_gap_bn_huf": 0.0
   },
   {
@@ -227,7 +228,7 @@
     "frost_days_winter": null,
     "gdd_total": 3528.0
    },
-   "value_bn_huf": 27.4,
+   "value_bn_huf": 27.5,
    "trend_gap_bn_huf": 0.0
   },
   {
@@ -363,7 +364,7 @@
     "frost_days_winter": null,
     "gdd_total": 3787.0
    },
-   "value_bn_huf": 54.8,
+   "value_bn_huf": 54.9,
    "trend_gap_bn_huf": 0.0
   },
   {
@@ -380,7 +381,7 @@
     "frost_days_winter": null,
     "gdd_total": 3653.0
    },
-   "value_bn_huf": 18.9,
+   "value_bn_huf": 19.0,
    "trend_gap_bn_huf": 0.0
   }
  ]

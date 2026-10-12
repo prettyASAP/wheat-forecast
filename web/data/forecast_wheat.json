@@ -4,18 +4,19 @@
  "updated_at": "2026-10-12",
  "weather_known_until": "2026-10-18",
  "weather_observed_until": "2026-10-11",
+ "season_start": "2026-10-01",
  "days_to_season_end": 261,
  "unit": "t/ha",
  "band": "80%",
  "method": "weather",
  "season_phase": "sowing",
  "national": {
-  "predicted_yield_t_ha": 5.64,
+  "predicted_yield_t_ha": 5.63,
   "pred_low_t_ha": 5.08,
-  "pred_high_t_ha": 6.2,
+  "pred_high_t_ha": 6.19,
   "anomaly_pct": -3.5,
   "trend_t_ha": 5.84,
-  "yoy_pct": 28.8,
+  "yoy_pct": 28.5,
   "prev_year": 2026,
   "prev_year_yield_t_ha": 4.38,
   "rank_from_worst": 9,
@@ -23,15 +24,15 @@
   "weights": "2025. évi vármegyei betakarított területek, Budapest nélkül",
   "model_error_pct": 7.6,
   "value": {
-   "price_huf_per_t": 73220,
+   "price_huf_per_t": 73300,
    "price_year": 2026,
    "price_phrase": "2026. októberi termelői áron",
    "area_ha": 1046156,
    "area_year": 2025,
    "production_mt": 5.9,
-   "production_value_bn_huf": 431.8,
-   "trend_gap_bn_huf": -15.4,
-   "note": "ár: étkezési és takarmánybúza termelői árainak átlaga, 4 jegyzett hét átlaga (2026-09-07 – 2026-10-04), 200.69 EUR/t × 364.82 Ft/EUR (MNB hivatalos középárfolyam, 2026-10-09); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
+   "production_value_bn_huf": 432.1,
+   "trend_gap_bn_huf": -15.6,
+   "note": "ár: étkezési és takarmánybúza termelői árainak átlaga, 4 jegyzett hét átlaga (2026-09-07 – 2026-10-04), 200.69 EUR/t × 365.21 Ft/EUR (MNB hivatalos középárfolyam, 2026-10-12); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
   },
   "stations": {
    "mm": 20.1,
@@ -58,7 +59,7 @@
      "key": "water",
      "label": "Vízellátás (csapadék, vízmérleg)",
      "short": "Vízellátás",
-     "t_ha": -0.052,
+     "t_ha": -0.053,
      "pct": -0.9
     },
     {
@@ -83,8 +84,8 @@
      "pct": 0.0
     }
    ],
-   "weather_total_pct": -1.0,
-   "baseline_shift_pct": -2.5,
+   "weather_total_pct": -1.1,
+   "baseline_shift_pct": -2.4,
    "note": "a modell időjárási tagjainak pontos bontása a szokásos szint százalékában; az 'alapszint' a modell és a naiv trend alapszintjének különbsége"
   },
   "envelope": [],
@@ -114,12 +115,12 @@
     "p90": 6.62
    },
    "HU212": {
-    "p10": 5.2,
-    "p50": 5.69,
+    "p10": 5.19,
+    "p50": 5.68,
     "p90": 6.08
    },
    "HU213": {
-    "p10": 4.77,
+    "p10": 4.76,
     "p50": 5.21,
     "p90": 5.61
    },
@@ -129,7 +130,7 @@
     "p90": 6.05
    },
    "HU222": {
-    "p10": 5.47,
+    "p10": 5.46,
     "p50": 5.88,
     "p90": 6.37
    },
@@ -150,16 +151,16 @@
    },
    "HU233": {
     "p10": 5.93,
-    "p50": 6.57,
+    "p50": 6.56,
     "p90": 6.98
    },
    "HU311": {
     "p10": 4.77,
     "p50": 5.57,
-    "p90": 6.1
+    "p90": 6.09
    },
    "HU312": {
-    "p10": 4.52,
+    "p10": 4.51,
     "p50": 5.32,
     "p90": 5.74
    },
@@ -174,13 +175,13 @@
     "p90": 6.24
    },
    "HU322": {
-    "p10": 4.35,
+    "p10": 4.34,
     "p50": 5.14,
     "p90": 5.54
    },
    "HU323": {
-    "p10": 4.59,
-    "p50": 5.5,
+    "p10": 4.58,
+    "p50": 5.49,
     "p90": 5.86
    },
    "HU331": {
@@ -203,7 +204,7 @@
    "worst": [
     {
      "year": 2003,
-     "t_ha": 4.26
+     "t_ha": 4.25
     },
     {
      "year": 2012,
@@ -221,7 +222,7 @@
     },
     {
      "year": 2004,
-     "t_ha": 6.25
+     "t_ha": 6.24
     },
     {
      "year": 2001,
@@ -275,7 +276,7 @@
    "county_name": "Fejér",
    "predicted_yield_t_ha": 6.15,
    "anomaly_pct": -2.9,
-   "low": 5.22,
+   "low": 5.21,
    "high": 7.08,
    "weather_todate": {
     "prec_total_mm": 35.7,
@@ -288,14 +289,14 @@
     "station_model_mm": 35.7
    },
    "value_bn_huf": 31.8,
-   "trend_gap_bn_huf": -0.9
+   "trend_gap_bn_huf": -1.0
   },
   {
    "nuts_id": "HU212",
    "county_name": "Komárom-Esztergom",
-   "predicted_yield_t_ha": 5.65,
-   "anomaly_pct": -4.7,
-   "low": 4.74,
+   "predicted_yield_t_ha": 5.64,
+   "anomaly_pct": -4.8,
+   "low": 4.73,
    "high": 6.55,
    "weather_todate": {
     "prec_total_mm": 14.5,
@@ -315,7 +316,7 @@
    "county_name": "Veszprém",
    "predicted_yield_t_ha": 5.17,
    "anomaly_pct": -4.6,
-   "low": 4.34,
+   "low": 4.33,
    "high": 6.01,
    "weather_todate": {
     "prec_total_mm": 24.1,
@@ -347,7 +348,7 @@
     "station_n": 19,
     "station_model_mm": 5.5
    },
-   "value_bn_huf": 26.3,
+   "value_bn_huf": 26.4,
    "trend_gap_bn_huf": -1.5
   },
   {
@@ -356,7 +357,7 @@
    "predicted_yield_t_ha": 5.86,
    "anomaly_pct": -4.8,
    "low": 5.0,
-   "high": 6.72,
+   "high": 6.71,
    "weather_todate": {
     "prec_total_mm": 13.3,
     "wb_total_mm": -14.8,
@@ -447,7 +448,7 @@
     "station_n": 9,
     "station_model_mm": 32.8
    },
-   "value_bn_huf": 25.7,
+   "value_bn_huf": 25.8,
    "trend_gap_bn_huf": -0.8
   },
   {
@@ -473,7 +474,7 @@
   {
    "nuts_id": "HU312",
    "county_name": "Heves",
-   "predicted_yield_t_ha": 5.21,
+   "predicted_yield_t_ha": 5.2,
    "anomaly_pct": -3.6,
    "low": 4.19,
    "high": 6.22,
@@ -494,9 +495,9 @@
    "nuts_id": "HU313",
    "county_name": "Nógrád",
    "predicted_yield_t_ha": 5.0,
-   "anomaly_pct": -4.6,
-   "low": 4.04,
-   "high": 5.97,
+   "anomaly_pct": -4.7,
+   "low": 4.03,
+   "high": 5.96,
    "weather_todate": {
     "prec_total_mm": 21.5,
     "wb_total_mm": -7.4,
@@ -513,9 +514,9 @@
   {
    "nuts_id": "HU321",
    "county_name": "Hajdú-Bihar",
-   "predicted_yield_t_ha": 5.72,
+   "predicted_yield_t_ha": 5.71,
    "anomaly_pct": -5.1,
-   "low": 4.66,
+   "low": 4.65,
    "high": 6.77,
    "weather_todate": {
     "prec_total_mm": 9.1,
@@ -535,7 +536,7 @@
    "county_name": "Jász-Nagykun-Szolnok",
    "predicted_yield_t_ha": 5.04,
    "anomaly_pct": -4.4,
-   "low": 4.03,
+   "low": 4.02,
    "high": 6.06,
    "weather_todate": {
     "prec_total_mm": 25.6,
@@ -553,9 +554,9 @@
   {
    "nuts_id": "HU323",
    "county_name": "Szabolcs-Szatmár-Bereg",
-   "predicted_yield_t_ha": 5.32,
-   "anomaly_pct": -5.0,
-   "low": 4.34,
+   "predicted_yield_t_ha": 5.31,
+   "anomaly_pct": -5.2,
+   "low": 4.33,
    "high": 6.29,
    "weather_todate": {
     "prec_total_mm": 12.7,
@@ -607,7 +608,7 @@
     "station_n": 22,
     "station_model_mm": 2.9
    },
-   "value_bn_huf": 48.2,
+   "value_bn_huf": 48.3,
    "trend_gap_bn_huf": -2.8
   },
   {

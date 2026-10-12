@@ -4,6 +4,7 @@
  "updated_at": "2026-10-12",
  "weather_known_until": "2026-10-18",
  "weather_observed_until": "2026-10-11",
+ "season_start": "2026-09-01",
  "days_to_season_end": 261,
  "unit": "t/ha",
  "band": "80%",
@@ -23,15 +24,15 @@
   "weights": "2025. évi vármegyei betakarított területek, Budapest nélkül",
   "model_error_pct": 12.7,
   "value": {
-   "price_huf_per_t": 197810,
+   "price_huf_per_t": 198020,
    "price_year": 2026,
    "price_phrase": "2026. októberi termelői áron",
    "area_ha": 143148,
    "area_year": 2025,
    "production_mt": 0.47,
-   "production_value_bn_huf": 93.6,
+   "production_value_bn_huf": 93.7,
    "trend_gap_bn_huf": -1.2,
-   "note": "ár: repcemag termelői ára, 4 jegyzett hét átlaga (2026-09-07 – 2026-10-04), 542.21 EUR/t × 364.82 Ft/EUR (MNB hivatalos középárfolyam, 2026-10-09); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
+   "note": "ár: repcemag termelői ára, 4 jegyzett hét átlaga (2026-09-07 – 2026-10-04), 542.21 EUR/t × 365.21 Ft/EUR (MNB hivatalos középárfolyam, 2026-10-12); terület: a 2025. évi betakarított terület (az idei hivatalos adat még nem ismert)"
   }
  },
  "scenarios": null,
