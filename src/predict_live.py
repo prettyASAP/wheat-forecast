@@ -614,6 +614,7 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
         "updated_at": today.isoformat(),
         "weather_known_until": str(known_until),
         "weather_observed_until": str(observed_until),
+        "season_start": start.isoformat(),  # a kiírt időszak kezdőnapja (megjelenítéshez)
         "days_to_season_end": max((end - today).days, 0),
         "unit": "t/ha",
         "band": "80%",

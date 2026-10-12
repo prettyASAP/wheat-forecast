@@ -344,9 +344,11 @@ def test_report_html_has_three_pages_and_all_crops():
     if any(fc.get("season_phase") == "running" for fc in fcs.values()):
         assert "Terményben és forintban" in html
     elif any(fc.get("season_phase") == "sowing" for fc in fcs.values()):
-        assert "A termésév eleje" in html
-        # a rögzített kezdőnap nem a tényleges vetés: nem nevezzük annak
-        assert "vetés óta" not in html.lower() and "vetési időszak" not in html.lower()
+        assert "évi termés" in html and (" között " in html or "Még nincs hozamszám" in html)
+        # a rögzített kezdőnapot sem vetésnek, sem termésév-kezdetnek nem nevezzük
+        low = html.lower()
+        assert "vetés óta" not in low and "vetési időszak" not in low
+        assert "termésév kezdete" not in low and "termésév eleje" not in low
 
 
 # --------------------------------------------------------------------------- #
@@ -673,10 +675,10 @@ def test_autumn_layout_uses_previous_year_finals_and_no_yield_for_sowing():
     html = report_html.build_html(fcs, "2026-10-06", "2026. 10. 06.", final_prev=prev)
     text = _re.sub(r"<[^>]+>", " ", html)
     assert html.count('<section class="page">') == 3
-    assert "évi betakarítás · lezárt szezonok" in text and "a termésév eleje" in text
-    assert ("indul az új termésév" in text or "Megkezdődött az új termésév" in text)
+    assert "évi betakarítás · lezárt szezonok" in text and "évi termés · még nincs hozamszám" in text
+    assert (" között " in text or "Még nincs hozamszám" in text)
     # a vetési kártyán nincs "a szokásoshoz" eltérés és nincs forint-kiesés
-    sow_part = html.split("évi termésév ·")[1].split("További termények")[0]
+    sow_part = html.split("évi termés · még nincs hozamszám")[1].split("További termények")[0]
     assert "a szokásoshoz" not in sow_part and "mrd Ft" not in sow_part
 
 
@@ -734,7 +736,7 @@ def test_sowing_page_first_day_has_no_numbers_and_no_crash():
         fcs[k] = f
     html = report_html.build_html(fcs, "2026-10-01", "2026. 10. 01.")
     text = _re.sub(r"<[^>]+>", " ", html)
-    assert "Megkezdődött az új termésév" in text and "nem esett" not in text
+    assert "Még nincs hozamszám" in text and "nem esett" not in text
     assert "None" not in text
 
 
@@ -780,8 +782,8 @@ def test_last_week_of_season_is_not_called_closed():
 
 
 def test_sowing_page_first_days_without_stats_names_fixed_start():
-    """A termésév első napjaiban (még nincs national.sowing) a lábjegyzet a
-    rögzített kezdőnapot a configból írja, nem üres zárójelet."""
+    """Az első napokban (még nincs national.sowing) a kezdőnapot a configból
+    írja ("október 1. óta"), nem üres szöveget."""
     import copy
     from src import report_html
     fcs = {c: report_html.load_fc(c) for c in config.REPORT_CROPS}
@@ -794,8 +796,7 @@ def test_sowing_page_first_days_without_stats_names_fixed_start():
             for k in ("prec_total_mm", "wb_total_mm", "gdd_total"):
                 c["weather_todate"][k] = None
     html = report_html.sowing_page(sow, 3, 4, lambda *a, **k: "", "")
-    assert "rögzített ()" not in html
-    assert "rögzített (okt. 1.)" in html or "rögzített (ápr. 1.)" in html
+    assert "Még nincs hozamszám" in html and "None" not in html and "– óta" not in html
 
 
 # --------------------------------------------------------------------------- #
@@ -918,3 +919,17 @@ def test_window_sums_adds_model_on_same_station_sample():
     # országos modellérték: állomásonként a saját megye modellértéke (4, 4, 1)
     assert w["model"]["national"] == 3.0 and w["model"]["counties"] == {"Békés": 4.0}
     assert "model" not in window_sums(s, date(2026, 10, 1), date(2026, 10, 2), county)
+
+
+def test_period_single_day_and_range():
+    from src.report_html import _period_hu
+    assert _period_hu("2026-10-01 – 2026-10-01") == "okt. 1."
+    assert _period_hu("2026-10-01 – 2026-10-11") == "okt. 1–11."
+    assert _period_hu("2026-10-28 – 2026-11-03") == "okt. 28. – nov. 3."
+
+
+def test_between_wording_single_day():
+    from src.report_html import _between
+    assert _between("okt. 1–10.") == "Okt. 1–10. között"
+    assert _between("okt. 1.") == "Okt. 1. napján"
+    assert _between("okt. 28. – nov. 3.") == "Okt. 28. – nov. 3. között"

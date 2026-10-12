@@ -9,7 +9,7 @@
     { key: "high", label: "Legfeljebb (t/ha)", numeric: true, decimals: 2, tip: "80%-os valószínűségi sáv teteje", explain: "tartomany" },
     { key: "station_prec_mm", label: "Mért csapadék (mm)", numeric: true, decimals: 1, tip: "a HungaroMet állomásainak átlaga a vármegyében", explain: "csapadek" },
     { key: "heat_days", label: "Hőstressznapok", numeric: true, decimals: 0, explain: "hostressz" },
-    { key: "gdd_total", label: "Hőösszeg", numeric: true, decimals: 0, tip: "a szezon kezdete óta felgyűlt meleg (fok x nap, GDD)", explain: "hoosszeg" }
+    { key: "gdd_total", label: "Hőösszeg", numeric: true, decimals: 0, tip: "a fejlécben jelzett időszakban felgyűlt meleg (°C·nap, GDD)", explain: "hoosszeg" }
   ];
 
   var state = {
@@ -261,6 +261,21 @@
     }
   }
 
+  // az állomási időablak helyi időben (a HungaroMet napja 06 UTC-től másnap 06 UTC-ig)
+  var MON = ["", "jan.", "febr.", "márc.", "ápr.", "máj.", "jún.", "júl.", "aug.", "szept.", "okt.", "nov.", "dec."];
+  function md(d) { return MON[+d.slice(5, 7)] + " " + (+d.slice(8, 10)) + "."; }
+  function stationWindow(st) {
+    function f(d) {
+      var p = {};
+      new Intl.DateTimeFormat("hu-HU", { timeZone: "Europe/Budapest", month: "numeric", day: "numeric",
+        hour: "numeric", hourCycle: "h23" }).formatToParts(new Date(d + "T06:00:00Z"))
+        .forEach(function (x) { p[x.type] = x.value; });
+      return MON[+p.month] + " " + (+p.day) + ". " + (+p.hour) + ":00";
+    }
+    var to = new Date(st.to + "T00:00:00Z"); to.setUTCDate(to.getUTCDate() + 1);
+    return f(st.from) + " – " + f(to.toISOString().slice(0, 10));
+  }
+
   function load(crop) {
     state.crop = crop;
     csvBtn.disabled = true;
@@ -286,11 +301,17 @@
         var act = data.national && data.national.actual;
         meta.textContent =
           (data.crop ? data.crop + " · " : "") +
-          (data.crop_year ? "termésév: " + data.crop_year + " · " : "") +
+          (data.crop_year ? data.crop_year + ". évi termés · " : "") +
           (data.updated_at ? "frissítve: " + huDate(data.updated_at) : "") +
           (act ? " · KSH-adat (" + act.updated + ")" : "") +
+          (data.national && data.national.stations
+            ? " · mért csapadék: " + stationWindow(data.national.stations) : "") +
           (data.weather_observed_until
-            ? " · időjárás eddig: " + huDate(data.weather_observed_until)
+            // az első napon még nincs eltelt nap: nincs időszak sem
+            ? (data.season_start && data.season_start > data.weather_observed_until ? ""
+               : " · hőösszeg: " + (data.season_start
+                   ? md(data.season_start) + " – " + md(data.weather_observed_until)
+                   : huDate(data.weather_observed_until) + "-ig"))
             : (data.weather_known_until
                ? " · időjárás (mért + 7 napos előrejelzés): " + huDate(data.weather_known_until) : ""));
         csvBtn.disabled = false;

@@ -89,16 +89,14 @@ const GLOSSARY = {
       "kimondjuk.",
   },
   vetesi: {
-    title: "A termésév eleje (még nincs hozamszám)",
+    title: "Még nincs hozamszám",
     text: "Az őszi vetésű terményeknél (búza, őszi árpa) október 1-jétől február " +
       "végéig, a kukoricánál április 1-jétől május végéig a néhány napnyi vagy heti " +
       "időjárásból számolt hozam hamis pontosságot sugallna: a modell ilyenkor " +
       "gyakorlatilag a sokéves trendet adná vissza. Ezért ebben az időszakban nem " +
       "közlünk hozamszámot, modelles tartományt sem. A kiindulás a sokéves szint. Emellett az " +
       "időjárás eddigi alakulását mutatjuk: csapadék, vízmérleg és hőösszeg október 1. " +
-      "(kukoricánál április 1.) óta, a sokéves azonos időszak átlagához mérve. Ez a " +
-      "kezdőnap a számítás rögzített napja, nem a tényleges vetés: az évente és " +
-      "gazdaságonként eltér, az őszi árpát gyakran már szeptember végén vetik. " +
+      "(kukoricánál április 1.) óta, a sokéves azonos időszak átlagához mérve. " +
       "Hozambecslést az őszi vetésűeknél márciustól (bokrosodás), a kukoricánál " +
       "júniustól közlünk.",
   },
@@ -123,7 +121,7 @@ const GLOSSARY = {
   },
   csapadek: {
     title: "Mért csapadék (mm)",
-    text: "A termésév eddig lehullott csapadéka a vármegye HungaroMet automata " +
+    text: "Az eddig lehullott csapadék a vármegye HungaroMet automata " +
       "állomásainak átlagaként, reggel 8-tól (télen 7-től) számolt napokra. 1 mm = 1 liter víz " +
       "négyzetméterenként. Ahol nincs mért adat, nem közlünk számot.",
   },
@@ -154,7 +152,7 @@ const GLOSSARY = {
   },
   hoosszeg: {
     title: "Hőösszeg (GDD)",
-    text: "A napi középhőmérsékletek összege a szezon kezdete óta (fok×nap, 0 °C " +
+    text: "A napi középhőmérsékletek összege október 1-jétől (repcénél szeptember 1-jétől, kukoricánál és napraforgónál április 1-jétől) a kiírt időszak végéig (fok×nap, 0 °C " +
       "felett számolva; angolul GDD). A növény fejlődésének „üzemanyag-mérője”: " +
       "minél több gyűlik, annál előrébb tart a kalászolás/érés. Önmagában se nem jó, " +
       "se nem rossz – a többi vármegyéhez és az évszakhoz képest érdemes nézni.",
