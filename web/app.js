@@ -22,9 +22,9 @@ const LAYERS = {
              unit: "%", fixed: [-20, 20],
              // piros–kék divergens: színtévesztő-biztos (a piros–zöld nem az)
              colors: ["#b03a2e", "#e67e22", "#f5e8c8", "#7fb3d5", "#2874a6"] },
-  wb:   { note: "vízmérleg (csapadék − potenciális párolgás), termésév eddig", unit: " mm",
-          colors: ["#b03a2e", "#e8c78f", "#7fb3d5", "#2874a6"] },
-  prec: { note: "csapadékösszeg, termésév eddig", unit: " mm",
+  // megyei csapadék csak mérésből (HungaroMet állomásátlag): a modell megyénként egyetlen
+  // pontot néz, az nem megyei adat; ezért nincs megyei modellcsapadék és vízmérleg réteg
+  prec: { note: "mért csapadék (HungaroMet állomások átlaga)", unit: " mm",
           colors: ["#e8c78f", "#a9cce3", "#5499c7", "#1a5276"] },
   heat: { note: "hőstressznapok a kritikus ablakban", unit: " nap",
           colors: ["#f5e8c8", "#e67e22", "#b03a2e", "#78281f"] },
@@ -82,12 +82,33 @@ function huDate(d) { return d ? d.replace(/-/g, ". ") + "." : ""; }
 /* A mondat alanya névelővel és termésévvel: "A búza idei" / "Az őszi árpa idei" /
    "A repce 2027. évi" – ősszel az őszi vetésűek már a KÖVETKEZŐ termésévben járnak,
    ott az "idei" hamis lenne. */
+// Nincs hozamszám: a termésév elején (márciusig, kukoricánál júniusig), és a
+// trendalapú terményeknél, amíg nincs KSH-adat (a trend nem becslés: 2026-ban a
+// napraforgó trendje 2,90 t/ha volt, az EU-becslés 1,91).
+function noYield(fc) {
+  return fc.season_phase === "sowing" || (fc.method === "trend" && !(fc.national && fc.national.actual));
+}
+
 // mettől közlünk hozamszámot (a payload yield_from mezője, config.YIELD_FROM)
 const HU_MONTHS_FROM = ["", "januártól", "februártól", "márciustól", "áprilistól", "májustól",
   "júniustól", "júliustól", "augusztustól", "szeptembertől", "októbertől", "novembertől", "decembertől"];
 function yieldFromHu(fc) {
   return fc.yield_from ? HU_MONTHS_FROM[+fc.yield_from.slice(5, 7)] : "a tavaszi fejlődés ismeretében";
 }
+
+// az állomási időablak helyi időben (a HungaroMet napja 06 UTC-től másnap 06 UTC-ig)
+function stationWindowHu(st) {
+  const f = d => {
+    const t = new Date(d + "T06:00:00Z");
+    const p = Object.fromEntries(new Intl.DateTimeFormat("hu-HU", { timeZone: "Europe/Budapest",
+      month: "numeric", day: "numeric", hour: "numeric", hourCycle: "h23" })
+      .formatToParts(t).map(x => [x.type, x.value]));
+    return `${HU_MONTHS_SHORT[+p.month]} ${+p.day}. ${+p.hour}:00`;
+  };
+  const to = new Date(st.to + "T00:00:00Z"); to.setUTCDate(to.getUTCDate() + 1);
+  return `${f(st.from)} – ${f(to.toISOString().slice(0, 10))}`;
+}
+const HU_MONTHS_SHORT = ["", "jan.", "febr.", "márc.", "ápr.", "máj.", "jún.", "júl.", "aug.", "szept.", "okt.", "nov.", "dec."];
 
 function cropSubject(fc) {
   const art = /^[aáeéiíoóöőuúüű]/i.test(fc.crop) ? "Az" : "A";
@@ -122,9 +143,9 @@ function layerValues(fc) {
   const out = {};
   for (const c of fc.counties) {
     out[c.nuts_id] = {
-      anomaly: c.predicted_yield_t_ha === null ? null : c.anomaly_pct,
-      wb: c.weather_todate.wb_total_mm,
-      prec: c.weather_todate.prec_total_mm,
+      // a termésév elején nincs hozambecslés: az eltérés-réteg is üres
+      anomaly: c.predicted_yield_t_ha === null || noYield(fc) ? null : c.anomaly_pct,
+      prec: c.weather_todate.station_prec_mm ?? null,
       heat: c.weather_todate.heat_days,
       gdd: c.weather_todate.gdd_total,
     };
@@ -156,12 +177,13 @@ function paintForLayer(layer, fc) {
   let note = spec.note;
   // régi, futó szezonbeli pillanatképben az időjárási rétegek az előrejelzett
   // napokat is tartalmazzák (lezárt szezonnál nincs előrejelzés)
-  if (layer !== "anomaly" && withForecast(fc)) note += " (előrejelzéssel együtt)";
-  if (layer === "wb" && hi < 0) {
-    note += " – idén mindenhol hiány; a kék a KISEBB hiányt jelenti";
-  }
+  if (layer !== "anomaly" && layer !== "prec" && withForecast(fc)) note += " (előrejelzéssel együtt)";
+  const st = fc.national && fc.national.stations;
+  if (layer === "prec") note += st ? `, ${stationWindowHu(st)}` : " – erre az időszakra nincs mért adat";
+  if (layer === "anomaly" && fc.season_phase === "sowing") note = `a termésév elején nincs hozambecslés (${yieldFromHu(fc)} közöljük)`;
+  else if (layer === "anomaly" && noYield(fc)) note = "ennél a terménynél nincs vármegyei hozamszám, amíg a KSH nem közli";
   document.getElementById("legend-note").textContent = note;
-  const LAYER_EXPLAIN = { anomaly: "szokasos", wb: "vizmerleg", prec: "csapadek", heat: "hostressz", gdd: "hoosszeg" };
+  const LAYER_EXPLAIN = { anomaly: "szokasos", prec: "csapadek", heat: "hostressz", gdd: "hoosszeg" };
   const legendInfo = document.getElementById("legend-info");
   if (legendInfo) legendInfo.dataset.explain = LAYER_EXPLAIN[layer];
   document.getElementById("legend-bar").style.background =
@@ -176,14 +198,14 @@ let mapReady = false;
 
 function applyForecast(fc) {
   currentForecast = fc;
-  // Vetési időszakban a hozam-eltérés réteg még nem mond semmit: a vízmérlegre
+  // Vetési időszakban a hozam-eltérés réteg még nem mond semmit: a mért csapadékra
   // váltunk, és ha a réteget mi váltottuk (nem a felhasználó), nem vetési
   // terménynél visszaállunk az eltérésre.
   const sel = document.getElementById("layer-select");
-  if (fc.season_phase === "sowing" && currentLayer === "anomaly") {
-    currentLayer = "wb"; layerAutoSet = true;
-    if (sel) sel.value = "wb";
-  } else if (fc.season_phase !== "sowing" && layerAutoSet) {
+  if (noYield(fc) && currentLayer === "anomaly") {
+    currentLayer = "prec"; layerAutoSet = true;
+    if (sel) sel.value = "prec";
+  } else if (!noYield(fc) && layerAutoSet) {
     currentLayer = "anomaly"; layerAutoSet = false;
     if (sel) sel.value = "anomaly";
   }
@@ -253,34 +275,41 @@ function renderHeadline(fc) {
   // TREND-alapú termények (napraforgó, repce): a mérési kapu elutasította az
   // időjárásmodellt, ezért a sokéves trendet közöljük – őszintén felcímkézve.
   if (fc.method === "trend") {
-    const mainT = (n.actual
-      ? `${cropSubject(fc)} termése a KSH adata szerint <b>${hu(n.predicted_yield_t_ha)} t/ha</b>
-         (${a > 0 ? "+" : ""}${hu(a, 1)}% a szokásoshoz)`
-      : `${cropSubject(fc)} termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b>
-      körül várható, a sokéves szokásos szint közelében`)
-      + (v ? ` – ${pricePhrase(v)} ez kb.
+    const oe = n.official_estimate;
+    let mainT, sub;
+    if (n.actual) {
+      mainT = `${cropSubject(fc)} termése a KSH adata szerint <b>${hu(n.predicted_yield_t_ha)} t/ha</b>
+         (${a > 0 ? "+" : ""}${hu(a, 1)}% a szokásoshoz)` + (v ? ` – ${pricePhrase(v)} ez kb.
          <b>${Math.round(v.production_value_bn_huf)} mrd Ft</b> termelési érték.` : ".");
-    const certT = `<span class="badge trend">TRENDALAPÚ</span> Ennél a terménynél az
-      idei időjárás statisztikailag nem javítja a becslést, ezért a sokéves trendet
-      közöljük: visszamért becslés, de az idei időjárást nem veszi figyelembe. ${info("trendalapu")}`;
-    const errT = n.model_error_pct
-      ? ` A becslés tipikus tévedése a múltbeli visszamérések alapján
-         ±${hu(n.model_error_pct, 1)}%. ${info("tevedes")}` : "";
+      sub = kshCert(n);
+    } else if (fc.days_to_season_end === 0) {
+      // lezárt szezon, KSH még nincs: a trend nem helyes adat, az EU-becslés igen
+      mainT = oe
+        ? `${cropSubject(fc)} termése az Európai Bizottság becslése szerint <b>${hu(oe.yield_t_ha)} t/ha</b>. ${info("eubecsles")}`
+        : `${cropSubject(fc)} termésére még nincs hivatalos adat.`;
+      sub = "A KSH adata még nem jelent meg.";
+    } else {
+      mainT = `${cropSubject(fc)} termésére a sokéves szint <b>${hu(n.trend_t_ha)} t/ha</b>.`;
+      sub = `<span class="badge trend">TRENDALAPÚ</span> Az idei időjárást nem veszi figyelembe. ${info("trendalapu")}`;
+    }
     el.innerHTML = `<div class="headline-main">${mainT}</div>
-      <div class="headline-sub">${n.actual ? kshCert(n) : certT + errT}</div>`;
+      <div class="headline-sub">${sub}</div>`;
     return;
   }
 
-  // VETÉSI IDŐSZAK: néhány napnyi időjárásból számolt hozam hamis pontosságot
-  // sugallna; a kiindulás a sokéves szint, a tartomány a mért évek szélső kimenetei.
+  // A TERMÉSÉV ELEJE: márciusig (kukoricánál júniusig) nincs hozamszám, és modelles
+  // tartomány sem (a modell a rossz éveket enyhébbnek számolja: a 2026-os búza 4,38
+  // t/ha lett, a modell 5,18-at adott). Csak a sokéves szint és a mért adat.
   if (fc.season_phase === "sowing") {
     const sw = n.sowing || {};
-    const an = (sc && sc.analogs) || null;
-    const rng = an ? ` A modell szerint, ha a 2000 óta mért évek időjárása követné: legrosszabb
-      esetben <b>${hu(an.worst[0].t_ha)}</b> (${an.worst[0].year}), legjobb esetben
-      <b>${hu(an.best[0].t_ha)}</b> (${an.best[0].year}) t/ha.` : "";
+    const rng = "";
     const st = n.stations;
-    const stTxt = st && st.n ? ` A HungaroMet ${st.n} állomásának átlaga ugyanezekre a napokra ${hu(st.mm, 0)} mm (${esc(st.source)}).` : "";
+    // ellenpróba pontosan ugyanarra az időablakra (az állomási nap 06–06 UTC)
+    const stTxt = st && st.n
+      ? (st.model_mm != null
+          ? ` Ellenőrzés (${stationWindowHu(st)}): a HungaroMet ${st.n} állomásának átlaga ${hu(st.mm, 0)} mm, a modell ${hu(st.model_mm, 0)} mm (${esc(st.source)}).`
+          : ` A HungaroMet ${st.n} állomásának átlaga ${stationWindowHu(st)} között ${hu(st.mm, 0)} mm (${esc(st.source)}).`)
+      : "";
     // régi pillanatkép (nincs weather_observed_until): ott a vetési összeg még az
     // előrejelzett napokat is tartalmazza, ezért nem írjuk ki tényként
     const rain = !fc.weather_observed_until ? ""
@@ -448,6 +477,19 @@ function renderNational(fc) {
   const v = n.value;
 
   const cards = [];
+  // trendalapú termény KSH-adat nélkül: nincs becslés-kártya, csak a hivatalos szám vagy a sokéves szint
+  if (fc.method === "trend" && !n.actual) {
+    const oe = n.official_estimate;
+    cards.push(fc.days_to_season_end === 0
+      ? `<div class="kpi"><div class="kpi-label">Európai Bizottság becslése · ${fc.crop_year} ${info("eubecsles")}</div>
+           <div class="kpi-value">${oe ? hu(oe.yield_t_ha) + " <small>t/ha</small>" : "–"}</div>
+           <div class="kpi-sub">a KSH adata még nem jelent meg · ${n.prev_year}. évi tény: ${hu(n.prev_year_yield_t_ha)} t/ha</div></div>`
+      : `<div class="kpi"><div class="kpi-label">Sokéves szint · ${fc.crop_year} ${info("trendalapu")}</div>
+           <div class="kpi-value">${hu(n.trend_t_ha)} <small>t/ha</small></div>
+           <div class="kpi-sub">${n.prev_year}. évi tény: ${hu(n.prev_year_yield_t_ha)} t/ha</div></div>`);
+    el.innerHTML = cards.join("");
+    return;
+  }
   if (fc.season_phase === "sowing") {
     const sw = n.sowing || {};
     cards.push(`
@@ -583,7 +625,7 @@ function showPanel(nutsId) {
   const wx = c.weather_todate;
   // "pötty a pályán": hol áll a vármegye értéke a 20 egység tartományában
   const TRACK_KEYS = {
-    "Csapadék": "prec_total_mm", "Vízmérleg": "wb_total_mm",
+    "Mért csapadék": "station_prec_mm",
     "Hőstressznapok": "heat_days", "Fagynapok": "frost_days_winter",
     "Hőösszeg (GDD)": "gdd_total",
   };
@@ -605,8 +647,7 @@ function showPanel(nutsId) {
   const wxRows = `
     <div class="chart-title">Időjárás ${withForecast(currentForecast) ? "(előrejelzéssel együtt)" : "eddig"} – a pötty: hol áll a vármegye a 20 közül
     (bal = legalacsonyabb, jobb = legmagasabb érték)</div>
-    ${trackRow("Csapadék", wx.prec_total_mm, " mm", "#5499c7", "csapadek")}
-    ${trackRow("Vízmérleg", wx.wb_total_mm, " mm", "#2874a6", "vizmerleg")}
+    ${trackRow("Mért csapadék", wx.station_prec_mm, " mm", "#5499c7", "csapadek")}
     ${trackRow("Hőstressznapok", wx.heat_days, "", "#c0392b", "hostressz")}
     ${trackRow("Fagynapok", wx.frost_days_winter, "", "#8e44ad", "fagynapok")}
     ${trackRow("Hőösszeg (GDD)", wx.gdd_total, "", "#d68910", "hoosszeg")}`;
@@ -624,7 +665,16 @@ function showPanel(nutsId) {
              (piros: ${currentForecast.national.actual ? "KSH-adat" : "idei becslés a sávval"})</div>` +
             yieldChartSVG(hc.years, hc.yields, cur);
   }
-  if (c.predicted_yield_t_ha === null) {
+  if (noYield(currentForecast)) {
+    // nincs megyei hozamszám (termésév eleje, vagy trendalapú termény KSH-adat nélkül):
+    // csak a múltbeli tény és a mért időjárás
+    const histOnly = hc ? `<div class="chart-title">Hozam ${hc.years[0]}–${hc.years[hc.years.length - 1]}</div>` +
+      yieldChartSVG(hc.years, hc.yields, null) : "";
+    const why = currentForecast.season_phase === "sowing"
+      ? `Hozambecslést ${yieldFromHu(currentForecast)} közlünk. ${info("vetesi")}`
+      : `Vármegyei hozamszám a KSH adatával jelenik meg. ${info("trendalapu")}`;
+    body.innerHTML = `<p class="note">${why}</p>${histOnly}${wxRows}`;
+  } else if (c.predicted_yield_t_ha === null) {
     body.innerHTML = `<p class="note">${esc(c.note || "Nincs becslés.")} ${info("budapest")}</p>${chart}${wxRows}`;
   } else {
     const cls = c.anomaly_pct < 0 ? "neg" : "pos";

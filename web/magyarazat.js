@@ -94,10 +94,7 @@ const GLOSSARY = {
       "végéig, a kukoricánál április 1-jétől május végéig a néhány napnyi vagy heti " +
       "időjárásból számolt hozam hamis pontosságot sugallna: a modell ilyenkor " +
       "gyakorlatilag a sokéves trendet adná vissza. Ezért ebben az időszakban nem " +
-      "közlünk hozamszámot. A kiindulás a sokéves szint, a tartomány a 2000 óta mért " +
-      "évek időjárásával számolt modell-kimenetek két széle (melyik év időjárása adná " +
-      "a leggyengébb és a legerősebb termést, " +
-      "ha innen indulva annak az évnek az időjárása következett). Emellett az " +
+      "közlünk hozamszámot, modelles tartományt sem. A kiindulás a sokéves szint. Emellett az " +
       "időjárás eddigi alakulását mutatjuk: csapadék, vízmérleg és hőösszeg október 1. " +
       "(kukoricánál április 1.) óta, a sokéves azonos időszak átlagához mérve. Ez a " +
       "kezdőnap a számítás rögzített napja, nem a tényleges vetés: az évente és " +
@@ -125,10 +122,10 @@ const GLOSSARY = {
       "nagyobb, mert az érzékenyebb a nyári időjárásra.",
   },
   csapadek: {
-    title: "Csapadék (mm)",
-    text: "A termésév eddig lehullott összes csapadéka milliméterben, a vármegye " +
-      "középpontjára számolva (Open-Meteo: ERA5, a legutóbbi napokra időjárási modellek). 1 mm = 1 liter víz " +
-      "négyzetméterenként.",
+    title: "Mért csapadék (mm)",
+    text: "A termésév eddig lehullott csapadéka a vármegye HungaroMet automata " +
+      "állomásainak átlagaként, reggel 8-tól (télen 7-től) számolt napokra. 1 mm = 1 liter víz " +
+      "négyzetméterenként. Ahol nincs mért adat, nem közlünk számot.",
   },
   vizmerleg: {
     title: "Vízmérleg (mm)",
@@ -176,7 +173,9 @@ const GLOSSARY = {
       "előrejelzését is felhasználja, a szezon hátralévő részét pedig a korábbi évek " +
       "időjárása képviseli; ez a „még változhat” rész. A modellből számolt csapadék " +
       "mellett, ahol elérhető, a HungaroMet automata állomásainak mért átlaga is " +
-      "szerepel, ugyanezekre a napokra (Adatbázis: Meteorológiai Adattár, HungaroMet Nonprofit Zrt. átlagolva az egyes értékekre).",
+      "szerepel (Adatbázis: Meteorológiai Adattár, HungaroMet Nonprofit Zrt. átlagolva az egyes értékekre). " +
+      "Az állomási nap reggel 8-tól (télen 7-től) másnap reggelig tart, a modellé éjféltől éjfélig, ezért az " +
+      "összevetéshez a modell órás csapadékát pontosan az állomási időszakra is összegezzük.",
   },
 
   frissites: {

@@ -676,7 +676,7 @@ def test_autumn_layout_uses_previous_year_finals_and_no_yield_for_sowing():
     assert "évi betakarítás · lezárt szezonok" in text and "a termésév eleje" in text
     assert ("indul az új termésév" in text or "Megkezdődött az új termésév" in text)
     # a vetési kártyán nincs "a szokásoshoz" eltérés és nincs forint-kiesés
-    sow_part = html.split("évi termésév ·")[1].split("Trendalapú")[0]
+    sow_part = html.split("évi termésév ·")[1].split("További termények")[0]
     assert "a szokásoshoz" not in sow_part and "mrd Ft" not in sow_part
 
 
@@ -691,7 +691,6 @@ def test_observed_cutoff_excludes_forecast_days():
     from src.predict_live import observed_cutoff
     today, known = _d(2026, 10, 8), _d(2026, 10, 14)
     assert observed_cutoff(today, known, None) == _d(2026, 10, 7)
-    assert observed_cutoff(today, known, {"last_day": "2026-10-06"}) == _d(2026, 10, 6)
     assert observed_cutoff(today, _d(2026, 6, 30), None) == _d(2026, 6, 30)  # lezárt szezon
 
 
@@ -714,7 +713,8 @@ def test_station_window_must_match_the_displayed_period():
     from src.predict_live import station_window
     st = {"windows": {"2026-10-01": {"from": "2026-10-01", "to": "2026-10-07"}}}
     assert station_window(st, _d(2026, 10, 1), _d(2026, 10, 7))["to"] == "2026-10-07"
-    assert station_window(st, _d(2026, 10, 1), _d(2026, 10, 6)) is None   # eltérő időszak: nem közöljük
+    assert station_window(st, _d(2026, 10, 1), _d(2026, 10, 6)) is None   # túlnyúlna a kiírt időszakon
+    assert station_window(st, _d(2026, 10, 1), _d(2026, 10, 8))["to"] == "2026-10-07"  # saját ablakával
     assert station_window(None, _d(2026, 10, 1), _d(2026, 10, 7)) is None
 
 
@@ -746,7 +746,7 @@ def test_observed_cutoff_stops_before_gap_filled_day():
     filled = [_d(2026, 10, 3), _d(2026, 10, 20)]
     assert first_gap_before(filled, _d(2026, 10, 14)) == _d(2026, 10, 3)
     assert first_gap_before([_d(2026, 10, 20)], _d(2026, 10, 14)) is None   # a jövőbeli pótlás nem számít
-    assert observed_cutoff(_d(2026, 10, 9), _d(2026, 10, 14), None, _d(2026, 10, 3)) == _d(2026, 10, 2)
+    assert observed_cutoff(_d(2026, 10, 9), _d(2026, 10, 14), _d(2026, 10, 3)) == _d(2026, 10, 2)
 
 
 def test_running_page_tolerates_missing_weather_values():
@@ -894,3 +894,27 @@ def test_final_card_shows_ksh_fact_and_model_line():
     html = report_html.final_card(fc)
     assert "KSH-adat" in html and "4,38" in html and "Modellbecslés" in html
     assert "80%-os sáv" not in html and "EU-becslés" not in html
+
+
+# --------------------------------------------------------------------------- #
+# HungaroMet ellenpróba: ugyanaz az időablak (06 UTC – 06 UTC), helyi időben kiírva
+# --------------------------------------------------------------------------- #
+def test_station_window_local_time_summer_and_winter():
+    from src.report_html import station_window_hu
+    assert station_window_hu({"from": "2026-10-01", "to": "2026-10-10"}) == "okt. 1. 8:00 – okt. 11. 8:00"
+    # a téli időszámítás (okt. 25.) után 06 UTC = 7:00
+    assert station_window_hu({"from": "2026-10-01", "to": "2026-11-09"}) == "okt. 1. 8:00 – nov. 10. 7:00"
+
+
+def test_window_sums_adds_model_on_same_station_sample():
+    from datetime import date
+    from src.fetch_hungaromet import window_sums
+    s = {1: {date(2026, 10, 1): 2.0, date(2026, 10, 2): 3.0},
+         2: {date(2026, 10, 1): 1.0, date(2026, 10, 2): 1.0},
+         3: {date(2026, 10, 1): 0.0, date(2026, 10, 2): 0.0}}
+    county = {1: "Békés", 2: "Békés", 3: "Zala"}
+    w = window_sums(s, date(2026, 10, 1), date(2026, 10, 2), county, {"Békés": 4.0, "Zala": 1.0})
+    assert w["national"] == {"mm": 2.3, "n": 3}
+    # országos modellérték: állomásonként a saját megye modellértéke (4, 4, 1)
+    assert w["model"]["national"] == 3.0 and w["model"]["counties"] == {"Békés": 4.0}
+    assert "model" not in window_sums(s, date(2026, 10, 1), date(2026, 10, 2), county)

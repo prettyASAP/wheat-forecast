@@ -7,8 +7,7 @@
     { key: "anomaly_pct", label: "Eltérés a szokásostól (%)", numeric: true, decimals: 1, anomaly: true, explain: "szokasos" },
     { key: "low", label: "Legalább (t/ha)", numeric: true, decimals: 2, tip: "80%-os valószínűségi sáv alja", explain: "tartomany" },
     { key: "high", label: "Legfeljebb (t/ha)", numeric: true, decimals: 2, tip: "80%-os valószínűségi sáv teteje", explain: "tartomany" },
-    { key: "prec_total_mm", label: "Csapadék (mm)", numeric: true, decimals: 1, explain: "csapadek" },
-    { key: "wb_total_mm", label: "Vízmérleg (mm)", numeric: true, decimals: 1, explain: "vizmerleg" },
+    { key: "station_prec_mm", label: "Mért csapadék (mm)", numeric: true, decimals: 1, tip: "a HungaroMet állomásainak átlaga a vármegyében", explain: "csapadek" },
     { key: "heat_days", label: "Hőstressznapok", numeric: true, decimals: 0, explain: "hostressz" },
     { key: "gdd_total", label: "Hőösszeg", numeric: true, decimals: 0, tip: "a szezon kezdete óta felgyűlt meleg (fok x nap, GDD)", explain: "hoosszeg" }
   ];
@@ -78,8 +77,7 @@
       anomaly_pct: county.anomaly_pct,
       low: county.low,
       high: county.high,
-      prec_total_mm: nullable(w.prec_total_mm),
-      wb_total_mm: nullable(w.wb_total_mm),
+      station_prec_mm: nullable(w.station_prec_mm),
       heat_days: nullable(w.heat_days),
       gdd_total: nullable(w.gdd_total),
       hasEstimate: county.predicted_yield_t_ha !== null && county.predicted_yield_t_ha !== undefined,
@@ -169,7 +167,9 @@
           td.textContent = String(v);
         } else if (v === null || v === undefined) {
           // becslés nélküli megye becslés-oszlopainál jelölés
-          td.textContent = col.key === "predicted_yield_t_ha" ? "nincs becslés" : "–";
+          td.textContent = col.key === "predicted_yield_t_ha"
+            ? (state.data && state.data.season_phase === "sowing" ? "márciustól"
+               : state.data && state.data.method === "trend" ? "KSH-adattal" : "nincs becslés") : "–";
           td.classList.add("na");
         } else {
           td.textContent = fmt(v, col.decimals);
@@ -273,7 +273,14 @@
       })
       .then(function (data) {
         state.data = data;
-        state.rows = (data.counties || []).map(flatten);
+        // a termésév elején nincs hozamszám: a becslés-oszlopok üresek
+        var sowing = data.season_phase === "sowing" ||
+          (data.method === "trend" && !(data.national && data.national.actual));
+        state.rows = (data.counties || []).map(function (c) {
+          var r = flatten(c);
+          if (sowing) { r.predicted_yield_t_ha = r.anomaly_pct = r.low = r.high = null; r.hasEstimate = false; }
+          return r;
+        });
         var th = headRow.querySelector('th[data-key="predicted_yield_t_ha"] span');
         if (th) th.textContent = yieldLabel(COLUMNS[1]);
         var act = data.national && data.national.actual;

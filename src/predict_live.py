@@ -397,25 +397,23 @@ def first_gap_before(filled_days: list, known_until: date):
     return gaps[0] if gaps else None
 
 
-def observed_cutoff(today: date, known_until: date, stations: dict | None,
-                    first_filled: date | None = None) -> date:
-    """A kiírt időjárás utolsó napja: tegnap (az előrejelzés nélkül); ha van friss
-    állomási adat, legfeljebb annak utolsó napja (közös időszak); és mindig az
-    első pótolt nap ELŐTT (pótolt átlagot nem írunk ki mért helyett)."""
+def observed_cutoff(today: date, known_until: date, first_filled: date | None = None) -> date:
+    """A kiírt időjárás utolsó napja: tegnap (az előrejelzés nélkül), és mindig az
+    első pótolt nap ELŐTT (pótolt átlagot nem írunk ki mért helyett). Az állomási
+    adat saját időablakkal szerepel (06–06 UTC), ahhoz nem igazítjuk."""
     cut = min(known_until, today - timedelta(days=1))
-    if stations:
-        cut = min(cut, date.fromisoformat(stations["last_day"]))
     if first_filled is not None:
         cut = min(cut, first_filled - timedelta(days=1))
     return cut
 
 
 def station_window(stations: dict | None, start: date, until: date) -> dict | None:
-    """Az állomási ablak, ha pontosan a [start, until] időszakra szól."""
+    """Az állomási ablak a szezon kezdetétől; a saját időablakával (from/to, 06–06 UTC)
+    szerepel, ezért nem kell a kiírt modellidőszakkal egyeznie, de túl sem nyúlhat rajta."""
     if not stations:
         return None
     w = stations.get("windows", {}).get(start.isoformat())
-    return w if w and w.get("to") == until.isoformat() else None
+    return w if w and w.get("to") <= until.isoformat() else None
 
 
 def season_phase(crop: str, crop_year: int, today: date, has_scenarios: bool,
@@ -503,10 +501,8 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
     # A KIÍRT "időjárás eddig" mutatók csak ELTELT napokból számolódnak. A
     # known_until a 7 napos előrejelzést is tartalmazza: a modell szándékosan
     # felhasználja, de kiírva ("esett") az előrejelzés tényként jelenne meg.
-    # Ha van friss HungaroMet állomási adat, az időszak vége a közös utolsó nap,
-    # hogy a modellből számolt és a mért csapadék UGYANARRA a napokra szóljon.
     stations = load_stations(today)
-    observed_until = observed_cutoff(today, known_until, stations,
+    observed_until = observed_cutoff(today, known_until,
                                      season_daily.attrs.get("first_filled_day"))
     # ha a kiírt időszak a vártnál korábban ér véget (pl. egy régi, pótolt nap
     # miatt), azt látható figyelmeztetésként jelezzük a napi futás felületén
@@ -634,9 +630,15 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
             if c:
                 r["weather_todate"]["station_prec_mm"] = c["mm"]
                 r["weather_todate"]["station_n"] = c["n"]
+                # a modell ugyanarra az időablakra (06 UTC – 06 UTC), órás adatból
+                mc = (sw_win.get("model") or {}).get("counties", {}).get(r["county_name"])
+                if mc is not None:
+                    r["weather_todate"]["station_model_mm"] = mc
         payload["national"]["stations"] = {**(sw_win.get("national") or {}),
                                            "from": sw_win["from"], "to": sw_win["to"],
                                            "source": stations["source"]}
+        if (sw_win.get("model") or {}).get("national") is not None:
+            payload["national"]["stations"]["model_mm"] = sw_win["model"]["national"]
     if payload["season_phase"] == "sowing":
         # mettől közlünk hozamszámot (a web ebből írja ki, pl. "márciustól")
         payload["yield_from"] = date(crop_year, *config.YIELD_FROM[crop]).isoformat()
