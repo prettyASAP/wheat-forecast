@@ -70,5 +70,7 @@ Ellenőrizd: a KSH aktuális táblája (ksh.hu/stadat_files/mez/hu/mez0071, 0072
 - A modellhez (src/model.py, src/features.py, src/build_panel.py, src/config.py
   modellbeállításai, data/raw, data/processed) csak mérési kapuval lehet nyúlni:
   ezt csak javasolhatja, nem javíthatja.
-- Nem élesít, nem merge-öl a main ágra: javítást csak külön ágon, pull requestként
-  javasol, a döntés a felhasználóé.
+- A main ágra csak akkor commitolhat, ha a HETI_ELLENOR.md „Mikor frissíthetsz
+  közvetlenül” feltételei mind teljesülnek; minden más javítás pull request, a
+  döntés a felhasználóé. A `.github/workflows/` mappához és a generált fájlokhoz
+  (`web/data/`) nem nyúlhat.
