@@ -1,13 +1,13 @@
 {
  "updated_at": "2026-10-14",
- "last_day": "2026-10-12",
+ "last_day": "2026-10-13",
  "source": "Adatbázis: Meteorológiai Adattár, HungaroMet Nonprofit Zrt. átlagolva az egyes értékekre",
  "stations_downloaded": 295,
  "windows": {
   "2026-10-01": {
    "from": "2026-10-01",
-   "to": "2026-10-12",
-   "days": 12,
+   "to": "2026-10-13",
+   "days": 13,
    "national": {
     "mm": 21.0,
     "n": 267
@@ -99,9 +99,9 @@
     "counties": {
      "Szabolcs-Szatmár-Bereg": 12.7,
      "Békés": 5.0,
-     "Győr-Moson-Sopron": 5.6,
-     "Zala": 23.8,
-     "Vas": 15.8,
+     "Győr-Moson-Sopron": 5.7,
+     "Zala": 23.9,
+     "Vas": 15.9,
      "Komárom-Esztergom": 14.5,
      "Pest": 26.0,
      "Baranya": 38.3,
@@ -122,8 +122,8 @@
   },
   "2026-04-01": {
    "from": "2026-04-01",
-   "to": "2026-10-12",
-   "days": 195,
+   "to": "2026-10-13",
+   "days": 196,
    "national": {
     "mm": 158.7,
     "n": 245
@@ -138,7 +138,7 @@
      "n": 22
     },
     "Győr-Moson-Sopron": {
-     "mm": 164.2,
+     "mm": 164.3,
      "n": 17
     },
     "Zala": {
@@ -215,9 +215,9 @@
     "counties": {
      "Szabolcs-Szatmár-Bereg": 169.4,
      "Békés": 156.2,
-     "Győr-Moson-Sopron": 156.1,
-     "Zala": 263.2,
-     "Vas": 255.6,
+     "Győr-Moson-Sopron": 156.2,
+     "Zala": 263.3,
+     "Vas": 255.7,
      "Komárom-Esztergom": 161.8,
      "Pest": 158.6,
      "Baranya": 256.6,
