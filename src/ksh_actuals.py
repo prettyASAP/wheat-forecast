@@ -131,16 +131,34 @@ def _ranks(crop: str, crop_year: int, anomaly_pct: float) -> tuple[int, int] | N
     return sum(1 for a in anoms if a < anomaly_pct) + 1, len(anoms) + 1
 
 
+EU_MAX_AGE_DAYS = 45  # az EU-becslés havonta frissül: a lezárt szezon főszámához ennyi idős is jó
+
+
+def _eu_estimate(crop: str) -> dict | None:
+    """Az EU-becslés közvetlenül a fájlból (ha a forintosítás 10 napos kapuja miatt
+    nem került a forecastba), legfeljebb EU_MAX_AGE_DAYS napos letöltésből."""
+    p = config.WEB_DATA / "official_estimates.json"
+    try:
+        d = json.loads(p.read_text(encoding="utf-8"))
+        age = (date.today() - date.fromisoformat(d["updated_at"])).days
+        o = (d.get("crops") or {}).get(crop)
+        return {**o, "as_of": d["updated_at"]} if o and age <= EU_MAX_AGE_DAYS else None
+    except (OSError, ValueError, KeyError):
+        return None
+
+
 def apply(fc: dict, data: dict | None = None) -> bool:
-    """A KSH-tényt teszi a modell száma helyére, ahol a KSH már közölte.
-    Idempotens: ismételt hívás a megőrzött modellszámból indul. True, ha a
-    termésév tényadatot kapott."""
+    """A KSH-tényt teszi a modell száma helyére, ahol a KSH már közölte. Lezárt
+    szezonban, amíg a KSH nem közölte, az Európai Bizottság becslése a főszám
+    (2026: kukorica modell 5,35, EU 3,36, agrárkamara kb. 2,5 t/ha); megyei szám
+    ilyenkor nincs. Idempotens: ismételt hívás a megőrzött modellszámból indul.
+    True, ha a termésév tényadatot vagy EU-becslést kapott."""
     data = load() if data is None else data
     crop = _crop_key(fc)
     entry = (data.get("crops") or {}).get(crop) or {}
     years = entry.get("years") or {}
     n = fc.get("national") or {}
-    if not years or not n:
+    if not n:
         return False
     src = {"source": "KSH", "table": entry.get("table"), "updated": entry.get("updated")}
 
@@ -155,22 +173,44 @@ def apply(fc: dict, data: dict | None = None) -> bool:
                                  / n["prev_year_yield_t_ha"], 1)
 
     act = years.get(str(fc["crop_year"]))
+    prev_act = n.get("actual") or {}
+    # csak teljesen lezárt szezonban (az utolsó napokban még a modell áll)
+    dte = fc.get("days_to_season_end")
+    closed = (dte == 0) if dte is not None else fc.get("season_phase") == "final"
+    oe = (n.get("official_estimate") or (prev_act.get("estimate") if prev_act.get("source") == "EU" else None)
+          or (_eu_estimate(crop) if closed else None))
+    def fresh(o):  # régi pillanatkép régi becslése ne legyen főszám
+        try:
+            return (date.today() - date.fromisoformat(o["as_of"])).days <= EU_MAX_AGE_DAYS
+        except (KeyError, TypeError, ValueError):
+            return False
+    if oe and not fresh(oe) and closed:
+        oe = _eu_estimate(crop)
+    if not act and closed and oe and fresh(oe) and oe.get("year") == fc["crop_year"] and oe.get("yield_t_ha"):
+        # lezárt szezon, KSH még nincs: az EU-becslés (országos; megyei bontás nincs)
+        act = {"national": {"yield_t_ha": oe["yield_t_ha"],
+                            "area_ha": (oe.get("area_kha") or 0) * 1000 or None,
+                            "production_t": (oe.get("production_kt") or 0) * 1000 or None},
+               "counties": {}}
+        src = {"source": "EU", "updated": oe.get("as_of"), "estimate": oe}
     if not act or n.get("predicted_yield_t_ha") is None:
         return False
-    model = (n.get("actual") or {}).get("model_yield_t_ha", n["predicted_yield_t_ha"])
+    model = prev_act.get("model_yield_t_ha", n["predicted_yield_t_ha"])
     y, trend = act["national"]["yield_t_ha"], n["trend_t_ha"]
     n["actual"] = {**src, "model_yield_t_ha": model}
     n["predicted_yield_t_ha"] = round(y, 2)
     n["anomaly_pct"] = round(100 * (y - trend) / trend, 1)
     n["pred_low_t_ha"] = n["pred_high_t_ha"] = None
     n.pop("official_estimate", None)  # a tény mellett a becslés nem kell
-    n["weights"] = "KSH, Ország összesen"
+    n["weights"] = "KSH, Ország összesen" if src["source"] == "KSH" else "Európai Bizottság becslése"
     if n.get("prev_year_yield_t_ha"):
         n["yoy_pct"] = round(100 * (y - n["prev_year_yield_t_ha"]) / n["prev_year_yield_t_ha"], 1)
     rk = _ranks(crop, fc["crop_year"], n["anomaly_pct"])
     if rk:
         n["rank_from_worst"], n["rank_total"] = rk
     v = n.get("value")
+    if v and not (act["national"]["area_ha"] and act["national"]["production_t"]):
+        n.pop("value", None); v = None  # termés vagy terület nélkül nincs helyes forintérték
     if v:
         price, area, prod = v["price_huf_per_t"], act["national"]["area_ha"], act["national"]["production_t"]
         v.update({
@@ -179,7 +219,8 @@ def apply(fc: dict, data: dict | None = None) -> bool:
             "production_value_bn_huf": round(prod * price / 1e9, 1),
             "trend_gap_bn_huf": round((y - trend) * area * price / 1e9, 1),
             "note": (v.get("note", "").split("; terület:")[0].split("; termés és terület:")[0]
-                     + f"; termés és terület: a KSH {fc['crop_year']}. évi adata"),
+                     + (f"; termés és terület: a KSH {fc['crop_year']}. évi adata" if src["source"] == "KSH"
+                        else "; termés és terület: az Európai Bizottság becslése")),
         })
     price = v["price_huf_per_t"] if v else None
     for r in fc.get("counties", []):
@@ -191,9 +232,10 @@ def apply(fc: dict, data: dict | None = None) -> bool:
         r["model_yield_t_ha"], r["model_anomaly_pct"] = m, ma
         r["low"] = r["high"] = None
         k = act["counties"].get(r["nuts_id"])
-        if not k:  # a KSH erre a vármegyére nem közöl adatot: modellszámot nem keverünk be
+        if not k:  # nincs megyei tény: modellszámot nem keverünk be
             r.update({"predicted_yield_t_ha": None, "anomaly_pct": None,
-                      "note": "a KSH erre a vármegyére nem közöl adatot"})
+                      "note": ("a KSH erre a vármegyére nem közöl adatot" if src["source"] == "KSH"
+                               else "megyei adat a KSH közlésével jelenik meg")})
             r.pop("value_bn_huf", None); r.pop("trend_gap_bn_huf", None)
             continue
         r["predicted_yield_t_ha"] = round(k["yield_t_ha"], 2)

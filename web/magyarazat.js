@@ -61,8 +61,9 @@ const GLOSSARY = {
   eubecsles: {
     title: "Európai Bizottság becslése",
     text: "Az Európai Bizottság agrárpiaci adatportálján közölt, havonta frissülő " +
-      "magyarországi termésadat (terület, termés, hozam). Viszonyítási pontként " +
-      "közöljük a saját becslésünk mellett. A modellünktől független szám, ezért " +
+      "magyarországi termésadat (terület, termés, hozam). Futó szezonban viszonyítási " +
+      "pont a saját becslésünk mellett; lezárt szezonban, amíg a KSH nem közli a " +
+      "termést, ez a főszám (megyei bontása nincs). A modellünktől független szám, ezért " +
       "eltérhet tőle: 2026-ban jóval alacsonyabb " +
       "lett a modellünk becslésénél. Becslés, nem végleges " +
       "adat: a végleges számot a KSH közli. Az őszi árpánál nincs összemérhető sor, " +

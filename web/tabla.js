@@ -167,9 +167,7 @@
           td.textContent = String(v);
         } else if (v === null || v === undefined) {
           // becslés nélküli megye becslés-oszlopainál jelölés
-          td.textContent = col.key === "predicted_yield_t_ha"
-            ? (state.data && state.data.season_phase === "sowing" ? "márciustól"
-               : state.data && state.data.method === "trend" ? "KSH-adattal" : "nincs becslés") : "–";
+          td.textContent = col.key === "predicted_yield_t_ha" ? emptyYield(row) : "–";
           td.classList.add("na");
         } else {
           td.textContent = fmt(v, col.decimals);
@@ -205,7 +203,17 @@
   // a hozamoszlop címkéje: ha a KSH már közölte a termésévet, tény áll benne
   function yieldLabel(col) {
     var act = state.data && state.data.national && state.data.national.actual;
-    return col.key === "predicted_yield_t_ha" && act ? "Termésátlag, KSH (t/ha)" : col.label;
+    return col.key === "predicted_yield_t_ha" && act && act.source === "KSH" ? "Termésátlag, KSH (t/ha)" : col.label;
+  }
+
+  // üres hozamcella szövege: csak azt ígéri, ami tényleg jönni fog
+  function emptyYield(row) {
+    var d = state.data || {};
+    if (d.season_phase === "sowing") return "márciustól";
+    if (/elhanyagolható/.test(row.note || "")) return "nincs becslés";      // Budapest
+    if (/nem közöl/.test(row.note || "")) return "nincs KSH-adat";
+    if (/KSH közlésével/.test(row.note || "") || d.method === "trend") return "KSH-adattal";
+    return "nincs becslés";
   }
 
   // ---- CSV export ----
@@ -225,7 +233,7 @@
       var cells = COLUMNS.map(function (col) {
         var v = row[col.key];
         if (v === null || v === undefined) {
-          return col.key === "predicted_yield_t_ha" ? csvField("nincs becslés") : "";
+          return col.key === "predicted_yield_t_ha" ? csvField(emptyYield(row)) : "";
         }
         if (col.numeric) return v.toFixed(col.decimals); // pont tizedes marad
         return csvField(v);
@@ -303,7 +311,8 @@
           (data.crop ? data.crop + " · " : "") +
           (data.crop_year ? data.crop_year + ". évi termés · " : "") +
           (data.updated_at ? "frissítve: " + huDate(data.updated_at) : "") +
-          (act ? " · KSH-adat (" + act.updated + ")" : "") +
+          (act ? (act.source === "KSH" ? " · KSH-adat (" + act.updated + ")"
+                 : " · országos: EU-becslés, megyei adat a KSH közlésével") : "") +
           (data.national && data.national.stations
             ? " · mért csapadék: " + stationWindow(data.national.stations) : "") +
           (data.weather_observed_until

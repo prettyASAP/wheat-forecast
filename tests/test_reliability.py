@@ -776,6 +776,7 @@ def test_last_week_of_season_is_not_called_closed():
     fcs = {c: copy.deepcopy(report_html.load_fc(c)) for c in config.REPORT_CROPS}
     for k, f in fcs.items():
         f.update(scenarios=None, season_phase="final", days_to_season_end=5 if k == "corn" else 0)
+        f["national"].pop("actual", None)  # a szezon végén még nincs KSH/EU ráhelyezés
     html = report_html.build_html(fcs, "2026-09-25", "2026. 09. 25.")
     assert "Mindhárom termény szezonja lezárult" not in html
     assert "5 nap van hátra, az előrejelzés lefedi" in html
@@ -933,3 +934,41 @@ def test_between_wording_single_day():
     assert _between("okt. 1–10.") == "Okt. 1–10. között"
     assert _between("okt. 1.") == "Okt. 1. napján"
     assert _between("okt. 28. – nov. 3.") == "Okt. 28. – nov. 3. között"
+
+
+def test_closed_season_without_ksh_uses_eu_estimate_no_county_numbers():
+    import copy
+    from src import ksh_actuals
+    fc = _fc_for_apply(); fc["season_phase"] = "final"
+    fc["national"]["official_estimate"] = {"year": 2026, "yield_t_ha": 3.36, "production_kt": 2013.2,
+                                           "area_kha": 599.2, "as_of": __import__("datetime").date.today().isoformat()}
+    assert ksh_actuals.apply(fc, {"crops": {}})
+    n = fc["national"]
+    assert n["predicted_yield_t_ha"] == 3.36 and n["actual"]["source"] == "EU"
+    assert n["actual"]["model_yield_t_ha"] == 5.18 and n["pred_low_t_ha"] is None
+    assert n["value"]["production_value_bn_huf"] == pytest.approx(2013200 * 73000 / 1e9, abs=0.05)
+    assert all(c["predicted_yield_t_ha"] is None for c in fc["counties"])  # nincs megyei bontás
+    snap = copy.deepcopy(fc); ksh_actuals.apply(fc, {"crops": {}}); assert fc == snap
+    # később megjelenik a KSH: az átáll rá, a modellszám megmarad
+    assert ksh_actuals.apply(fc, _KSH_DATA)
+    assert fc["national"]["actual"]["source"] == "KSH" and fc["national"]["predicted_yield_t_ha"] == 4.38
+    assert fc["national"]["actual"]["model_yield_t_ha"] == 5.18
+    assert fc["counties"][0]["predicted_yield_t_ha"] == 3.95
+
+
+def test_running_season_never_uses_eu_estimate():
+    from src import ksh_actuals
+    fc = _fc_for_apply(); fc["season_phase"] = "running"
+    fc["national"]["official_estimate"] = {"year": 2026, "yield_t_ha": 3.36,
+                                           "as_of": __import__("datetime").date.today().isoformat()}
+    assert not ksh_actuals.apply(fc, {"crops": {}})
+    assert fc["national"]["predicted_yield_t_ha"] == 5.18
+
+
+def test_stale_eu_estimate_is_not_used_as_headline(monkeypatch):
+    from src import ksh_actuals
+    monkeypatch.setattr(ksh_actuals, "_eu_estimate", lambda crop: None)
+    fc = _fc_for_apply(); fc["season_phase"] = "final"; fc["days_to_season_end"] = 0
+    fc["national"]["official_estimate"] = {"year": 2026, "yield_t_ha": 3.36, "as_of": "2026-01-01"}
+    assert not ksh_actuals.apply(fc, {"crops": {}})
+    assert fc["national"]["predicted_yield_t_ha"] == 5.18

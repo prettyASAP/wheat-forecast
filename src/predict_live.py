@@ -672,7 +672,7 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
     # A lenti ellenőrzés a MODELL számain fut (payload), nem a ténnyel.
     out = copy.deepcopy(payload)
     if ksh_actuals.apply(out):
-        print(f"  [ok] KSH-tény: {out['national']['predicted_yield_t_ha']} t/ha "
+        print(f"  [ok] {out['national']['actual']['source']}: {out['national']['predicted_yield_t_ha']} t/ha "
               f"(modell: {payload['national']['predicted_yield_t_ha']})")
     hdir = history_dir(crop)
     hdir.mkdir(parents=True, exist_ok=True)

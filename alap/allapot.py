@@ -259,7 +259,10 @@ def main():
     gond = [f"hiányzó becslésfájl: {c}" for c in TERMENYEK if c not in fc]
     for c, d in fc.items():
         sor = d["counties"]
-        becs = [r for r in sor if r["predicted_yield_t_ha"] is not None]
+        # a modell megyei becslése (KSH-/EU-ráhelyezés után a model_yield_t_ha őrzi)
+        becs = [{**r, "predicted_yield_t_ha": r.get("model_yield_t_ha", r["predicted_yield_t_ha"]),
+                 "anomaly_pct": r.get("model_anomaly_pct", r["anomaly_pct"])}
+                for r in sor if r.get("model_yield_t_ha", r["predicted_yield_t_ha"]) is not None]
         if len(sor) != 20: gond.append(f"{c}: {len(sor)} sor")
         if len(becs) != 19: gond.append(f"{c}: {len(becs)} becslés")
         if c not in TREND:  # a kód józansági határai, ahogy a predict_live fáziszáró ellenőrzése használja
@@ -268,7 +271,9 @@ def main():
                 if not also <= r["predicted_yield_t_ha"] <= felso: gond.append(f"{c} {r['nuts_id']}: hozam kilóg")
                 if abs(r["anomaly_pct"]) > 50: gond.append(f"{c} {r['nuts_id']}: eltérés kilóg")
         ertek = [r["predicted_yield_t_ha"] for r in becs]
-        if ertek and not min(ertek) <= d["national"]["predicted_yield_t_ha"] <= max(ertek):
+        # a modell országos száma (ráhelyezés után az actual.model_yield_t_ha őrzi)
+        nat_model = (d["national"].get("actual") or {}).get("model_yield_t_ha", d["national"]["predicted_yield_t_ha"])
+        if ertek and not min(ertek) <= nat_model <= max(ertek):
             gond.append(f"{c}: az országos becslés a vármegyei tartományon kívül")
         for nid, q in ((d.get("scenarios") or {}).get("counties") or {}).items():
             if not q["p10"] <= q["p50"] <= q["p90"]: gond.append(f"{c} {nid}: percentilisek nem sorrendben")

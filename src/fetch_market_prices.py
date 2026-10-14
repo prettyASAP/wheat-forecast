@@ -449,8 +449,8 @@ def collect_valuation(today: date, fx: dict | None) -> dict | None:
 
 # --------------------------------------------------------------------------- #
 # Hivatalos EU-termésbecslés (DG AGRI, tagállami adatokból) — VISZONYÍTÁSI PONT a
-# saját becslésünk mellé. Aratás után ez tartalmazza a betakarítási jelentéseket,
-# amelyeket egy időjárás-modell nem láthat (2026 tanulsága). BECSLÉSKÉNT címkézzük,
+# saját becslésünk mellé, lezárt szezonban (KSH előtt) a főszám (2026 tanulsága:
+# a modell a rossz évet enyhébbnek számolta). BECSLÉSKÉNT címkézzük,
 # nem tényként: havonta frissül, és nem mindenhol azonos a végleges KSH-adattal.
 # Az őszi árpára nincs összemérhető sor (a forrás csak az ÖSSZES árpát közli).
 # --------------------------------------------------------------------------- #
@@ -463,19 +463,26 @@ _OFFICIAL_SPEC = {
 
 
 def collect_official(today: date) -> dict:
-    """termény -> {year, yield_t_ha, production_kt, area_kha}; csak plauzibilis,
-    a folyó termésévre vonatkozó sorok. Hibánál üres dict (a megjelenítés kimarad)."""
+    """termény -> {year, yield_t_ha, production_kt, area_kha}; csak plauzibilis
+    sorok. Az év a termény termésévéhez igazodik (kukoricánál 2027. márciusig a
+    2026-os), ha arra még nincs sor, az előző év. Hibánál üres dict."""
+    from src.predict_live import current_crop_year
     out: dict = {}
     cache: dict = {}
     for crop, (path, names, (lo, hi)) in _OFFICIAL_SPEC.items():
         try:
             if path not in cache:
                 cache[path] = _get(path, {"memberStateCodes": "HU",
-                                          "years": str(today.year)})
-            rs = [r for r in cache[path] if r.get("crop") in names
-                  and r.get("year") == today.year]
+                                          "years": f"{today.year - 1},{today.year}"})
+            cy = current_crop_year(today, crop)
+            rs = []
+            for year in (cy, cy - 1):
+                rs = [r for r in cache[path] if r.get("crop") in names and r.get("year") == year]
+                if len(rs) == len(names):
+                    break
             if len(rs) != len(names):
                 continue
+            year = rs[0]["year"]
             area = sum(float(r["area"]) for r in rs)
             prod = sum(float(r["grossProduction"]) for r in rs)
             if area <= 0:
@@ -484,7 +491,7 @@ def collect_official(today: date) -> dict:
             if not (lo <= y <= hi):
                 print(f"  [hivatalos] {crop}: hozam a plauzibilis sávon kívül ({y:.2f})")
                 continue
-            out[crop] = {"year": today.year, "yield_t_ha": round(y, 2),
+            out[crop] = {"year": year, "yield_t_ha": round(y, 2),
                          "production_kt": round(prod, 1), "area_kha": round(area, 1)}
         except Exception as e:
             print(f"  [hivatalos] {crop}: {e}")
@@ -534,7 +541,7 @@ def main() -> None:
         (config.WEB_DATA / "official_estimates.json").write_text(json.dumps({
             "updated_at": today.isoformat(),
             "source": ("Európai Bizottság (DG AGRI) tagállami termésbecslése; havonta "
-                       "frissül, aratás után a betakarítási jelentéseket is tartalmazza"),
+                       "frissül"),
             "crops": official}, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"[ok] official_estimates.json: {', '.join(official)}")
     out = config.WEB_DATA / "market_prices.json"

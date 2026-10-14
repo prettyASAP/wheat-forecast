@@ -126,6 +126,11 @@ function obsPeriodHu(fc) {
 }
 // 'Okt. 1–10. között' / egynapos időszaknál 'Okt. 1. napján'
 function betweenHu(a, b) { return rangeHu(a, b) + (a === b ? " napján" : " között"); }
+// helyezés: 1 -> 'leggyengébb', 5 -> '5. leggyengébb'; withArt: névelővel ('a', 'az 5.')
+function ordHu(r, word, withArt = false) {
+  const core = r === 1 ? word : `${r}. ${word}`;
+  return withArt ? `${r === 5 ? "az" : "a"} ${core}` : core;
+}
 function cap(t) { return t ? t[0].toUpperCase() + t.slice(1) : t; }
 function sinceHu(d) { return d ? `${HU_MONTHS_FULL[+d.slice(5, 7)]} ${+d.slice(8, 10)}.` : ""; }
 const HU_MONTHS_SHORT = ["", "jan.", "febr.", "márc.", "ápr.", "máj.", "jún.", "júl.", "aug.", "szept.", "okt.", "nov.", "dec."];
@@ -302,7 +307,7 @@ function renderHeadline(fc) {
     const oe = n.official_estimate;
     let mainT, sub;
     if (n.actual) {
-      mainT = `${cropSubject(fc)} termése a KSH adata szerint <b>${hu(n.predicted_yield_t_ha)} t/ha</b>
+      mainT = `${cropSubject(fc)} termése ${srcPhrase(n)} <b>${hu(n.predicted_yield_t_ha)} t/ha</b>
          (${a > 0 ? "+" : ""}${hu(a, 1)}% a szokásoshoz)` + (v ? ` – ${pricePhrase(v)} ez kb.
          <b>${Math.round(v.production_value_bn_huf)} mrd Ft</b> termelési érték.` : ".");
       sub = kshCert(n);
@@ -351,7 +356,7 @@ function renderHeadline(fc) {
 
   // ha a KSH már közölte: tény, nem becslés
   const yp = n.actual
-    ? `termése a KSH adata szerint <b>${hu(n.predicted_yield_t_ha)} t/ha</b>`
+    ? `termése ${srcPhrase(n)} <b>${hu(n.predicted_yield_t_ha)} t/ha</b>`
     : `termése <b>${hu(n.predicted_yield_t_ha)} t/ha</b> körül
       várható`;
   let main;
@@ -385,14 +390,14 @@ function renderHeadline(fc) {
   }
   if (n.rank_from_worst <= 5) {
     clauses.push(n.actual
-      ? `Ez a ${n.rank_total} év ${n.rank_from_worst}. leggyengébb éve.`
+      ? `Ez a ${n.rank_total} év ${ordHu(n.rank_from_worst, "leggyengébb")} éve.`
       : `Ha így marad, a ${n.rank_total} év
-      ${n.rank_from_worst}. leggyengébb éve lenne.`);
+      ${ordHu(n.rank_from_worst, "leggyengébb")} éve lenne.`);
   } else if (n.rank_from_worst >= n.rank_total - 4) {
     clauses.push(n.actual
-      ? `Ez a ${n.rank_total} év ${n.rank_total - n.rank_from_worst + 1}. legerősebb éve.`
+      ? `Ez a ${n.rank_total} év ${ordHu(n.rank_total - n.rank_from_worst + 1, "legerősebb")} éve.`
       : `Ha így marad, a ${n.rank_total} év
-      ${n.rank_total - n.rank_from_worst + 1}. legerősebb éve lenne.`);
+      ${ordHu(n.rank_total - n.rank_from_worst + 1, "legerősebb")} éve lenne.`);
   }
 
   const cert = sc
@@ -416,12 +421,20 @@ function renderHeadline(fc) {
     <div class="headline-sub">${n.actual ? kshCert(n) : cert + err}</div>${envelopeWarning(n)}`;
 }
 
-/* KSH-tény jelölése: a forrás, a frissítés napja és a modell záró becslése. */
+/* A főszám forrása (KSH-tény, vagy lezárt szezonban a KSH előtt az EU-becslés),
+   a dátum és a modell záró becslése. */
+function isKsh(n) { return !!(n.actual && n.actual.source === "KSH"); }
+function actLabel(n) { return isKsh(n) ? "KSH-adat" : "EU-becslés"; }
+function srcPhrase(n) { return isKsh(n) ? "a KSH adata szerint" : "az Európai Bizottság becslése szerint"; }
 function kshCert(n) {
   const act = n.actual;
-  return `<span class="badge final">KSH-ADAT</span> A KSH vármegyei termésadata
-    (${esc(act.table || "")} tábla, frissítve: ${esc(act.updated || "")}). A modell záró
-    becslése ${hu(act.model_yield_t_ha)} t/ha volt.`;
+  return isKsh(n)
+    ? `<span class="badge final">KSH-ADAT</span> A KSH vármegyei termésadata
+      (${esc(act.table || "")} tábla, frissítve: ${esc(act.updated || "")}). A modell záró
+      becslése ${hu(act.model_yield_t_ha)} t/ha volt.`
+    : `<span class="badge final">EU-BECSLÉS</span> Az Európai Bizottság becslése
+      (${huDate(act.updated || "")}); a KSH adata még nem jelent meg. A modell záró
+      becslése ${hu(act.model_yield_t_ha)} t/ha volt. ${info("eubecsles")}`;
 }
 
 /* Modelltartomány-jelző: ha egy idei mutató kívül esik azon, amit a modell a
@@ -536,7 +549,7 @@ function renderNational(fc) {
   }
   cards.push(`
     <div class="kpi">
-      <div class="kpi-label">${n.actual ? "Országos termésátlag (KSH)" : "Országos becslés"} · ${fc.crop_year} ${info("becsles")}</div>
+      <div class="kpi-label">${n.actual ? `Országos termésátlag (${actLabel(n)})` : "Országos becslés"} · ${fc.crop_year} ${info("becsles")}</div>
       <div class="kpi-value">${hu(n.predicted_yield_t_ha)} <small>t/ha</small></div>
       <div class="kpi-sub">${chip(n.anomaly_pct, "%")} a szokásoshoz ${info("szokasos")} ·
         ${chip(n.yoy_pct, "%")} a ${n.prev_year}. évihez</div>
@@ -548,7 +561,7 @@ function renderNational(fc) {
     <div class="kpi">
       <div class="kpi-label">Hol áll ez az elmúlt évek közt? ${info("helyezes")}</div>
       <div class="kpi-viz">${rankStripSVG(fc)}</div>
-      <div class="kpi-sub">${n.rank_total} évből a ${n.rank_from_worst}. leggyengébb · a szaggatott vonal a szokásos szint</div>
+      <div class="kpi-sub">${n.rank_total} évből ${ordHu(n.rank_from_worst, "leggyengébb", true)} · a szaggatott vonal a szokásos szint</div>
     </div>`);
   if (sc) {
     cards.push(`
@@ -671,7 +684,7 @@ function showPanel(nutsId) {
   const wxRows = `
     <div class="chart-title">Időjárás ${withForecast(currentForecast) ? "(előrejelzéssel együtt)" : "eddig"}${
       currentForecast.national.stations ? `; mért csapadék: ${stationWindowHu(currentForecast.national.stations)}` : ""}${
-      obsPeriodHu(currentForecast) ? `; hőösszeg: ${obsPeriodHu(currentForecast)}` : ""} – a pötty: hol áll a vármegye a 20 közül
+      obsPeriodHu(currentForecast) ? `; hőösszeg: ${obsPeriodHu(currentForecast).replace(/^./, c => c.toLowerCase())}` : ""} – a pötty: hol áll a vármegye a 20 közül
     (bal = legalacsonyabb, jobb = legmagasabb érték)</div>
     ${trackRow("Mért csapadék", wx.station_prec_mm, " mm", "#5499c7", "csapadek")}
     ${trackRow("Hőstressznapok", wx.heat_days, "", "#c0392b", "hostressz")}
@@ -688,7 +701,7 @@ function showPanel(nutsId) {
       low: c.low ?? c.predicted_yield_t_ha, high: c.high ?? c.predicted_yield_t_ha,
     };
     chart = `<div class="chart-title">Hozam ${hc.years[0]}–${hc.years[hc.years.length - 1]}
-             (piros: ${currentForecast.national.actual ? "KSH-adat" : "idei becslés a sávval"})</div>` +
+             ${cur ? `(piros: ${currentForecast.national.actual ? actLabel(currentForecast.national) : "idei becslés a sávval"})` : ""}</div>` +
             yieldChartSVG(hc.years, hc.yields, cur);
   }
   if (noYield(currentForecast)) {
@@ -701,7 +714,9 @@ function showPanel(nutsId) {
       : `Vármegyei hozamszám a KSH adatával jelenik meg. ${info("trendalapu")}`;
     body.innerHTML = `<p class="note">${why}</p>${histOnly}${wxRows}`;
   } else if (c.predicted_yield_t_ha === null) {
-    body.innerHTML = `<p class="note">${esc(c.note || "Nincs becslés.")} ${info("budapest")}</p>${chart}${wxRows}`;
+    // Budapestnél a "miért nincs becslés" magyarázat; KSH/EU-ráhelyezésnél a forrásé
+    const why = /elhanyagolható/.test(c.note || "") ? info("budapest") : info(isKsh(currentForecast.national) ? "becsles" : "eubecsles");
+    body.innerHTML = `<p class="note">${esc(c.note || "Nincs becslés.")} ${why}</p>${chart}${wxRows}`;
   } else {
     const cls = c.anomaly_pct < 0 ? "neg" : "pos";
     const sign = c.anomaly_pct > 0 ? "+" : "";
