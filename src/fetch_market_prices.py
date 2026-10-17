@@ -326,9 +326,18 @@ def collect(today: date) -> tuple[list, list]:
 # hogy az 1. oldal forintja és a 4. oldal árai UGYANARRA az árszintre épüljenek.
 # --------------------------------------------------------------------------- #
 VALUATION_WEEKS = 4
-_HU_MONTH_ADJ = ["", "januári", "februári", "márciusi", "áprilisi", "májusi",
-                 "júniusi", "júliusi", "augusztusi", "szeptemberi", "októberi",
-                 "novemberi", "decemberi"]
+_HU_MONTHS = ["", "jan.", "febr.", "márc.", "ápr.", "máj.", "jún.", "júl.",
+              "aug.", "szept.", "okt.", "nov.", "dec."]
+
+
+def _period_phrase(start: date, end: date) -> str:
+    """Az árperiódus pontosan, nem egy csak részben fedő hónapnévvel:
+    'a 2026. szept. 14. és okt. 11. közötti termelői átlagáron'."""
+    a = f"{start.year}. {_HU_MONTHS[start.month]} {start.day}."
+    b = f"{_HU_MONTHS[end.month]} {end.day}."
+    if end.year != start.year:
+        b = f"{end.year}. {b}"
+    return f"a {a} és {b} közötti termelői átlagáron"
 
 # termény -> (végpont, névmező, terméknevek, plauzibilis EUR/t sáv, alap leírása)
 _VALUATION_SPEC = {
@@ -438,7 +447,7 @@ def collect_valuation(today: date, fx: dict | None) -> dict | None:
                 "weeks": len(weeks),
                 "period": f"{weeks[0].isoformat()} – {newest_end.isoformat()}",
                 "basis": basis,
-                "phrase": f"{newest_end.year}. {_HU_MONTH_ADJ[newest_end.month]} termelői áron",
+                "phrase": _period_phrase(weeks[0], newest_end),
             }
         except Exception as e:
             print(f"  [érték] {crop}: {e}")

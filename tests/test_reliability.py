@@ -972,3 +972,13 @@ def test_stale_eu_estimate_is_not_used_as_headline(monkeypatch):
     fc["national"]["official_estimate"] = {"year": 2026, "yield_t_ha": 3.36, "as_of": "2026-01-01"}
     assert not ksh_actuals.apply(fc, {"crops": {}})
     assert fc["national"]["predicted_yield_t_ha"] == 5.18
+
+
+def test_price_phrase_names_exact_period():
+    """Az ár felirata a tényleges árperiódust mondja, nem egy részben fedő hónapot."""
+    from datetime import date as _date
+    from src.fetch_market_prices import _period_phrase
+    assert (_period_phrase(_date(2026, 9, 14), _date(2026, 10, 11))
+            == "a 2026. szept. 14. és okt. 11. közötti termelői átlagáron")
+    assert (_period_phrase(_date(2026, 12, 21), _date(2027, 1, 17))
+            == "a 2026. dec. 21. és 2027. jan. 17. közötti termelői átlagáron")
