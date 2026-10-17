@@ -12,7 +12,7 @@
     <a class="back-link" href="index.html">← Vissza a térképre</a>
     <a class="back-link" href="tabla.html">Táblázat ↗</a>
     <h1>Mi mit jelent?</h1>
-    <p class="glossary-lead">Minden adat és ábra magyarázata egy helyen – ugyanezek
+    <p class="glossary-lead">Minden adat és ábra magyarázata egy helyen. Ugyanezek
       a leírások érhetők el az oldalon a <span class="info-btn"
       style="cursor:default">i</span> gombokkal.</p>
     <div id="glossary"></div>
@@ -83,23 +83,24 @@
         (2026 júliusa óta):</b> 2011-től minden évre
         kizárólag a korábbi éveken tanított modell jelez előre; a
         hiperparamétereket és a változókészletet minden tanítóablakon belül
-        beágyazott keresztvalidáció választja – a tesztév utáni információ sehol
+        beágyazott keresztvalidáció választja, a tesztév utáni információ sehol
         nem szerepel. <b>Vármegyei</b> hiba (RMSE, ebből számoljuk a sávot):
         <b>búza 0,57 t/ha</b>, <b>kukorica 1,51 t/ha</b>, <b>őszi árpa 0,58
-        t/ha</b> – mindhárom veri a naiv trend-előrejelzést (0,62 / 1,95 / 0,67).
+        t/ha</b>; mindhárom veri a naiv trend-előrejelzést (0,62 / 1,95 / 0,67).
         Az <b>országos</b> becslés tipikus hibája ennél kisebb, mert a vármegyei
         tévedések aggregáláskor részben kioltják egymást: terület-súlyozott
-        országos walk-forward RMSE <b>búza 0,44 t/ha (7,7%)</b>, <b>kukorica
-        1,35 t/ha (19,1%)</b>, <b>őszi árpa 0,43 t/ha (7,2%)</b> – a főoldali „a
-        becslés tipikus tévedése ±X%” ezt az országos számot közli. A sáv a
+        országos walk-forward RMSE <b>búza 0,44 t/ha</b>, <b>kukorica
+        1,35 t/ha</b>, <b>őszi árpa 0,43 t/ha</b>. A főoldali „a
+        becslés tipikus tévedése ±X%” ezt az országos számot közli, az adott
+        termésév szokásos szintjének százalékában. A sáv a
         walk-forward reziduumok empirikus 10–90. percentiliséből számolódik,
         vármegyénként zsugorított szórással; a kvantiliseket és a lefedettséget
         ugyanazon reziduumokra illesztjük (in-sample kalibráció, tényleges
         lefedettség 80%). A változó-cseréket (terménybázisú, plafonozott GDD;
         EDD hőstressz-intenzitás; meleg éjszakák) ugyanez a kapu döntötte el
-        terményenként – a kukoricánál a csere nem javított, ott a korábbi
+        terményenként; a kukoricánál a csere nem javított, ott a korábbi
         készlet maradt. Részletek: reports/walkforward_report.md.</p>
-      <p>Kiegészítő diagnosztika – leave-one-year-out keresztvalidáció: a modellt
+      <p>Kiegészítő diagnosztika, leave-one-year-out keresztvalidáció: a modellt
         26-szor illesztjük, mindig egy teljes év kihagyásával.
         Out-of-sample hibák (RMSE): <b>búza 0,53 t/ha (11,4%)</b>,
         <b>kukorica 1,40 t/ha (22,9%)</b>, <b>őszi árpa 0,55 t/ha (12,1%)</b> –
@@ -129,7 +130,7 @@
         szezon maradékát rendre a 2000–2025-ös évek tényleges időjárásával
         folytatjuk, és mindegyikre kiszámoljuk a modell előrejelzését. A
         középbecslés az együttes átlaga (a nemlineáris wb_deficit-tag miatt az
-        „átlagos időjárás” behelyettesítése torzítana – Jensen-egyenlőtlenség); a
+        „átlagos időjárás” behelyettesítése torzítana: Jensen-egyenlőtlenség); a
         P10–P90 sáv az együttes 10. és 90. percentilise. A közölt 80%-os sáv szezon
         közben a modellhiba és az időjárási bizonytalanság négyzetes összege:
         σ = √(σ<sub>modell</sub>² + σ<sub>időjárás</sub>²). A rendszer minden nap
