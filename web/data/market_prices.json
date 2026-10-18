@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-10-17",
+ "updated_at": "2026-10-18",
  "source": "Európai Bizottság (DG AGRI) agrifood API; a magyar adatok a tagállami jelentésből (AKI PÁIR) származnak",
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
@@ -227,7 +227,7 @@
     "weeks": 4,
     "period": "2026-09-14 – 2026-10-11",
     "basis": "étkezési és takarmánybúza termelői árainak átlaga",
-    "phrase": "2026. októberi termelői áron"
+    "phrase": "a 2026. szept. 14. és okt. 11. közötti termelői átlagáron"
    },
    "corn": {
     "eur_per_t": 237.53,
@@ -235,7 +235,7 @@
     "weeks": 4,
     "period": "2026-09-14 – 2026-10-11",
     "basis": "takarmánykukorica termelői ára",
-    "phrase": "2026. októberi termelői áron"
+    "phrase": "a 2026. szept. 14. és okt. 11. közötti termelői átlagáron"
    },
    "barley": {
     "eur_per_t": 181.47,
@@ -243,7 +243,7 @@
     "weeks": 4,
     "period": "2026-09-14 – 2026-10-11",
     "basis": "takarmányárpa termelői ára",
-    "phrase": "2026. októberi termelői áron"
+    "phrase": "a 2026. szept. 14. és okt. 11. közötti termelői átlagáron"
    },
    "sunflower": {
     "eur_per_t": 522.78,
@@ -251,7 +251,7 @@
     "weeks": 4,
     "period": "2026-09-14 – 2026-10-11",
     "basis": "hagyományos napraforgómag termelői ára",
-    "phrase": "2026. októberi termelői áron"
+    "phrase": "a 2026. szept. 14. és okt. 11. közötti termelői átlagáron"
    },
    "rapeseed": {
     "eur_per_t": 540.29,
@@ -259,7 +259,7 @@
     "weeks": 4,
     "period": "2026-09-14 – 2026-10-11",
     "basis": "repcemag termelői ára",
-    "phrase": "2026. októberi termelői áron"
+    "phrase": "a 2026. szept. 14. és okt. 11. közötti termelői átlagáron"
    }
   }
  },
