@@ -1,13 +1,13 @@
 {
- "updated_at": "2026-10-19",
- "last_day": "2026-10-17",
+ "updated_at": "2026-10-20",
+ "last_day": "2026-10-18",
  "source": "Adatbázis: Meteorológiai Adattár, HungaroMet Nonprofit Zrt. átlagolva az egyes értékekre",
  "stations_downloaded": 295,
  "windows": {
   "2026-10-01": {
    "from": "2026-10-01",
-   "to": "2026-10-17",
-   "days": 17,
+   "to": "2026-10-18",
+   "days": 18,
    "national": {
     "mm": 21.1,
     "n": 267
@@ -99,31 +99,31 @@
     "counties": {
      "Szabolcs-Szatmár-Bereg": 23.1,
      "Békés": 22.7,
-     "Győr-Moson-Sopron": 4.8,
+     "Győr-Moson-Sopron": 4.9,
      "Zala": 19.9,
      "Vas": 15.7,
      "Komárom-Esztergom": 14.7,
-     "Pest": 23.4,
+     "Pest": 23.5,
      "Baranya": 23.1,
      "Somogy": 29.5,
      "Fejér": 22.9,
-     "Bács-Kiskun": 26.7,
+     "Bács-Kiskun": 26.8,
      "Veszprém": 22.1,
      "Budapest": 22.4,
      "Tolna": 24.3,
-     "Heves": 19.9,
+     "Heves": 20.1,
      "Nógrád": 16.5,
      "Jász-Nagykun-Szolnok": 24.9,
      "Borsod-Abaúj-Zemplén": 17.7,
-     "Csongrád-Csanád": 24.3,
+     "Csongrád-Csanád": 24.4,
      "Hajdú-Bihar": 28.0
     }
    }
   },
   "2026-04-01": {
    "from": "2026-04-01",
-   "to": "2026-10-17",
-   "days": 200,
+   "to": "2026-10-18",
+   "days": 201,
    "national": {
     "mm": 158.8,
     "n": 245
@@ -215,23 +215,23 @@
     "counties": {
      "Szabolcs-Szatmár-Bereg": 179.8,
      "Békés": 173.9,
-     "Győr-Moson-Sopron": 155.3,
+     "Győr-Moson-Sopron": 155.4,
      "Zala": 259.3,
      "Vas": 255.5,
      "Komárom-Esztergom": 162.0,
-     "Pest": 156.0,
+     "Pest": 156.1,
      "Baranya": 241.4,
      "Somogy": 221.8,
      "Fejér": 169.9,
-     "Bács-Kiskun": 188.4,
+     "Bács-Kiskun": 188.5,
      "Veszprém": 194.1,
      "Budapest": 161.3,
      "Tolna": 230.0,
-     "Heves": 218.6,
+     "Heves": 218.8,
      "Nógrád": 201.0,
      "Jász-Nagykun-Szolnok": 204.4,
      "Borsod-Abaúj-Zemplén": 151.3,
-     "Csongrád-Csanád": 186.5,
+     "Csongrád-Csanád": 186.6,
      "Hajdú-Bihar": 173.9
     }
    }
