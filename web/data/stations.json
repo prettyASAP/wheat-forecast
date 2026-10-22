@@ -1,16 +1,16 @@
 {
- "updated_at": "2026-10-21",
- "last_day": "2026-10-19",
+ "updated_at": "2026-10-22",
+ "last_day": "2026-10-20",
  "source": "Adatbázis: Meteorológiai Adattár, HungaroMet Nonprofit Zrt. átlagolva az egyes értékekre",
  "stations_downloaded": 295,
  "windows": {
   "2026-10-01": {
    "from": "2026-10-01",
-   "to": "2026-10-19",
-   "days": 19,
+   "to": "2026-10-20",
+   "days": 20,
    "national": {
-    "mm": 21.2,
-    "n": 265
+    "mm": 21.1,
+    "n": 267
    },
    "counties": {
     "Békés": {
@@ -50,8 +50,8 @@
      "n": 10
     },
     "Bács-Kiskun": {
-     "mm": 22.4,
-     "n": 18
+     "mm": 22.5,
+     "n": 19
     },
     "Somogy": {
      "mm": 25.9,
@@ -66,8 +66,8 @@
      "n": 5
     },
     "Pest": {
-     "mm": 19.0,
-     "n": 20
+     "mm": 18.8,
+     "n": 21
     },
     "Baranya": {
      "mm": 30.6,
@@ -95,12 +95,12 @@
     }
    },
    "model": {
-    "national": 21.5,
+    "national": 21.6,
     "counties": {
-     "Békés": 22.7,
-     "Hajdú-Bihar": 28.0,
+     "Békés": 23.2,
+     "Hajdú-Bihar": 28.3,
      "Szabolcs-Szatmár-Bereg": 23.1,
-     "Borsod-Abaúj-Zemplén": 17.7,
+     "Borsod-Abaúj-Zemplén": 17.9,
      "Győr-Moson-Sopron": 5.0,
      "Zala": 19.8,
      "Vas": 16.2,
@@ -113,7 +113,7 @@
      "Pest": 23.5,
      "Baranya": 23.1,
      "Tolna": 24.3,
-     "Jász-Nagykun-Szolnok": 24.9,
+     "Jász-Nagykun-Szolnok": 25.4,
      "Nógrád": 16.5,
      "Heves": 20.1,
      "Csongrád-Csanád": 24.4
@@ -122,8 +122,8 @@
   },
   "2026-04-01": {
    "from": "2026-04-01",
-   "to": "2026-10-19",
-   "days": 202,
+   "to": "2026-10-20",
+   "days": 203,
    "national": {
     "mm": 158.8,
     "n": 245
@@ -211,12 +211,12 @@
     }
    },
    "model": {
-    "national": 188.6,
+    "national": 188.7,
     "counties": {
-     "Békés": 173.9,
-     "Hajdú-Bihar": 173.9,
+     "Békés": 174.4,
+     "Hajdú-Bihar": 174.2,
      "Szabolcs-Szatmár-Bereg": 179.8,
-     "Borsod-Abaúj-Zemplén": 151.3,
+     "Borsod-Abaúj-Zemplén": 151.5,
      "Győr-Moson-Sopron": 155.5,
      "Zala": 259.2,
      "Vas": 256.0,
@@ -229,7 +229,7 @@
      "Pest": 156.1,
      "Baranya": 241.4,
      "Tolna": 230.0,
-     "Jász-Nagykun-Szolnok": 204.4,
+     "Jász-Nagykun-Szolnok": 204.9,
      "Nógrád": 201.0,
      "Heves": 218.8,
      "Csongrád-Csanád": 186.6

@@ -1,7 +1,7 @@
 {
  "crop": "kukorica",
  "crop_year": 2026,
- "updated_at": "2026-10-21",
+ "updated_at": "2026-10-22",
  "weather_known_until": "2026-09-30",
  "weather_observed_until": "2026-09-30",
  "season_start": "2026-04-01",
@@ -24,15 +24,15 @@
   "weights": "Európai Bizottság becslése",
   "model_error_pct": 19.1,
   "value": {
-   "price_huf_per_t": 86230,
+   "price_huf_per_t": 86760,
    "price_year": 2026,
    "price_phrase": "a 2026. szept. 14. és okt. 11. közötti termelői átlagáron",
    "area_ha": 599200,
    "area_year": 2026,
    "production_mt": 2.01,
-   "production_value_bn_huf": 173.6,
-   "trend_gap_bn_huf": -190.1,
-   "note": "ár: takarmánykukorica termelői ára, 4 jegyzett hét átlaga (2026-09-14 – 2026-10-11), 237.53 EUR/t × 363.03 Ft/EUR (MNB hivatalos középárfolyam, 2026-10-20); termés és terület: az Európai Bizottság becslése"
+   "production_value_bn_huf": 174.7,
+   "trend_gap_bn_huf": -191.3,
+   "note": "ár: takarmánykukorica termelői ára, 4 jegyzett hét átlaga (2026-09-14 – 2026-10-11), 237.53 EUR/t × 365.28 Ft/EUR (MNB hivatalos középárfolyam, 2026-10-21); termés és terület: az Európai Bizottság becslése"
   },
   "drivers": {
    "groups": [
@@ -84,14 +84,14 @@
   ],
   "actual": {
    "source": "EU",
-   "updated": "2026-10-21",
+   "updated": "2026-10-22",
    "estimate": {
     "year": 2026,
     "yield_t_ha": 3.36,
     "production_kt": 2013.2,
     "area_kha": 599.2,
     "source": "Európai Bizottság (DG AGRI)",
-    "as_of": "2026-10-21"
+    "as_of": "2026-10-22"
    },
    "model_yield_t_ha": 5.34
   }
