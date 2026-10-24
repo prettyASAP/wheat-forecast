@@ -1,7 +1,7 @@
 {
  "crop": "kukorica",
  "crop_year": 2026,
- "updated_at": "2026-10-23",
+ "updated_at": "2026-10-24",
  "weather_known_until": "2026-09-30",
  "weather_observed_until": "2026-09-30",
  "season_start": "2026-04-01",
@@ -40,8 +40,8 @@
      "key": "water",
      "label": "Vízellátás (csapadék, vízmérleg)",
      "short": "Vízellátás",
-     "t_ha": -1.849,
-     "pct": -26.3
+     "t_ha": -1.848,
+     "pct": -26.2
     },
     {
      "key": "heat",
@@ -76,7 +76,7 @@
     "feature": "wb_deficit",
     "label": "a szezon halmozott vízhiánya",
     "direction": "below",
-    "value": -315.6,
+    "value": -315.5,
     "hist_extreme": -205.4,
     "hist_extreme_year": 2003,
     "excess_pct_of_range": 53.6
@@ -84,14 +84,14 @@
   ],
   "actual": {
    "source": "EU",
-   "updated": "2026-10-23",
+   "updated": "2026-10-24",
    "estimate": {
     "year": 2026,
     "yield_t_ha": 3.36,
     "production_kt": 2013.2,
     "area_kha": 599.2,
     "source": "Európai Bizottság (DG AGRI)",
-    "as_of": "2026-10-23"
+    "as_of": "2026-10-24"
    },
    "model_yield_t_ha": 5.34
   }
@@ -106,8 +106,8 @@
    "low": null,
    "high": null,
    "weather_todate": {
-    "prec_total_mm": 139.3,
-    "wb_total_mm": -736.8,
+    "prec_total_mm": 139.6,
+    "wb_total_mm": -736.5,
     "heat_days": 8,
     "frost_days_winter": null,
     "gdd_total": 3686.0
@@ -122,13 +122,13 @@
    "low": null,
    "high": null,
    "weather_todate": {
-    "prec_total_mm": 132.9,
-    "wb_total_mm": -745.8,
+    "prec_total_mm": 133.2,
+    "wb_total_mm": -745.4,
     "heat_days": 7,
     "frost_days_winter": null,
     "gdd_total": 3607.0
    },
-   "model_yield_t_ha": 4.17,
+   "model_yield_t_ha": 4.18,
    "model_anomaly_pct": -36.0,
    "note": "megyei adat a KSH közlésével jelenik meg"
   },
@@ -140,14 +140,14 @@
    "low": null,
    "high": null,
    "weather_todate": {
-    "prec_total_mm": 148.1,
-    "wb_total_mm": -734.1,
+    "prec_total_mm": 148.4,
+    "wb_total_mm": -733.9,
     "heat_days": 8,
     "frost_days_winter": null,
     "gdd_total": 3676.0
    },
-   "model_yield_t_ha": 4.99,
-   "model_anomaly_pct": -33.8,
+   "model_yield_t_ha": 5.0,
+   "model_anomaly_pct": -33.7,
    "note": "megyei adat a KSH közlésével jelenik meg"
   },
   {
@@ -158,8 +158,8 @@
    "low": null,
    "high": null,
    "weather_todate": {
-    "prec_total_mm": 148.3,
-    "wb_total_mm": -713.8,
+    "prec_total_mm": 148.5,
+    "wb_total_mm": -713.7,
     "heat_days": 6,
     "frost_days_winter": null,
     "gdd_total": 3530.0
@@ -176,13 +176,13 @@
    "low": null,
    "high": null,
    "weather_todate": {
-    "prec_total_mm": 173.1,
-    "wb_total_mm": -602.0,
+    "prec_total_mm": 173.3,
+    "wb_total_mm": -601.7,
     "heat_days": 1,
     "frost_days_winter": null,
     "gdd_total": 3280.0
    },
-   "model_yield_t_ha": 4.25,
+   "model_yield_t_ha": 4.26,
    "model_anomaly_pct": -33.2,
    "note": "megyei adat a KSH közlésével jelenik meg"
   },
@@ -195,7 +195,7 @@
    "high": null,
    "weather_todate": {
     "prec_total_mm": 150.5,
-    "wb_total_mm": -761.9,
+    "wb_total_mm": -761.7,
     "heat_days": 8,
     "frost_days_winter": null,
     "gdd_total": 3748.0
@@ -213,7 +213,7 @@
    "high": null,
    "weather_todate": {
     "prec_total_mm": 239.8,
-    "wb_total_mm": -557.8,
+    "wb_total_mm": -557.7,
     "heat_days": 4,
     "frost_days_winter": null,
     "gdd_total": 3540.0
@@ -231,7 +231,7 @@
    "high": null,
    "weather_todate": {
     "prec_total_mm": 239.4,
-    "wb_total_mm": -556.0,
+    "wb_total_mm": -556.2,
     "heat_days": 4,
     "frost_days_winter": null,
     "gdd_total": 3541.0
@@ -248,8 +248,8 @@
    "low": null,
    "high": null,
    "weather_todate": {
-    "prec_total_mm": 219.1,
-    "wb_total_mm": -598.3,
+    "prec_total_mm": 219.2,
+    "wb_total_mm": -598.2,
     "heat_days": 5,
     "frost_days_winter": null,
     "gdd_total": 3557.0
@@ -266,8 +266,8 @@
    "low": null,
    "high": null,
    "weather_todate": {
-    "prec_total_mm": 193.4,
-    "wb_total_mm": -623.4,
+    "prec_total_mm": 193.6,
+    "wb_total_mm": -623.2,
     "heat_days": 4,
     "frost_days_winter": null,
     "gdd_total": 3541.0
@@ -284,8 +284,8 @@
    "low": null,
    "high": null,
    "weather_todate": {
-    "prec_total_mm": 206.5,
-    "wb_total_mm": -637.7,
+    "prec_total_mm": 206.7,
+    "wb_total_mm": -637.4,
     "heat_days": 5,
     "frost_days_winter": null,
     "gdd_total": 3528.0
@@ -303,7 +303,7 @@
    "high": null,
    "weather_todate": {
     "prec_total_mm": 133.6,
-    "wb_total_mm": -694.7,
+    "wb_total_mm": -694.8,
     "heat_days": 6,
     "frost_days_winter": null,
     "gdd_total": 3550.0
@@ -320,14 +320,14 @@
    "low": null,
    "high": null,
    "weather_todate": {
-    "prec_total_mm": 199.0,
-    "wb_total_mm": -624.5,
+    "prec_total_mm": 199.3,
+    "wb_total_mm": -624.3,
     "heat_days": 7,
     "frost_days_winter": null,
     "gdd_total": 3537.0
    },
    "model_yield_t_ha": 4.31,
-   "model_anomaly_pct": -28.0,
+   "model_anomaly_pct": -27.9,
    "note": "megyei adat a KSH közlésével jelenik meg"
   },
   {
@@ -338,8 +338,8 @@
    "low": null,
    "high": null,
    "weather_todate": {
-    "prec_total_mm": 184.9,
-    "wb_total_mm": -631.5,
+    "prec_total_mm": 185.4,
+    "wb_total_mm": -631.0,
     "heat_days": 6,
     "frost_days_winter": null,
     "gdd_total": 3382.0
@@ -357,13 +357,13 @@
    "high": null,
    "weather_todate": {
     "prec_total_mm": 145.9,
-    "wb_total_mm": -670.7,
+    "wb_total_mm": -670.6,
     "heat_days": 5,
     "frost_days_winter": null,
     "gdd_total": 3523.0
    },
    "model_yield_t_ha": 6.47,
-   "model_anomaly_pct": -16.9,
+   "model_anomaly_pct": -16.8,
    "note": "megyei adat a KSH közlésével jelenik meg"
   },
   {
@@ -374,8 +374,8 @@
    "low": null,
    "high": null,
    "weather_todate": {
-    "prec_total_mm": 179.5,
-    "wb_total_mm": -715.6,
+    "prec_total_mm": 179.6,
+    "wb_total_mm": -715.4,
     "heat_days": 9,
     "frost_days_winter": null,
     "gdd_total": 3719.0
@@ -398,7 +398,7 @@
     "frost_days_winter": null,
     "gdd_total": 3471.0
    },
-   "model_yield_t_ha": 5.22,
+   "model_yield_t_ha": 5.23,
    "model_anomaly_pct": -23.5,
    "note": "megyei adat a KSH közlésével jelenik meg"
   },
@@ -410,8 +410,8 @@
    "low": null,
    "high": null,
    "weather_todate": {
-    "prec_total_mm": 162.0,
-    "wb_total_mm": -762.7,
+    "prec_total_mm": 162.3,
+    "wb_total_mm": -762.3,
     "heat_days": 10,
     "frost_days_winter": null,
     "gdd_total": 3778.0
@@ -429,7 +429,7 @@
    "high": null,
    "weather_todate": {
     "prec_total_mm": 151.2,
-    "wb_total_mm": -754.8,
+    "wb_total_mm": -754.7,
     "heat_days": 10,
     "frost_days_winter": null,
     "gdd_total": 3787.0
@@ -446,8 +446,8 @@
    "low": null,
    "high": null,
    "weather_todate": {
-    "prec_total_mm": 162.3,
-    "wb_total_mm": -700.4,
+    "prec_total_mm": 162.5,
+    "wb_total_mm": -700.2,
     "heat_days": 6,
     "frost_days_winter": null,
     "gdd_total": 3653.0
