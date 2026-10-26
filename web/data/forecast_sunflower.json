@@ -1,7 +1,7 @@
 {
  "crop": "napraforgó",
  "crop_year": 2026,
- "updated_at": "2026-10-25",
+ "updated_at": "2026-10-26",
  "weather_known_until": "2026-09-30",
  "weather_observed_until": "2026-09-30",
  "season_start": "2026-04-01",
@@ -36,14 +36,14 @@
   },
   "actual": {
    "source": "EU",
-   "updated": "2026-10-25",
+   "updated": "2026-10-26",
    "estimate": {
     "year": 2026,
     "yield_t_ha": 1.91,
     "production_kt": 1496.5,
     "area_kha": 783.5,
     "source": "Európai Bizottság (DG AGRI)",
-    "as_of": "2026-10-25"
+    "as_of": "2026-10-26"
    },
    "model_yield_t_ha": 2.9
   }
