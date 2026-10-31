@@ -747,6 +747,25 @@ def station_window_hu(st: dict) -> str:
     return f"{t(date.fromisoformat(st['from']))} – {t(date.fromisoformat(st['to']) + timedelta(days=1))}"
 
 
+def wb_vs_normal(sw: dict) -> str:
+    """A vízmérleg a sokéves átlaghoz mérve (a modellből). Az abszolút modellérték
+    a rácspontos ERA5-csapadék torzítását hordozza (2026-ban az állomásokhoz képest
+    +20%), a saját sokéves átlagához mért eltérés ezt nagyrészt kiejti."""
+    d = sw["wb_mm"] - sw["wb_normal_mm"]
+    if round(abs(d)) == 0:
+        return "A vízmérleg a modell szerint a sokéves átlag szintjén van."
+    return (f"A vízmérleg a modell szerint {abs(d):.0f} mm-rel a sokéves átlag "
+            f"{'alatt' if d < 0 else 'felett'} van.")
+
+
+def measured_sentence(st: dict | None) -> str:
+    """Az országos MÉRT csapadék (HungaroMet állomásátlag) a saját időablakával."""
+    if not (st and st.get("n") and st.get("mm") is not None):
+        return ""
+    return (f" A HungaroMet {st['n']} állomásán {station_window_hu(st)} között "
+            f"átlagosan {hu(st['mm'],0)} mm csapadék esett.")
+
+
 def station_note(fc: dict) -> str:
     st = fc["national"].get("stations")
     return f" Mért csapadék: {st['source']}." if st else ""
@@ -798,7 +817,7 @@ def banner_parts(final: list, sowing: list, running: list) -> tuple[str, str, st
         if per and sw.get("prec_mm") is not None and sw["prec_mm"] < 0.5:
             parts.append(f"{start} nem esett eső.")
         elif per and pct is not None:
-            parts.append(f"{start} a csapadék a sokéves átlag {pct}%-a.")
+            parts.append(f"{start} a csapadék a modell szerint a sokéves átlag {pct}%-a.")
     return " ".join(parts), big, big_label
 
 
@@ -820,14 +839,17 @@ def sowing_page(sowing: list, page_no: int, total: int, footer, methodology: str
     chk = (f" Ellenőrzés ugyanerre az időszakra: a {st['n']} állomás átlaga "
            f"{hu(st['mm'],0)} mm, a modell {hu(st['model_mm'],0)} mm."
            if st and st.get("n") and st.get("model_mm") is not None else "")
+    # Abszolút "esett" mennyiség csak mérésből: a modell megyénként egyetlen ERA5-
+    # rácspontot néz, és 2026-ban ápr. 1. óta tartósan ~20%-kal több csapadékot ad,
+    # mint a HungaroMet-állomások (az Alföldön +40–70%). A modellből a sokéves
+    # átlagához mért arány marad, mert a torzítás abban is benne van.
     if sw and dry:
         lead = (f"<strong>{_between(period)} nem esett csapadék:</strong> a modell szerint országosan "
                 f"{hu(sw['prec_mm'],0)} mm, a sokéves átlag ugyanerre az időszakra {hu(sw['prec_normal_mm'],0)} mm."
-                f" A vízmérleg {hu(sw['wb_mm'],0)} mm (a sokéves átlag {hu(sw['wb_normal_mm'],0)} mm).")
+                f"{measured_sentence(st)} {wb_vs_normal(sw)}")
     else:
-        lead = (f"<strong>{_between(period)} országosan {hu(sw['prec_mm'],0)} mm csapadék esett a modell szerint, "
-                f"a sokéves átlag {pct}%-a.</strong> A vízmérleg {hu(sw['wb_mm'],0)} mm "
-                f"(a sokéves átlag {hu(sw['wb_normal_mm'],0)} mm)." if sw else "")
+        lead = (f"<strong>{_between(period)} a csapadék a modell szerint a sokéves átlag {pct}%-a.</strong>"
+                f"{measured_sentence(st)} {wb_vs_normal(sw)}" if sw else "")
     has_st = any(c["weather_todate"].get("station_prec_mm") is not None for c in focus)
 
     def st_cell(c):
@@ -858,7 +880,7 @@ def sowing_page(sowing: list, page_no: int, total: int, footer, methodology: str
   <div>
     <div><p class="rep-kicker" style="margin-bottom:6px">Fókusz-vármegyék</p>
       <table class="table" style="font-size:11.5px"><thead><tr><th>Vármegye</th>{st_head}<th style="text-align:right">Hőösszeg</th></tr></thead><tbody>{frows}</tbody></table>
-      <p style="font-size:10px;{MUTED};margin:6px 0 0">{st_foot.strip()} Hőösszeg{f" ({period})" if period else ""}, °C·nap, és az országos adatok: modell (Open-Meteo: ERA5). Vízmérleg: csapadék mínusz potenciális párolgás (ET₀).{chk}</p></div>
+      <p style="font-size:10px;{MUTED};margin:6px 0 0">{st_foot.strip()} Hőösszeg{f" ({period})" if period else ""}, °C·nap, a sokéves átlaghoz mért csapadékarány és a vízmérleg: modell (Open-Meteo: ERA5). Vízmérleg: csapadék mínusz potenciális párolgás (ET₀).{chk}</p></div>
   </div>
 {map_block}
   <p style="font-size:10px;line-height:1.5;text-align:justify;{MUTED};margin:14px 0 0;border-top:1px solid var(--color-divider);padding-top:7px">{methodology}{station_note(fc)}</p>

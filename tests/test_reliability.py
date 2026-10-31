@@ -740,6 +740,29 @@ def test_sowing_page_first_day_has_no_numbers_and_no_crash():
     assert "None" not in text
 
 
+def test_sowing_lead_uses_measured_mm_and_model_only_relative():
+    """2026. okt.: a modell (rácspontos ERA5) 48 mm-t adott, az állomások 40 mm-t mértek
+    (ápr. 1. óta tartósan +20%). Abszolút "esett" mennyiség csak mérésből szerepel, a
+    modellből a sokéves átlaghoz mért arány; a vízmérleg nem lehet "−0 mm"."""
+    from src import report_html
+    sw = {"since": "2026-10-01", "until": "2026-10-30", "prec_mm": 48.2, "prec_normal_mm": 48.3,
+          "prec_pct_of_normal": 100, "wb_mm": -12.7, "wb_normal_mm": -0.5}
+    st = {"mm": 40.1, "n": 264, "from": "2026-10-01", "to": "2026-10-29", "model_mm": 47.7,
+          "source": "HungaroMet"}
+    m = report_html.measured_sentence(st)
+    assert "264 állomásán okt. 1. 8:00 – okt. 30. 7:00 között átlagosan 40 mm" in m
+    assert report_html.measured_sentence(None) == ""
+    assert report_html.wb_vs_normal(sw) == "A vízmérleg a modell szerint 12 mm-rel a sokéves átlag alatt van."
+    assert "szintjén" in report_html.wb_vs_normal({"wb_mm": -0.4, "wb_normal_mm": 0.0})
+    assert "felett" in report_html.wb_vs_normal({"wb_mm": 5.0, "wb_normal_mm": -3.0})
+    fc = {"crop": "búza", "crop_year": 2027, "national": {"sowing": sw, "stations": st},
+          "counties": [{"county_name": k, "weather_todate": {"station_prec_mm": 40.0, "gdd_total": 350.0}}
+                       for k in report_html.FOCUS]}
+    html = report_html.sowing_page([fc], 3, 4, lambda a, b: "", "")
+    assert "48 mm csapadék esett" not in html and "−0 mm" not in html
+    assert "a csapadék a modell szerint a sokéves átlag 100%-a" in html
+
+
 def test_observed_cutoff_stops_before_gap_filled_day():
     """Ha az ERA5 archívumból hiányzik egy nap, a kód sokéves átlaggal pótolja; a
     kiírt 'eddig' időszak ennél a napnál korábban véget ér."""
