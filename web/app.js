@@ -77,6 +77,14 @@ function daysLeft(fc) {
 }
 
 // ISO-dátum (2026-09-19) magyar alakban (2026. 09. 19.)
+// A vízmérleg a modell sokéves átlagához mérve: az abszolút modellérték a rácspontos
+// ERA5-csapadék torzítását hordozza (2026-ban az állomásokhoz képest ~+20%).
+function wbVsNormal(sw) {
+  const d = sw.wb_mm - sw.wb_normal_mm;
+  if (Math.round(Math.abs(d)) === 0) return "a vízmérleg a modell szerint a sokéves átlag szintjén van";
+  return `a vízmérleg a modell szerint ${hu(Math.abs(d), 0)} mm-rel a sokéves átlag ${d < 0 ? "alatt" : "felett"} van`;
+}
+
 function huDate(d) { return d ? d.replace(/-/g, ". ") + "." : ""; }
 
 /* A mondat alanya névelővel és termésévvel: "A búza idei" / "Az őszi árpa idei" /
@@ -343,10 +351,10 @@ function renderHeadline(fc) {
     // előrejelzett napokat is tartalmazza, ezért nem írjuk ki tényként
     const rain = !fc.weather_observed_until ? ""
       : sw.prec_mm != null && sw.prec_mm < 0.5
-      ? ` ${sw.since && sw.until ? betweenHu(sw.since, sw.until) : "Eddig"} nem esett csapadék; a vízmérleg ${hu(sw.wb_mm, 0)} mm.${stTxt}`
+      ? ` ${sw.since && sw.until ? betweenHu(sw.since, sw.until) : "Eddig"} nem esett csapadék; ${wbVsNormal(sw)}.${stTxt}`
       : sw.prec_pct_of_normal != null
-        ? ` ${sw.since && sw.until ? betweenHu(sw.since, sw.until) : "Eddig"} a csapadék a sokéves átlag <b>${sw.prec_pct_of_normal}%-a</b>
-           (${hu(sw.prec_mm, 0)} mm), a vízmérleg ${hu(sw.wb_mm, 0)} mm.${stTxt}` : "";
+        ? ` ${sw.since && sw.until ? betweenHu(sw.since, sw.until) : "Eddig"} a csapadék a modell szerint a sokéves átlag <b>${sw.prec_pct_of_normal}%-a</b>,
+           ${wbVsNormal(sw)}.${stTxt}` : "";
     el.innerHTML = `<div class="headline-main">${cropSubject(fc)} termésére még nincs hozamszám.
         A kiindulás a sokéves szint, <b>${hu(n.trend_t_ha)} t/ha</b>.${rng}${rain}</div>
       <div class="headline-sub"><span class="badge sowing">MÉG NINCS HOZAMSZÁM</span> Hozambecslést
@@ -541,8 +549,7 @@ function renderNational(fc) {
         <div class="kpi-label">${sw.since && sw.until ? rangeHu(sw.since, sw.until) : "Eddig"} ${info("vizmerleg")}</div>
         <div class="kpi-value">${sw.prec_pct_of_normal != null ? sw.prec_pct_of_normal + "%" : hu(sw.prec_mm, 0) + " mm"}
           <small>${sw.prec_pct_of_normal != null ? "a sokéves csapadék" : "csapadék"}</small></div>
-        <div class="kpi-sub">${hu(sw.prec_mm, 0)} mm csapadék (sokéves ${hu(sw.prec_normal_mm, 0)} mm) ·
-          vízmérleg ${hu(sw.wb_mm, 0)} mm (sokéves ${hu(sw.wb_normal_mm, 0)} mm)</div>
+        <div class="kpi-sub">${n.stations && n.stations.n ? `mért: ${hu(n.stations.mm, 0)} mm (${stationWindowHu(n.stations)}, ${n.stations.n} állomás) · ` : ""}${wbVsNormal(sw)}</div>
       </div>`);
     el.innerHTML = cards.join("");
     return;
