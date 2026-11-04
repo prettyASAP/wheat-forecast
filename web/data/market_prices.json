@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-11-03",
+ "updated_at": "2026-11-04",
  "source": "Európai Bizottság (DG AGRI) agrifood API; a magyar adatok a tagállami jelentésből (AKI PÁIR) származnak",
  "note": "Hivatalos HETI jegyzések (a cukor havi) — napi hivatalos árjegyzés nem létezik; a jelentés naponta frissül, a referencia-időszak tételenként jelölve.",
  "items": [
@@ -218,7 +218,7 @@
   "fx": {
    "rate": 364.88,
    "source": "MNB hivatalos középárfolyam",
-   "date": "2026-11-02"
+   "date": "2026-11-03"
   },
   "crops": {
    "wheat": {
