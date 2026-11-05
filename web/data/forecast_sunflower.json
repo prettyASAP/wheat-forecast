@@ -1,7 +1,7 @@
 {
  "crop": "napraforgó",
  "crop_year": 2026,
- "updated_at": "2026-11-04",
+ "updated_at": "2026-11-05",
  "weather_known_until": "2026-09-30",
  "weather_observed_until": "2026-09-30",
  "season_start": "2026-04-01",
@@ -24,26 +24,26 @@
   "weights": "Európai Bizottság becslése",
   "model_error_pct": 12.6,
   "value": {
-   "price_huf_per_t": 191460,
+   "price_huf_per_t": 190640,
    "price_year": 2026,
    "price_phrase": "a 2026. szept. 28. és okt. 25. közötti termelői átlagáron",
    "area_ha": 783500,
    "area_year": 2026,
    "production_mt": 1.5,
-   "production_value_bn_huf": 286.5,
-   "trend_gap_bn_huf": -147.0,
-   "note": "ár: hagyományos napraforgómag termelői ára, 4 jegyzett hét átlaga (2026-09-28 – 2026-10-25), 524.73 EUR/t × 364.88 Ft/EUR (MNB hivatalos középárfolyam, 2026-11-03); termés és terület: az Európai Bizottság becslése"
+   "production_value_bn_huf": 285.3,
+   "trend_gap_bn_huf": -146.4,
+   "note": "ár: hagyományos napraforgómag termelői ára, 4 jegyzett hét átlaga (2026-09-28 – 2026-10-25), 524.73 EUR/t × 363.32 Ft/EUR (MNB hivatalos középárfolyam, 2026-11-04); termés és terület: az Európai Bizottság becslése"
   },
   "actual": {
    "source": "EU",
-   "updated": "2026-11-04",
+   "updated": "2026-11-05",
    "estimate": {
     "year": 2026,
     "yield_t_ha": 1.91,
     "production_kt": 1496.5,
     "area_kha": 783.5,
     "source": "Európai Bizottság (DG AGRI)",
-    "as_of": "2026-11-04"
+    "as_of": "2026-11-05"
    },
    "model_yield_t_ha": 2.9
   }

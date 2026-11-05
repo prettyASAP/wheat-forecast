@@ -1,19 +1,7 @@
 {
- "updated_at": "2026-11-04",
+ "updated_at": "2026-11-05",
  "source": "Európai Bizottság (DG AGRI) tagállami termésbecslése; havonta frissül",
  "crops": {
-  "wheat": {
-   "year": 2026,
-   "yield_t_ha": 4.19,
-   "production_kt": 4500.7,
-   "area_kha": 1074.0
-  },
-  "corn": {
-   "year": 2026,
-   "yield_t_ha": 3.36,
-   "production_kt": 2013.2,
-   "area_kha": 599.2
-  },
   "sunflower": {
    "year": 2026,
    "yield_t_ha": 1.91,
