@@ -653,10 +653,11 @@ def main(crop: str = config.DEFAULT_CROP) -> None:
         try:
             off = json.loads(off_path.read_text(encoding="utf-8"))
             o = off["crops"].get(crop)
-            age = (today - date.fromisoformat(off["updated_at"])).days
+            as_of = (o or {}).get("as_of") or off["updated_at"]  # terményenkénti letöltési nap
+            age = (today - date.fromisoformat(as_of)).days
             if o and o["year"] == crop_year and age <= VALUATION_MAX_AGE_DAYS:
                 payload["national"]["official_estimate"] = {
-                    **o, "source": "Európai Bizottság (DG AGRI)", "as_of": off["updated_at"]}
+                    **o, "source": "Európai Bizottság (DG AGRI)", "as_of": as_of}
         except Exception as e:
             print(f"  [info] hivatalos becslés nem olvasható: {e}")
 

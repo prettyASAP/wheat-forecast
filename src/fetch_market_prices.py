@@ -471,10 +471,12 @@ _OFFICIAL_SPEC = {
 }
 
 
-def collect_official(today: date) -> dict:
+def collect_official(today: date, failed: list | None = None) -> dict:
     """termény -> {year, yield_t_ha, production_kt, area_kha}; csak plauzibilis
     sorok. Az év a termény termésévéhez igazodik (kukoricánál 2027. márciusig a
-    2026-os), ha arra még nincs sor, az előző év. Hibánál üres dict."""
+    2026-os), ha arra még nincs sor, az előző év. Hibánál üres dict.
+    A letöltési hibával (pl. HTTP 404/500) kiesett terményeket a `failed` listába
+    teszi, hogy a hívó megtarthassa az utolsó sikeres értéküket."""
     from src.predict_live import current_crop_year
     out: dict = {}
     cache: dict = {}
@@ -504,6 +506,58 @@ def collect_official(today: date) -> dict:
                          "production_kt": round(prod, 1), "area_kha": round(area, 1)}
         except Exception as e:
             print(f"  [hivatalos] {crop}: {e}")
+            if failed is not None:
+                failed.append(crop)
+    return out
+
+
+OFFICIAL_MAX_AGE_DAYS = 45  # = ksh_actuals.EU_MAX_AGE_DAYS (a lezárt szezon főszámának korhatára)
+
+
+def _last_official(crop: str, today: date) -> dict | None:
+    """Az utolsó sikeresen letöltött EU-becslés egy terményre: előbb a meglévő
+    official_estimates.json, ha onnan már kiesett, a napi pillanatképek
+    (web/data/history) official_estimate mezője, csak a termény futó termésévének
+    pillanatképeiből (régebbi termésév pillanatképe már túlhaladott értéket hordoz).
+    as_of = a letöltés napja."""
+    from src.predict_live import current_crop_year
+    p = config.WEB_DATA / "official_estimates.json"
+    try:
+        d = json.loads(p.read_text(encoding="utf-8"))
+        o = (d.get("crops") or {}).get(crop)
+        if o:
+            return {**o, "as_of": o.get("as_of") or d["updated_at"]}
+    except (OSError, ValueError, KeyError):
+        pass
+    hdir = config.WEB_DATA / "history" / crop
+    for f in sorted(hdir.glob("????-??-??.json"), reverse=True)[:OFFICIAL_MAX_AGE_DAYS]:
+        try:
+            snap = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if snap.get("crop_year") != current_crop_year(today, crop):
+            break
+        o = (snap.get("national") or {}).get("official_estimate")
+        if o and o.get("as_of") and o.get("year") == snap["crop_year"]:
+            return {k: o[k] for k in ("year", "yield_t_ha", "production_kt", "area_kha", "as_of") if k in o}
+    return None
+
+
+def merge_official(fresh: dict, failed: list, today: date, last=_last_official) -> dict:
+    """A friss letöltés, kiegészítve a letöltési hibával kiesett terményeknél az
+    utolsó sikeres értékkel (legfeljebb OFFICIAL_MAX_AGE_DAYS napos letöltés).
+    Ami a sikeres letöltésből hiányzik (nincs sor, plauzibilis sávon kívül), az
+    nem jön vissza a régiből."""
+    out = {c: {**o, "as_of": today.isoformat()} for c, o in fresh.items()}
+    for crop in failed:
+        o = last(crop, today)
+        try:
+            age = (today - date.fromisoformat(o["as_of"])).days if o else None
+        except (KeyError, TypeError, ValueError):
+            age = None
+        if age is not None and 0 <= age <= OFFICIAL_MAX_AGE_DAYS:
+            out[crop] = o
+            print(f"  [hivatalos] {crop}: letöltési hiba, az {o['as_of']}-i érték marad")
     return out
 
 
@@ -525,6 +579,16 @@ NOT_AVAILABLE = [
 def main() -> None:
     today = date.today()
     print(f"Piaci árjegyzések letöltése (EU agrifood API), ma: {today}")
+    # az EU-termésbecslés az árak előtt: az árak hiánya (sys.exit lent) ne vigye el
+    failed: list = []
+    official = merge_official(collect_official(today, failed), failed, today)
+    if official:  # sikertelen letöltésnél a meglévő fájl marad (nem írjuk felül üressel)
+        (config.WEB_DATA / "official_estimates.json").write_text(json.dumps({
+            "updated_at": today.isoformat(),
+            "source": ("Európai Bizottság (DG AGRI) tagállami termésbecslése; havonta "
+                       "frissül"),
+            "crops": official}, ensure_ascii=False, indent=1), encoding="utf-8")
+        print(f"[ok] official_estimates.json: {', '.join(official)}")
     items, skipped = collect(today)
     items = _filter_regular(items, skipped, today)
     fx = _fx_rate()
@@ -545,14 +609,6 @@ def main() -> None:
         "skipped_today": skipped,
         "not_available": NOT_AVAILABLE,
     }
-    official = collect_official(today)
-    if official:  # sikertelen letöltésnél a meglévő fájl marad (nem írjuk felül üressel)
-        (config.WEB_DATA / "official_estimates.json").write_text(json.dumps({
-            "updated_at": today.isoformat(),
-            "source": ("Európai Bizottság (DG AGRI) tagállami termésbecslése; havonta "
-                       "frissül"),
-            "crops": official}, ensure_ascii=False, indent=1), encoding="utf-8")
-        print(f"[ok] official_estimates.json: {', '.join(official)}")
     out = config.WEB_DATA / "market_prices.json"
     out.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"[ok] {out.name}: {len(items)} tétel"

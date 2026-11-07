@@ -373,6 +373,28 @@ def price_phrase(v: dict, cap: bool = False) -> str:
     return s[0].upper() + s[1:] if cap else s
 
 
+def prices_phrase(fs: list, fallback: str) -> str:
+    """Az ár felirata a ténylegesen használt árperiódussal (SZABALYOK 4.): ha a
+    kiírt termények értéke eltérő periódus árán számolt (pl. az árpa ára egy héttel
+    régebbi), terményenként írja ki, nem az elsőét mindegyikre."""
+    groups: dict = {}
+    for f in fs:
+        n = f.get("national") or {}
+        v = n.get("value")
+        if not v or (f.get("method") == "trend" and not (n.get("actual") or {}).get("source")):
+            continue  # mint value_basis: forintérték nélkül kiírt termény nem kerül a feliratba
+        groups.setdefault(price_phrase(v), []).append(f["crop"])
+    if not groups:
+        return fallback
+    if len(groups) == 1:
+        s = next(iter(groups))
+    else:
+        def names(ns):
+            return ns[0] if len(ns) == 1 else ", ".join(ns[:-1]) + " és " + ns[-1]
+        s = ", ".join(f"{names(ns)} {ph}" for ph, ns in groups.items())
+    return s[0].upper() + s[1:]
+
+
 def drivers_strip(fcs: dict, title: str = "Mi húzza a becslést?") -> str:
     """'Mi húzza a becslést?' – a három kártya alatt, oszlopra igazítva: a becslés
     időjárási részének pontos bontása (a meglévő lineáris modell tagjai
@@ -1095,7 +1117,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
   </div>
   {blocks}
   {trend_strip(trend_fcs or [])}
-  <p style="font-size:10px;{MUTED};margin:10px 0 0">Vármegyei statisztikai modell (KSH 2000-től, ERA5 időjárás).{ksh_note(closed + list(trend_fcs or []))} {banner_price}, {value_basis(closed + list(trend_fcs or []))}.{" EU-becslés: az Európai Bizottság havonta frissülő termésadata." if has_eu(closed + running + list(trend_fcs or [])) else ""}</p>
+  <p style="font-size:10px;{MUTED};margin:10px 0 0">Vármegyei statisztikai modell (KSH 2000-től, ERA5 időjárás).{ksh_note(closed + list(trend_fcs or []))} {prices_phrase(closed + list(trend_fcs or []), banner_price)}, {value_basis(closed + list(trend_fcs or []))}.{" EU-becslés: az Európai Bizottság havonta frissülő termésadata." if has_eu(closed + running + list(trend_fcs or [])) else ""}</p>
   {footer(1, total)}
 </section>"""
     else:
@@ -1113,7 +1135,7 @@ def build_html(fcs: dict, today: str, stamp: str, trend_fcs: list | None = None,
     <div style="flex:1">
       <p style="font-family:var(--font-heading);font-weight:600;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--color-accent-300);margin:0 0 6px">Ma a lényeg</p>
       <p style="margin:0;font-family:var(--font-heading);font-weight:600;font-size:22px;line-height:1.15">A három termény együtt <span style="color:#fff">~{total_val:.0f} mrd Ft</span> termelési értéket ígér, ez <span style="color:#f0b7a5">{abs(total_gap):.0f} mrd Ft-tal {"kevesebb" if total_gap < 0 else "több"}</span> a szokásosnál.</p>
-      <p style="margin:8px 0 0;font-size:12px;color:var(--color-accent-300)">{banner_price} és a legutóbbi lezárt évi területtel számolva; tájékoztató becslés.{years_note}</p>
+      <p style="margin:8px 0 0;font-size:12px;color:var(--color-accent-300)">{prices_phrase(list(fcs.values()), banner_price)} és a legutóbbi lezárt évi területtel számolva; tájékoztató becslés.{years_note}</p>
     </div>
     <div style="flex:none;text-align:right;border-left:1px solid color-mix(in srgb,#fff 22%,transparent);padding-left:22px">
       <div style="font-family:var(--font-heading);font-weight:600;font-size:44px;line-height:0.9;color:#fff">{total_val:.0f}</div>
@@ -1256,8 +1278,10 @@ def main(make_pdf: bool = True, out_path: str | Path | None = None) -> Path | No
         if offp.exists():
             od = json.loads(offp.read_text(encoding="utf-8"))
             # ugyanaz a korhatár, mint a lezárt szezon főszámánál (ksh_actuals.EU_MAX_AGE_DAYS)
-            if (date.today() - date.fromisoformat(od.get("updated_at", "2000-01-01"))).days <= ksh_actuals.EU_MAX_AGE_DAYS:
-                off = {k: {**v, "as_of": od["updated_at"]} for k, v in (od.get("crops") or {}).items()}
+            for k, v in (od.get("crops") or {}).items():
+                as_of = v.get("as_of") or od.get("updated_at", "2000-01-01")  # terményenkénti letöltési nap
+                if (date.today() - date.fromisoformat(as_of)).days <= ksh_actuals.EU_MAX_AGE_DAYS:
+                    off[k] = {**v, "as_of": as_of}
         for crop, fc in fcs.items():
             if fc.get("season_phase") != "sowing":
                 continue

@@ -140,9 +140,12 @@ def _eu_estimate(crop: str) -> dict | None:
     p = config.WEB_DATA / "official_estimates.json"
     try:
         d = json.loads(p.read_text(encoding="utf-8"))
-        age = (date.today() - date.fromisoformat(d["updated_at"])).days
         o = (d.get("crops") or {}).get(crop)
-        return {**o, "as_of": d["updated_at"]} if o and age <= EU_MAX_AGE_DAYS else None
+        if not o:
+            return None
+        as_of = o.get("as_of") or d["updated_at"]  # terményenkénti letöltési nap
+        age = (date.today() - date.fromisoformat(as_of)).days
+        return {**o, "as_of": as_of} if age <= EU_MAX_AGE_DAYS else None
     except (OSError, ValueError, KeyError):
         return None
 

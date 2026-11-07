@@ -982,3 +982,45 @@ def test_price_phrase_names_exact_period():
             == "a 2026. szept. 14. és okt. 11. közötti termelői átlagáron")
     assert (_period_phrase(_date(2026, 12, 21), _date(2027, 1, 17))
             == "a 2026. dec. 21. és 2027. jan. 17. közötti termelői átlagáron")
+
+
+def test_official_letoltesi_hiba_nem_torli_a_becslest():
+    """Heti ellenőr 2026-11-07: a cereal végpont 404-e után a búza és a kukorica
+    EU-becslése kiesett a fájlból, a kukorica lezárt szezonjában a modell lett a
+    főszám. Letöltési hibánál az utolsó sikeres érték marad (legfeljebb 45 napig)."""
+    from datetime import date
+    from src.fetch_market_prices import merge_official
+    today = date(2026, 11, 7)
+    old = {"corn": {"year": 2026, "yield_t_ha": 3.36, "as_of": "2026-11-04"},
+           "wheat": {"year": 2026, "yield_t_ha": 4.19, "as_of": "2026-09-01"}}
+    fresh = {"sunflower": {"year": 2026, "yield_t_ha": 1.91}}
+    out = merge_official(fresh, ["corn", "wheat"], today, last=lambda c, t: old.get(c))
+    assert out["corn"]["yield_t_ha"] == 3.36 and out["corn"]["as_of"] == "2026-11-04"
+    assert "wheat" not in out  # 67 napos: túl régi
+    assert out["sunflower"]["as_of"] == "2026-11-07"
+    # sikeres letöltésből hiányzó termény nem jön vissza a régiből
+    assert "corn" not in merge_official(fresh, [], today, last=lambda c, t: old.get(c))
+
+
+def test_eu_becsles_kora_termenyenkent(tmp_path, monkeypatch):
+    import json
+    from datetime import date, timedelta
+    from src import config, ksh_actuals
+    old = (date.today() - timedelta(days=60)).isoformat()
+    (tmp_path / "official_estimates.json").write_text(json.dumps({
+        "updated_at": date.today().isoformat(),
+        "crops": {"corn": {"year": 2026, "yield_t_ha": 3.36, "as_of": old}}}), encoding="utf-8")
+    monkeypatch.setattr(config, "WEB_DATA", tmp_path)
+    assert ksh_actuals._eu_estimate("corn") is None
+
+
+def test_ar_felirat_termenyenkenti_periodussal():
+    from src.report_html import prices_phrase
+    a = {"price_phrase": "a 2026. okt. 5. és nov. 1. közötti termelői átlagáron"}
+    b = {"price_phrase": "a 2026. szept. 28. és okt. 25. közötti termelői átlagáron"}
+    fs = [{"crop": "búza", "national": {"value": a}}, {"crop": "kukorica", "national": {"value": a}},
+          {"crop": "őszi árpa", "national": {"value": b}}]
+    assert prices_phrase(fs, "x") == ("Búza és kukorica a 2026. okt. 5. és nov. 1. közötti termelői "
+                                      "átlagáron, őszi árpa a 2026. szept. 28. és okt. 25. közötti "
+                                      "termelői átlagáron")
+    assert prices_phrase(fs[:2], "x") == "A 2026. okt. 5. és nov. 1. közötti termelői átlagáron"
