@@ -1,7 +1,7 @@
 {
  "crop": "kukorica",
  "crop_year": 2026,
- "updated_at": "2026-11-23",
+ "updated_at": "2026-11-24",
  "weather_known_until": "2026-09-30",
  "weather_observed_until": "2026-09-30",
  "season_start": "2026-04-01",
@@ -11,12 +11,12 @@
  "method": "weather",
  "season_phase": "final",
  "national": {
-  "predicted_yield_t_ha": 3.36,
+  "predicted_yield_t_ha": 3.12,
   "pred_low_t_ha": null,
   "pred_high_t_ha": null,
-  "anomaly_pct": -52.3,
+  "anomaly_pct": -55.7,
   "trend_t_ha": 7.04,
-  "yoy_pct": -36.2,
+  "yoy_pct": -40.8,
   "prev_year": 2025,
   "prev_year_yield_t_ha": 5.27,
   "rank_from_worst": 1,
@@ -29,9 +29,9 @@
    "price_phrase": "a 2024. évi átlagáron",
    "area_ha": 599200,
    "area_year": 2026,
-   "production_mt": 2.01,
-   "production_value_bn_huf": 139.4,
-   "trend_gap_bn_huf": -152.7,
+   "production_mt": 1.87,
+   "production_value_bn_huf": 129.5,
+   "trend_gap_bn_huf": -162.7,
    "note": "ár: a 2024. évi termelői átlagár (Eurostat); termés és terület: az Európai Bizottság becslése"
   },
   "drivers": {
@@ -84,13 +84,14 @@
   ],
   "actual": {
    "source": "EU",
-   "updated": "2026-11-04",
+   "updated": "2026-11-24",
    "estimate": {
     "year": 2026,
-    "yield_t_ha": 3.36,
-    "production_kt": 2013.2,
+    "yield_t_ha": 3.12,
+    "production_kt": 1869.4,
     "area_kha": 599.2,
-    "as_of": "2026-11-04"
+    "as_of": "2026-11-24",
+    "source": "Európai Bizottság (DG AGRI)"
    },
    "model_yield_t_ha": 5.34
   }
