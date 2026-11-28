@@ -1,238 +1,238 @@
 {
- "updated_at": "2026-11-27",
- "last_day": "2026-11-25",
+ "updated_at": "2026-11-28",
+ "last_day": "2026-11-26",
  "source": "Adatbázis: Meteorológiai Adattár, HungaroMet Nonprofit Zrt. átlagolva az egyes értékekre",
  "stations_downloaded": 295,
  "windows": {
   "2026-10-01": {
    "from": "2026-10-01",
-   "to": "2026-11-25",
-   "days": 56,
+   "to": "2026-11-26",
+   "days": 57,
    "national": {
-    "mm": 128.0,
-    "n": 260
+    "mm": 139.7,
+    "n": 261
    },
    "counties": {
+    "Szabolcs-Szatmár-Bereg": {
+     "mm": 127.1,
+     "n": 19
+    },
     "Békés": {
-     "mm": 136.4,
+     "mm": 149.0,
      "n": 22
     },
-    "Hajdú-Bihar": {
-     "mm": 132.3,
-     "n": 16
-    },
-    "Szabolcs-Szatmár-Bereg": {
-     "mm": 120.1,
-     "n": 19
-    },
-    "Borsod-Abaúj-Zemplén": {
-     "mm": 112.1,
-     "n": 25
-    },
     "Győr-Moson-Sopron": {
-     "mm": 83.5,
+     "mm": 97.5,
      "n": 19
-    },
-    "Vas": {
-     "mm": 114.9,
-     "n": 8
     },
     "Zala": {
-     "mm": 146.5,
+     "mm": 158.3,
      "n": 9
     },
-    "Fejér": {
-     "mm": 129.0,
-     "n": 9
-    },
-    "Veszprém": {
-     "mm": 134.8,
-     "n": 10
-    },
-    "Bács-Kiskun": {
-     "mm": 136.1,
-     "n": 18
-    },
-    "Somogy": {
-     "mm": 154.5,
-     "n": 11
+    "Vas": {
+     "mm": 125.2,
+     "n": 8
     },
     "Komárom-Esztergom": {
-     "mm": 133.5,
+     "mm": 145.3,
      "n": 5
     },
     "Pest": {
-     "mm": 113.5,
+     "mm": 127.2,
      "n": 20
     },
-    "Budapest": {
-     "mm": 124.0,
-     "n": 4
-    },
     "Baranya": {
-     "mm": 177.5,
+     "mm": 192.3,
      "n": 11
     },
-    "Tolna": {
-     "mm": 152.7,
-     "n": 8
+    "Somogy": {
+     "mm": 167.2,
+     "n": 11
     },
-    "Jász-Nagykun-Szolnok": {
-     "mm": 138.4,
-     "n": 17
-    },
-    "Nógrád": {
-     "mm": 110.3,
-     "n": 7
-    },
-    "Heves": {
-     "mm": 117.2,
+    "Fejér": {
+     "mm": 142.6,
      "n": 9
     },
+    "Bács-Kiskun": {
+     "mm": 148.1,
+     "n": 18
+    },
+    "Veszprém": {
+     "mm": 147.3,
+     "n": 10
+    },
+    "Budapest": {
+     "mm": 135.0,
+     "n": 5
+    },
+    "Tolna": {
+     "mm": 165.6,
+     "n": 8
+    },
+    "Heves": {
+     "mm": 127.9,
+     "n": 9
+    },
+    "Nógrád": {
+     "mm": 125.4,
+     "n": 7
+    },
+    "Jász-Nagykun-Szolnok": {
+     "mm": 149.0,
+     "n": 17
+    },
+    "Borsod-Abaúj-Zemplén": {
+     "mm": 120.8,
+     "n": 25
+    },
     "Csongrád-Csanád": {
-     "mm": 139.5,
+     "mm": 154.7,
      "n": 13
+    },
+    "Hajdú-Bihar": {
+     "mm": 141.4,
+     "n": 16
     }
    },
    "model": {
-    "national": 147.6,
+    "national": 161.1,
     "counties": {
-     "Békés": 162.2,
-     "Hajdú-Bihar": 160.2,
-     "Szabolcs-Szatmár-Bereg": 152.2,
-     "Borsod-Abaúj-Zemplén": 126.5,
-     "Győr-Moson-Sopron": 96.0,
-     "Vas": 116.5,
-     "Zala": 139.2,
-     "Fejér": 138.9,
-     "Veszprém": 123.8,
-     "Bács-Kiskun": 186.6,
-     "Somogy": 174.0,
-     "Komárom-Esztergom": 115.1,
-     "Pest": 135.7,
-     "Budapest": 128.0,
-     "Baranya": 209.5,
-     "Tolna": 189.8,
-     "Jász-Nagykun-Szolnok": 154.2,
-     "Nógrád": 120.0,
-     "Heves": 131.6,
-     "Csongrád-Csanád": 165.5
+     "Szabolcs-Szatmár-Bereg": 155.8,
+     "Békés": 184.5,
+     "Győr-Moson-Sopron": 110.2,
+     "Zala": 153.1,
+     "Vas": 122.9,
+     "Komárom-Esztergom": 121.4,
+     "Pest": 151.9,
+     "Baranya": 220.7,
+     "Somogy": 188.2,
+     "Fejér": 156.0,
+     "Bács-Kiskun": 199.4,
+     "Veszprém": 133.3,
+     "Budapest": 146.5,
+     "Tolna": 201.3,
+     "Heves": 146.1,
+     "Nógrád": 133.3,
+     "Jász-Nagykun-Szolnok": 169.9,
+     "Borsod-Abaúj-Zemplén": 136.4,
+     "Csongrád-Csanád": 187.2,
+     "Hajdú-Bihar": 173.8
     }
    }
   },
   "2026-04-01": {
    "from": "2026-04-01",
-   "to": "2026-11-25",
-   "days": 239,
+   "to": "2026-11-26",
+   "days": 240,
    "national": {
-    "mm": 266.0,
-    "n": 240
+    "mm": 277.8,
+    "n": 241
    },
    "counties": {
+    "Szabolcs-Szatmár-Bereg": {
+     "mm": 264.1,
+     "n": 17
+    },
     "Békés": {
-     "mm": 259.2,
+     "mm": 271.8,
      "n": 22
     },
-    "Hajdú-Bihar": {
-     "mm": 229.2,
-     "n": 14
-    },
-    "Szabolcs-Szatmár-Bereg": {
-     "mm": 257.1,
-     "n": 17
-    },
-    "Borsod-Abaúj-Zemplén": {
-     "mm": 242.1,
-     "n": 21
-    },
     "Győr-Moson-Sopron": {
-     "mm": 240.6,
+     "mm": 254.8,
      "n": 17
-    },
-    "Vas": {
-     "mm": 328.5,
-     "n": 8
     },
     "Zala": {
-     "mm": 397.2,
+     "mm": 408.9,
      "n": 9
     },
-    "Fejér": {
-     "mm": 236.4,
+    "Vas": {
+     "mm": 338.9,
      "n": 8
     },
-    "Veszprém": {
-     "mm": 275.1,
-     "n": 9
-    },
-    "Bács-Kiskun": {
-     "mm": 259.4,
-     "n": 17
-    },
-    "Somogy": {
-     "mm": 343.4,
-     "n": 11
-    },
     "Komárom-Esztergom": {
-     "mm": 260.4,
+     "mm": 271.3,
      "n": 3
     },
     "Pest": {
-     "mm": 212.3,
+     "mm": 225.9,
      "n": 18
     },
-    "Budapest": {
-     "mm": 211.7,
-     "n": 4
-    },
     "Baranya": {
-     "mm": 381.0,
+     "mm": 395.8,
      "n": 11
     },
-    "Tolna": {
-     "mm": 296.2,
-     "n": 6
+    "Somogy": {
+     "mm": 356.1,
+     "n": 11
     },
-    "Jász-Nagykun-Szolnok": {
-     "mm": 243.1,
-     "n": 17
-    },
-    "Nógrád": {
-     "mm": 246.8,
-     "n": 7
-    },
-    "Heves": {
-     "mm": 228.1,
+    "Fejér": {
+     "mm": 250.0,
      "n": 8
     },
+    "Bács-Kiskun": {
+     "mm": 271.3,
+     "n": 17
+    },
+    "Veszprém": {
+     "mm": 287.3,
+     "n": 9
+    },
+    "Budapest": {
+     "mm": 234.4,
+     "n": 5
+    },
+    "Tolna": {
+     "mm": 309.1,
+     "n": 6
+    },
+    "Heves": {
+     "mm": 238.8,
+     "n": 8
+    },
+    "Nógrád": {
+     "mm": 261.9,
+     "n": 7
+    },
+    "Jász-Nagykun-Szolnok": {
+     "mm": 253.7,
+     "n": 17
+    },
+    "Borsod-Abaúj-Zemplén": {
+     "mm": 250.7,
+     "n": 21
+    },
     "Csongrád-Csanád": {
-     "mm": 270.3,
+     "mm": 285.6,
      "n": 13
+    },
+    "Hajdú-Bihar": {
+     "mm": 238.7,
+     "n": 14
     }
    },
    "model": {
-    "national": 315.5,
+    "national": 329.0,
     "counties": {
-     "Békés": 313.4,
-     "Hajdú-Bihar": 306.1,
-     "Szabolcs-Szatmár-Bereg": 308.9,
-     "Borsod-Abaúj-Zemplén": 260.1,
-     "Győr-Moson-Sopron": 246.5,
-     "Vas": 356.3,
-     "Zala": 378.6,
-     "Fejér": 285.9,
-     "Veszprém": 295.8,
-     "Bács-Kiskun": 348.3,
-     "Somogy": 366.3,
-     "Komárom-Esztergom": 262.4,
-     "Pest": 268.3,
-     "Budapest": 266.9,
-     "Baranya": 427.8,
-     "Tolna": 395.5,
-     "Jász-Nagykun-Szolnok": 333.7,
-     "Nógrád": 304.5,
-     "Heves": 330.3,
-     "Csongrád-Csanád": 327.7
+     "Szabolcs-Szatmár-Bereg": 312.5,
+     "Békés": 335.7,
+     "Győr-Moson-Sopron": 260.7,
+     "Zala": 392.5,
+     "Vas": 362.7,
+     "Komárom-Esztergom": 268.7,
+     "Pest": 284.5,
+     "Baranya": 439.0,
+     "Somogy": 380.5,
+     "Fejér": 303.0,
+     "Bács-Kiskun": 361.1,
+     "Veszprém": 305.3,
+     "Budapest": 285.4,
+     "Tolna": 407.0,
+     "Heves": 344.8,
+     "Nógrád": 317.8,
+     "Jász-Nagykun-Szolnok": 349.4,
+     "Borsod-Abaúj-Zemplén": 270.0,
+     "Csongrád-Csanád": 349.4,
+     "Hajdú-Bihar": 319.7
     }
    }
   }
